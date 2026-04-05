@@ -1,0 +1,107 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light theme colors - Dashboard inspired */
+    --background: 220 14% 96%;           /* #F7F8FA - light gray background */
+    --background-elevated: 0 0% 100%;    /* #FFFFFF - pure white for cards */
+    --background-overlay: 0 0% 100%;     /* #FFFFFF - overlays */
+
+    --foreground: 220 13% 18%;           /* #2B2F3A - dark blue-gray */
+    --foreground-secondary: 220 9% 46%;  /* #6B7280 - medium gray */
+    --foreground-tertiary: 220 9% 60%;   /* #8B92A0 - light gray */
+
+    --border: 220 13% 91%;               /* #E5E7EB - subtle border */
+    --border-hover: 220 13% 85%;         /* #D1D5DB - hover state */
+    --border-focus: 217 91% 60%;         /* #60A5FA - bright blue focus */
+
+    /* Font variables */
+    --font-inter: "Inter", sans-serif;
+    --font-mono: "JetBrains Mono", monospace;
+  }
+
+  [data-theme="dark"] {
+    /* Dark theme colors - Slate Blue aesthetic (from reference image) */
+    --background: 222 47% 11%;           /* #1E293B - slate-900 base */
+    --background-elevated: 215 25% 23%;  /* #334155 - slate-700 elevated (lighter blue-tinted) */
+    --background-overlay: 222 47% 11%;   /* Same as base */
+
+    --foreground: 0 0% 100%;             /* #FFFFFF - pure white */
+    --foreground-secondary: 215 20% 65%; /* #94A3B8 - slate-400 */
+    --foreground-tertiary: 215 16% 47%;  /* #64748B - slate-500 */
+
+    --border: 215 25% 23%;               /* #334155 - same as elevated for subtle borders */
+    --border-hover: 215 25% 27%;         /* #3F4B5B - slightly lighter */
+    --border-focus: 217 91% 60%;         /* #60A5FA - bright blue focus */
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
+  }
+
+  /* Focus visible styles */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-border-focus ring-offset-2 ring-offset-background;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-[#EBEDF0] dark:bg-[#1A202C];
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-[#C1C7CD] dark:bg-[#2D3748] rounded-lg;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-[#A8ADB4] dark:bg-[#2d3744];
+  }
+}
+
+@layer components {
+  /* Utility classes for common patterns */
+  .card-base {
+    
+    @apply rounded-xl bg-white dark:bg-[rgb(34,44,64)] shadow-sm border border-border; 
+  }
+
+
+  .input-base {
+    @apply w-full rounded-lg border border-border bg-white px-3 py-2 text-sm;
+    @apply placeholder:text-foreground-tertiary;
+    @apply focus:border-border-focus focus:outline-none focus:ring-2 focus:ring-border-focus focus:ring-offset-2;
+    @apply disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .button-base {
+    @apply inline-flex items-center justify-center rounded-lg font-medium transition-colors;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
+    @apply disabled:pointer-events-none disabled:opacity-50;
+  }
+}

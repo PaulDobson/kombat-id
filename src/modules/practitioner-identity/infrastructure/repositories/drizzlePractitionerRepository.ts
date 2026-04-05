@@ -1,0 +1,244 @@
+import "server-only";
+
+import { z } from "zod";
+import { adminSupabase } from "@/lib/supabase/admin";
+import { DomainError } from "@/lib/errors";
+import type { Database } from "@/types/database.types";
+import type {
+  Practitioner,
+  Grade,
+  Gender,
+} from "../../domain/entities/practitioner";
+import type {
+  PractitionerRepository,
+  PractitionerSearchQuery,
+} from "../../domain/interfaces/practitionerRepository";
+
+type PractitionerRow = Database["public"]["Tables"]["practitioners"]["Row"];
+type PractitionerInsert =
+  Database["public"]["Tables"]["practitioners"]["Insert"];
+
+const PractitionerRowSchema = z.object({
+  id: z.string().uuid(),
+  auth_user_id: z.string().uuid().nullable(),
+  rut: z.string().min(1),
+  full_name: z.string().min(1),
+  birth_date: z.string().min(1),
+  gender: z.enum(["male", "female", "other"]),
+  grade: z.enum(["white", "yellow", "green", "blue", "red", "black"]),
+  dan: z.number().int().min(1).max(9).nullable(),
+  start_date: z.string().min(1),
+  is_active: z.boolean(),
+  contact_phone: z.string().nullable(),
+  contact_email: z.string().nullable(),
+  photo_path: z.string().nullable(),
+  qr_token: z.string().uuid(),
+  weight_kg: z.number().nullable(),
+  deactivated_at: z.string().nullable(),
+  deactivation_reason: z.string().nullable(),
+  updated_at: z.string().min(1),
+  created_at: z.string().min(1),
+});
+
+export class DrizzlePractitionerRepository implements PractitionerRepository {
+  async findById(publicId: string): Promise<Practitioner | null> {
+    const { data, error } = await adminSupabase
+      .from("practitioners")
+      .select("*")
+      .eq("id", publicId)
+      .maybeSingle();
+
+    if (error)
+      throw new DomainError(
+        `Failed to find practitioner by id: ${error.message}`,
+      );
+    if (!data) return null;
+    return this.fromRow(data as PractitionerRow);
+  }
+
+  async findByRut(rut: string): Promise<Practitioner | null> {
+    const { data, error } = await adminSupabase
+      .from("practitioners")
+      .select("*")
+      .eq("rut", rut)
+      .maybeSingle();
+
+    if (error)
+      throw new DomainError(
+        `Failed to find practitioner by RUT: ${error.message}`,
+      );
+    if (!data) return null;
+    return this.fromRow(data as PractitionerRow);
+  }
+
+  async findByAuthUserId(authUserId: string): Promise<Practitioner | null> {
+    const { data, error } = await adminSupabase
+      .from("practitioners")
+      .select("*")
+      .eq("auth_user_id", authUserId)
+      .maybeSingle();
+
+    if (error)
+      throw new DomainError(
+        `Failed to find practitioner by auth user id: ${error.message}`,
+      );
+    if (!data) return null;
+    return this.fromRow(data as PractitionerRow);
+  }
+
+  async findByQrToken(token: string): Promise<Practitioner | null> {
+    const { data, error } = await adminSupabase
+      .from("practitioners")
+      .select("*")
+      .eq("qr_token", token)
+      .maybeSingle();
+
+    if (error)
+      throw new DomainError(
+        `Failed to find practitioner by QR token: ${error.message}`,
+      );
+    if (!data) return null;
+    return this.fromRow(data as PractitionerRow);
+  }
+
+  async search(query: PractitionerSearchQuery): Promise<Practitioner[]> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let builder: any = adminSupabase.from("practitioners").select("*");
+
+    if (query.name) builder = builder.ilike("full_name", `%${query.name}%`);
+    if (query.rut) builder = builder.eq("rut", query.rut);
+    if (query.grade) builder = builder.eq("grade", query.grade);
+
+    const { data, error } = await builder;
+    if (error)
+      throw new DomainError(`Failed to search practitioners: ${error.message}`);
+
+    return ((data as PractitionerRow[]) ?? []).map((row) => this.fromRow(row));
+  }
+
+  async save(practitioner: Practitioner): Promise<void> {
+    const row = this.toRow(practitioner);
+    const { error } = await adminSupabase
+      .from("practitioners")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .upsert(row as any);
+    if (error)
+      throw new DomainError(`Failed to save practitioner: ${error.message}`);
+  }
+
+  async updateGrade(
+    publicId: string,
+    grade: Grade,
+    _adminId: string,
+  ): Promise<void> {
+    const { error } = await adminSupabase
+      .from("practitioners")
+      .update({
+        grade,
+        updated_at: new Date().toISOString(),
+      } as unknown as never)
+      .eq("id", publicId);
+
+    if (error)
+      throw new DomainError(
+        `Failed to update practitioner grade: ${error.message}`,
+      );
+  }
+
+  async setActiveStatus(
+    publicId: string,
+    active: boolean,
+    reason: string,
+    _adminId: string,
+  ): Promise<void> {
+    const now = new Date().toISOString();
+    const { error } = await adminSupabase
+      .from("practitioners")
+      .update({
+        is_active: active,
+        deactivated_at: active ? null : now,
+        deactivation_reason: active ? null : reason,
+        updated_at: now,
+      } as unknown as never)
+      .eq("id", publicId);
+
+    if (error)
+      throw new DomainError(
+        `Failed to set practitioner active status: ${error.message}`,
+      );
+  }
+
+  async regenerateQrToken(publicId: string, _adminId: string): Promise<string> {
+    const newToken = crypto.randomUUID();
+    const { error } = await adminSupabase
+      .from("practitioners")
+      .update({
+        qr_token: newToken,
+        updated_at: new Date().toISOString(),
+      } as unknown as never)
+      .eq("id", publicId);
+
+    if (error)
+      throw new DomainError(`Failed to regenerate QR token: ${error.message}`);
+
+    return newToken;
+  }
+
+  private fromRow(row: PractitionerRow): Practitioner {
+    const parsed = PractitionerRowSchema.safeParse(row);
+    if (!parsed.success) {
+      throw new DomainError(
+        `Practitioner row failed schema validation: ${parsed.error.message}`,
+      );
+    }
+    return this.toEntity(parsed.data as PractitionerRow);
+  }
+
+  private toEntity(row: PractitionerRow): Practitioner {
+    return {
+      id: row.id,
+      authUserId: row.auth_user_id,
+      rut: row.rut,
+      fullName: row.full_name,
+      birthDate: row.birth_date,
+      gender: row.gender as Gender,
+      grade: row.grade as Grade,
+      dan: row.dan,
+      startDate: row.start_date,
+      isActive: row.is_active,
+      contactPhone: row.contact_phone,
+      contactEmail: row.contact_email,
+      photoPath: row.photo_path,
+      qrToken: row.qr_token,
+      weightKg: row.weight_kg,
+      deactivatedAt: row.deactivated_at,
+      deactivationReason: row.deactivation_reason,
+      updatedAt: row.updated_at,
+      createdAt: row.created_at,
+    };
+  }
+
+  private toRow(practitioner: Practitioner): PractitionerInsert {
+    return {
+      id: practitioner.id,
+      auth_user_id: practitioner.authUserId,
+      rut: practitioner.rut,
+      full_name: practitioner.fullName,
+      birth_date: practitioner.birthDate,
+      gender: practitioner.gender,
+      grade: practitioner.grade,
+      dan: practitioner.dan,
+      start_date: practitioner.startDate,
+      is_active: practitioner.isActive,
+      contact_phone: practitioner.contactPhone,
+      contact_email: practitioner.contactEmail,
+      photo_path: practitioner.photoPath,
+      qr_token: practitioner.qrToken,
+      weight_kg: practitioner.weightKg,
+      deactivated_at: practitioner.deactivatedAt,
+      deactivation_reason: practitioner.deactivationReason,
+      updated_at: practitioner.updatedAt,
+      created_at: practitioner.createdAt,
+    };
+  }
+}
