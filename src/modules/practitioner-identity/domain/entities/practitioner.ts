@@ -31,6 +31,12 @@ export interface Practitioner {
   role?: PractitionerRole;
   /** Req 9.2 — Categoría de edad derivada de birthDate; opcional para compatibilidad */
   ageCategory?: AgeCategory;
+  // Address fields
+  addressStreet: string | null;
+  addressCity: string | null;
+  addressRegion: string | null;
+  // Instructor/master reference
+  instructorId: string | null; // UUID of the responsible instructor/master
 }
 
 /**

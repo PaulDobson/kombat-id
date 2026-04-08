@@ -12,6 +12,8 @@ export interface PractitionerRepository {
   findByAuthUserId(authUserId: string): Promise<Practitioner | null>;
   findByQrToken(token: string): Promise<Practitioner | null>;
   search(query: PractitionerSearchQuery): Promise<Practitioner[]>;
+  /** Returns all active practitioners with the given grade (Requirements: 4.1, 11.2) */
+  findActiveByGrade(grade: Grade): Promise<Practitioner[]>;
   save(practitioner: Practitioner): Promise<void>;
   updateGrade(publicId: string, grade: Grade, adminId: string): Promise<void>;
   setActiveStatus(

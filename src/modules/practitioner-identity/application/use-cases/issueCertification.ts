@@ -6,6 +6,7 @@ import type {
 import type { PractitionerRepository } from "../../domain/interfaces/practitionerRepository";
 import type { CertificationRepository } from "../../domain/interfaces/certificationRepository";
 import type { MasterLineageRepository } from "../../domain/interfaces/masterLineageRepository";
+import type { ChargeRepository } from "../../domain/interfaces/chargeRepository";
 import {
   PractitionerNotFoundError,
   UnauthorizedError,
@@ -37,6 +38,7 @@ export async function issueCertification(
     certificationRepo: CertificationRepository;
     isAdmin: (userId: string) => Promise<boolean>;
     masterLineageRepo?: MasterLineageRepository;
+    chargeRepo?: ChargeRepository;
   },
 ): Promise<{ certId: string }> {
   IssueCertificationInputSchema.parse(input);
@@ -55,6 +57,19 @@ export async function issueCertification(
 
   // Req 9.5 — Para certificaciones de grado técnico, se requiere maestro certificador
   if (input.certType === "technical_grade") {
+    // Req 12.5 — Verificar que no existan cobros bloqueantes (pendiente o vencido) de examen_grado
+    if (deps.chargeRepo) {
+      const blockingCharges = await deps.chargeRepo.findBlockingCharges(
+        input.practitionerId,
+        "examen_grado",
+      );
+      if (blockingCharges.length > 0) {
+        throw new DomainError(
+          `Cannot issue technical grade certification: practitioner has ${blockingCharges.length} unpaid or overdue 'examen_grado' charge(s). Please settle all pending charges before issuing the certification.`,
+        );
+      }
+    }
+
     if (!input.certifyingMasterId) {
       throw new DomainError(
         "A certifying master is required for technical grade certifications",

@@ -11,6 +11,9 @@ export type WeightCategory =
   | "middle"
   | "heavy";
 
+// Requirements: 11.2, 11.3, 11.4
+export type RankingType = "national" | "international" | "combined";
+
 export interface RankingPosition {
   id: string;
   practitionerId: string;
@@ -21,6 +24,12 @@ export interface RankingPosition {
   position: number;
   categoryCount: number;
   calculatedAt: string;
+  // Ranking internacional (Requirements: 11.2, 11.3, 11.4)
+  rankingType: RankingType;
+  nationalPoints: number;
+  internationalPoints: number;
+  internationalPosition: number | null; // null si no tiene resultados internacionales
+  combinedPosition: number;
 }
 
 export interface RankingSnapshot {

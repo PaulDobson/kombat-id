@@ -1,5 +1,6 @@
 "use server";
 
+import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
@@ -284,6 +285,141 @@ export async function removePractitionerFromAcademyAction(
       "[removePractitionerFromAcademyAction] Unexpected error:",
       err,
     );
+    return {
+      success: false,
+      error: "Error interno del servidor",
+      code: "INTERNAL_ERROR",
+    };
+  }
+}
+
+export async function addInstructorToAcademyAction(
+  rawInput: unknown,
+): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  if (!admin) {
+    return { success: false, error: "No autorizado", code: "UNAUTHORIZED" };
+  }
+
+  const parsed = z
+    .object({ academyId: z.string().uuid(), instructorId: z.string().uuid() })
+    .safeParse(rawInput);
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.message,
+      code: "VALIDATION_ERROR",
+    };
+  }
+
+  const { academyId, instructorId } = parsed.data;
+
+  try {
+    const academyRepo = new DrizzleAcademyRepository();
+    const practitionerRepo = new DrizzlePractitionerRepository();
+
+    const [academy, instructor] = await Promise.all([
+      academyRepo.findById(academyId),
+      practitionerRepo.findById(instructorId),
+    ]);
+
+    if (!academy) {
+      return {
+        success: false,
+        error: "Academia no encontrada",
+        code: "NOT_FOUND",
+      };
+    }
+    if (!instructor) {
+      return {
+        success: false,
+        error: "Practicante no encontrado",
+        code: "NOT_FOUND",
+      };
+    }
+    if (
+      !["instructor", "profesor", "maestro"].includes(instructor.role ?? "")
+    ) {
+      return {
+        success: false,
+        error: "El practicante debe tener rol instructor, profesor o maestro",
+        code: "INVALID_INSTRUCTOR_ROLE",
+      };
+    }
+    if (academy.responsibleInstructorIds.includes(instructorId)) {
+      return {
+        success: false,
+        error: "El instructor ya está vinculado a esta academia",
+        code: "ALREADY_ASSIGNED",
+      };
+    }
+
+    const updated: Academy = {
+      ...academy,
+      responsibleInstructorIds: [
+        ...academy.responsibleInstructorIds,
+        instructorId,
+      ],
+      updatedAt: new Date().toISOString(),
+    };
+    await academyRepo.save(updated);
+    revalidatePath(`/admin/academies/${academyId}`);
+    return { success: true, data: undefined };
+  } catch (err) {
+    console.error("[addInstructorToAcademyAction] Unexpected error:", err);
+    return {
+      success: false,
+      error: "Error interno del servidor",
+      code: "INTERNAL_ERROR",
+    };
+  }
+}
+
+export async function removeInstructorFromAcademyAction(
+  rawInput: unknown,
+): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  if (!admin) {
+    return { success: false, error: "No autorizado", code: "UNAUTHORIZED" };
+  }
+
+  const parsed = z
+    .object({ academyId: z.string().uuid(), instructorId: z.string().uuid() })
+    .safeParse(rawInput);
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.message,
+      code: "VALIDATION_ERROR",
+    };
+  }
+
+  const { academyId, instructorId } = parsed.data;
+
+  try {
+    const academyRepo = new DrizzleAcademyRepository();
+    const academy = await academyRepo.findById(academyId);
+
+    if (!academy) {
+      return {
+        success: false,
+        error: "Academia no encontrada",
+        code: "NOT_FOUND",
+      };
+    }
+
+    const updated: Academy = {
+      ...academy,
+      responsibleInstructorIds: academy.responsibleInstructorIds.filter(
+        (id) => id !== instructorId,
+      ),
+      updatedAt: new Date().toISOString(),
+    };
+    await academyRepo.save(updated);
+    revalidatePath(`/admin/academies/${academyId}`);
+    return { success: true, data: undefined };
+  } catch (err) {
+    console.error("[removeInstructorFromAcademyAction] Unexpected error:", err);
     return {
       success: false,
       error: "Error interno del servidor",

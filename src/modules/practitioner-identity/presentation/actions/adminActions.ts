@@ -17,6 +17,11 @@ import {
   UpdatePractitionerGradeInputSchema,
 } from "../../application/use-cases/updatePractitionerGrade";
 import {
+  updateDisciplineGrade,
+  UpdateDisciplineGradeInputSchema,
+} from "../../application/use-cases/updateDisciplineGrade";
+import { DrizzleDisciplineGradeRepository } from "../../infrastructure/repositories/drizzleDisciplineGradeRepository";
+import {
   issueCertification,
   IssueCertificationInputSchema,
 } from "../../application/use-cases/issueCertification";
@@ -38,6 +43,7 @@ import {
 } from "../../application/use-cases/searchPractitioners";
 import {
   PractitionerNotFoundError,
+  PractitionerInactiveError,
   DuplicateHistoryEntryError,
   CertificationNotFoundError,
   CertificationAlreadyRevokedError,
@@ -125,6 +131,20 @@ export async function addMartialHistoryEntryAction(
   }
 }
 
+// Extended schema that adds an optional `discipline` field on top of the base schema.
+// When `discipline` is present the action delegates to `updateDisciplineGrade`;
+// otherwise it falls back to the existing `updatePractitionerGrade` behaviour.
+const UpdatePractitionerGradeActionSchema =
+  UpdatePractitionerGradeInputSchema.extend({
+    discipline: UpdateDisciplineGradeInputSchema.shape.discipline.optional(),
+    dan: UpdateDisciplineGradeInputSchema.shape.dan.optional(),
+    obtainedAt: UpdateDisciplineGradeInputSchema.shape.obtainedAt.optional(),
+    certifyingMasterId:
+      UpdateDisciplineGradeInputSchema.shape.certifyingMasterId.optional(),
+    certificationId:
+      UpdateDisciplineGradeInputSchema.shape.certificationId.optional(),
+  });
+
 export async function updatePractitionerGradeAction(
   rawInput: unknown,
 ): Promise<ActionResult> {
@@ -133,7 +153,7 @@ export async function updatePractitionerGradeAction(
     return { success: false, error: "No autorizado", code: "UNAUTHORIZED" };
   }
 
-  const parsed = UpdatePractitionerGradeInputSchema.safeParse(rawInput);
+  const parsed = UpdatePractitionerGradeActionSchema.safeParse(rawInput);
   if (!parsed.success) {
     return {
       success: false,
@@ -145,13 +165,47 @@ export async function updatePractitionerGradeAction(
   try {
     const practitionerRepo = new DrizzlePractitionerRepository();
     const martialHistoryRepo = new DrizzleMartialHistoryRepository();
-    const auditLogRepo = new DrizzleAuditLogRepository();
-    await updatePractitionerGrade(parsed.data, {
-      practitionerRepo,
-      martialHistoryRepo,
-      auditLogRepo,
-      isAdmin,
-    });
+
+    if (parsed.data.discipline) {
+      // Req 13.4, 13.7 — discipline specified: delegate to updateDisciplineGrade
+      const disciplineInput = UpdateDisciplineGradeInputSchema.parse({
+        practitionerId: parsed.data.publicId,
+        discipline: parsed.data.discipline,
+        grade: parsed.data.newGrade,
+        dan: parsed.data.dan ?? null,
+        obtainedAt:
+          parsed.data.obtainedAt ?? new Date().toISOString().split("T")[0],
+        adminId: parsed.data.adminId,
+        certifyingMasterId: parsed.data.certifyingMasterId ?? null,
+        certificationId: parsed.data.certificationId ?? null,
+      });
+
+      const disciplineGradeRepo = new DrizzleDisciplineGradeRepository();
+      await updateDisciplineGrade(disciplineInput, {
+        practitionerRepo,
+        disciplineGradeRepo,
+        martialHistoryRepo,
+        isAdmin,
+      });
+    } else {
+      // Req 13.7 — no discipline: existing behaviour (kombat_taekwondo only)
+      const auditLogRepo = new DrizzleAuditLogRepository();
+      await updatePractitionerGrade(
+        {
+          publicId: parsed.data.publicId,
+          newGrade: parsed.data.newGrade,
+          adminId: parsed.data.adminId,
+          justification: parsed.data.justification,
+        },
+        {
+          practitionerRepo,
+          martialHistoryRepo,
+          auditLogRepo,
+          isAdmin,
+        },
+      );
+    }
+
     return { success: true, data: undefined };
   } catch (err) {
     if (err instanceof PractitionerNotFoundError) {
@@ -159,6 +213,13 @@ export async function updatePractitionerGradeAction(
         success: false,
         error: "Practicante no encontrado",
         code: "NOT_FOUND",
+      };
+    }
+    if (err instanceof PractitionerInactiveError) {
+      return {
+        success: false,
+        error: "El practicante está inactivo",
+        code: "PRACTITIONER_INACTIVE",
       };
     }
     if (err instanceof InvalidGradeDowngradeError) {

@@ -35,10 +35,21 @@ export function IssueCertificationForm({ practitionerId, issuedBy }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div>
-        <label htmlFor="certType">Tipo de certificación</label>
-        <select id="certType" name="certType" required>
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="space-y-1.5">
+        <label
+          htmlFor="certType"
+          className="block text-xs font-medium text-neutral-400 uppercase tracking-wider"
+        >
+          Tipo de certificación <span className="text-rose-400">*</span>
+        </label>
+        <select
+          id="certType"
+          name="certType"
+          required
+          disabled={isPending}
+          className="w-full px-3 py-2.5 bg-neutral-800 border border-neutral-700 rounded-lg text-sm text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50"
+        >
           <option value="">Seleccionar...</option>
           <option value="technical_grade">Grado técnico</option>
           <option value="instructor">Instructor</option>
@@ -48,14 +59,43 @@ export function IssueCertificationForm({ practitionerId, issuedBy }: Props) {
         </select>
       </div>
 
-      <div>
-        <label htmlFor="notes">Notas (opcional)</label>
-        <textarea id="notes" name="notes" rows={3} />
+      <div className="space-y-1.5">
+        <label
+          htmlFor="notes"
+          className="block text-xs font-medium text-neutral-400 uppercase tracking-wider"
+        >
+          Notas{" "}
+          <span className="text-neutral-600 normal-case tracking-normal font-normal">
+            (opcional)
+          </span>
+        </label>
+        <textarea
+          id="notes"
+          name="notes"
+          rows={3}
+          disabled={isPending}
+          placeholder="Observaciones adicionales sobre esta certificación..."
+          className="w-full px-3 py-2.5 bg-neutral-800 border border-neutral-700 rounded-lg text-sm text-neutral-100 placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none disabled:opacity-50"
+        />
       </div>
 
-      <button type="submit" disabled={isPending}>
-        {isPending ? "Emitiendo..." : "Emitir certificación"}
-      </button>
+      <div className="flex items-center gap-3 pt-1">
+        <button
+          type="submit"
+          disabled={isPending}
+          className="bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isPending ? "Emitiendo..." : "Emitir certificación"}
+        </button>
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={() => router.back()}
+          className="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border border-neutral-700 px-5 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+        >
+          Cancelar
+        </button>
+      </div>
     </form>
   );
 }

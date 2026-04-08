@@ -35,13 +35,35 @@ export default async function NewCertificationPage({
   if (!practitioner) notFound();
 
   return (
-    <main>
-      <h1>Emitir certificación — {practitioner.fullName}</h1>
-      <Link href={`/admin/practitioners/${publicId}`}>← Volver al detalle</Link>
-      <IssueCertificationForm
-        practitionerId={publicId}
-        issuedBy={adminUser.id}
-      />
+    <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      {/* Back link */}
+      <Link
+        href={`/admin/practitioners/${publicId}`}
+        className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-neutral-200 transition-colors"
+      >
+        ← Volver al detalle
+      </Link>
+
+      {/* Header */}
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight text-neutral-50">
+          Emitir certificación
+        </h1>
+        <p className="text-sm text-neutral-400">
+          Practicante:{" "}
+          <span className="text-neutral-200 font-medium">
+            {practitioner.fullName}
+          </span>
+        </p>
+      </div>
+
+      {/* Form card */}
+      <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">
+        <IssueCertificationForm
+          practitionerId={publicId}
+          issuedBy={adminUser.id}
+        />
+      </div>
     </main>
   );
 }

@@ -30,13 +30,7 @@ const GRADE_LABELS: Record<string, string> = {
   black: "Negro",
 };
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("es-CL", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
+import { formatDateLong as formatDate } from "@/lib/format-date";
 
 export default async function RankingPage() {
   const user = await requireUser();

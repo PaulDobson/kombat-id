@@ -9,6 +9,7 @@ import type {
   WeightCategory,
   RankingPosition,
   RankingSnapshot,
+  RankingType,
 } from "../../domain/entities/ranking";
 import type {
   RankingRepository,
@@ -119,6 +120,43 @@ export class DrizzleRankingRepository implements RankingRepository {
   }
 
   // -------------------------------------------------------------------------
+  // upsertPositions
+  // -------------------------------------------------------------------------
+
+  async upsertPositions(positions: RankingPosition[]): Promise<void> {
+    if (positions.length === 0) return;
+
+    const rows = positions.map((p) => ({
+      id: p.id,
+      practitioner_id: p.practitionerId,
+      grade: p.grade,
+      age_range: p.ageRange,
+      weight_category: p.weightCategory,
+      total_points: p.totalPoints,
+      position: p.position,
+      category_count: p.categoryCount,
+      calculated_at: p.calculatedAt,
+      ranking_type: p.rankingType,
+      national_points: p.nationalPoints,
+      international_points: p.internationalPoints,
+      international_position: p.internationalPosition,
+      combined_position: p.combinedPosition,
+    }));
+
+    const { error } = await adminSupabase
+      .from("ranking_positions")
+      .upsert(rows as unknown as never, {
+        onConflict: "practitioner_id,grade,age_range,weight_category",
+      });
+
+    if (error) {
+      throw new DomainError(
+        `Failed to upsert ranking positions: ${error.message}`,
+      );
+    }
+  }
+
+  // -------------------------------------------------------------------------
   // saveSnapshot
   // -------------------------------------------------------------------------
 
@@ -189,6 +227,11 @@ export class DrizzleRankingRepository implements RankingRepository {
       position: row.position,
       categoryCount: row.category_count,
       calculatedAt: row.calculated_at,
+      rankingType: (row.ranking_type as RankingType) ?? "national",
+      nationalPoints: row.national_points ?? row.total_points,
+      internationalPoints: row.international_points ?? 0,
+      internationalPosition: row.international_position ?? null,
+      combinedPosition: row.combined_position ?? row.position,
     };
   }
 

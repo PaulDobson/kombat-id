@@ -33,13 +33,7 @@ const EVENT_TYPE_STYLES: Record<EventType, string> = {
   exam: "bg-success-900/50 text-success-400 border border-success-800",
 };
 
-function formatDate(iso: string) {
-  return new Date(iso + "T12:00:00").toLocaleDateString("es-CL", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
+import { formatDateShort as formatDate } from "@/lib/format-date";
 
 export default async function AdminEventsPage({
   searchParams,

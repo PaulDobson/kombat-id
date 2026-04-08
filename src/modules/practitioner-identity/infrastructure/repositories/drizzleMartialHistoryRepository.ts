@@ -181,12 +181,8 @@ export class DrizzleMartialHistoryRepository implements MartialHistoryRepository
       correctedBy: row.corrected_by,
       recordedBy: row.recorded_by,
       createdAt: row.created_at,
-      eventScope:
-        ((row as unknown as Record<string, unknown>)
-          .event_scope as EventScope) ?? null,
-      eventCountry:
-        ((row as unknown as Record<string, unknown>).event_country as string) ??
-        null,
+      eventScope: (row.event_scope as EventScope) ?? null,
+      eventCountry: row.event_country ?? null,
     };
   }
 }

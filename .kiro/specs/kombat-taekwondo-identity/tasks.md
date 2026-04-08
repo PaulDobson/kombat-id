@@ -449,16 +449,16 @@ Implementación incremental del módulo `practitioner-identity` siguiendo Clean 
     - **Validates: Requirements 10.5, 10.7, 10.10**
 
 - [ ] 23. Módulo: Ranking Internacional
-  - [~] 23.1 Extender entidades de dominio para ranking internacional
+  - [x] 23.1 Extender entidades de dominio para ranking internacional
     - Agregar `EventScope` y campos `eventScope`, `eventCountry` a `MartialHistoryEntry`
     - Agregar `RankingType` y campos de ranking internacional/combinado a `RankingPosition`
     - Agregar función pura `calculateInternationalPoints(basePoints: number): number`
     - _Requirements: 11.1, 11.2, 11.3_
 
-  - [~] 23.2 Migración de BD: columnas `event_scope` y `event_country` en `martial_history`, columnas de ranking internacional en `ranking_positions`
+  - [x] 23.2 Migración de BD: columnas `event_scope` y `event_country` en `martial_history`, columnas de ranking internacional en `ranking_positions`
     - _Requirements: 11.1, 11.6_
 
-  - [~] 23.3 Extender `recalculateRanking` para calcular los tres tipos de ranking
+  - [x] 23.3 Extender `recalculateRanking` para calcular los tres tipos de ranking
     - Ranking nacional: solo `event_scope = 'national'`
     - Ranking internacional: solo `event_scope = 'international'` con multiplicador 1.5x
     - Ranking combinado: suma de puntos nacionales e internacionales
@@ -475,20 +475,20 @@ Implementación incremental del módulo `practitioner-identity` siguiendo Clean 
     - **Validates: Requirements 11.2, 11.3, 11.7**
 
 - [ ] 24. Módulo: Sistema Económico
-  - [ ] 24.1 Crear entidad `Charge` y su interfaz de repositorio
+  - [x] 24.1 Crear entidad `Charge` y su interfaz de repositorio
     - Crear `domain/entities/charge.ts` con tipos `ChargeType`, `ChargeStatus`, `Currency`, `Charge`
     - Crear `domain/interfaces/chargeRepository.ts`
     - _Requirements: 12.1, 12.2, 12.3_
 
-  - [ ] 24.2 Migración de BD: tabla `charges` con RLS
+  - [x] 24.2 Migración de BD: tabla `charges` con RLS
     - _Requirements: 12.1, 12.2, 12.3_
 
-  - [ ] 24.3 Implementar `infrastructure/repositories/drizzleChargeRepository.ts`
+  - [x] 24.3 Implementar `infrastructure/repositories/drizzleChargeRepository.ts`
     - Implementar todos los métodos de `ChargeRepository`
     - Marcar con `import "server-only"`
     - _Requirements: 12.1, 12.4_
 
-  - [ ] 24.4 Implementar casos de uso económicos
+  - [x] 24.4 Implementar casos de uso económicos
     - `application/use-cases/createCharge.ts` — Admin: crea cobro
     - `application/use-cases/registerPayment.ts` — Admin: registra pago manual
     - `application/use-cases/markChargeExempt.ts` — Admin: exención con justificación obligatoria
@@ -496,15 +496,15 @@ Implementación incremental del módulo `practitioner-identity` siguiendo Clean 
     - `application/use-cases/getPractitionerEconomicSummary.ts`
     - _Requirements: 12.3, 12.4, 12.7, 12.8, 12.10_
 
-  - [ ] 24.5 Extender `issueCertification` para verificar cobros pendientes
+  - [x] 24.5 Extender `issueCertification` para verificar cobros pendientes
     - Antes de emitir certificación de grado técnico, verificar que no exista cobro `examen_grado` con estado `pendiente` o `vencido`
     - _Requirements: 12.5_
 
-  - [ ] 24.6 Crear `presentation/actions/chargeActions.ts` con `"use server"`
+  - [x] 24.6 Crear `presentation/actions/chargeActions.ts` con `"use server"`
     - Implementar `createChargeAction`, `registerPaymentAction`, `markChargeExemptAction`, `getPractitionerEconomicSummaryAction`
     - _Requirements: 12.7, 12.8, 12.10_
 
-  - [ ] 24.7 Crear rutas de gestión económica
+  - [x] 24.7 Crear rutas de gestión económica
     - `src/app/(dashboard)/admin/charges/page.tsx` — resumen económico global
     - `src/app/(dashboard)/admin/charges/[practitionerId]/page.tsx` — cobros de un practicante
     - _Requirements: 12.10_
@@ -516,32 +516,32 @@ Implementación incremental del módulo `practitioner-identity` siguiendo Clean 
     - **Validates: Requirements 12.4, 12.5**
 
 - [ ] 25. Módulo: Perfil Marcial Extendido
-  - [ ] 25.1 Crear entidad `DisciplineGrade` y su interfaz de repositorio
+  - [x] 25.1 Crear entidad `DisciplineGrade` y su interfaz de repositorio
     - Crear `domain/entities/disciplineGrade.ts` con tipos `Discipline`, `DisciplineGrade`
     - Crear `domain/interfaces/disciplineGradeRepository.ts`
     - Agregar función pura `derivePrimaryGrade(disciplineGrades: DisciplineGrade[]): Grade`
     - _Requirements: 13.1, 13.2, 13.9_
 
-  - [ ] 25.2 Migración de BD: tabla `discipline_grades` con RLS y constraint de unicidad de grado activo
+  - [x] 25.2 Migración de BD: tabla `discipline_grades` con RLS y constraint de unicidad de grado activo
     - _Requirements: 13.1, 13.3_
 
-  - [ ] 25.3 Implementar `infrastructure/repositories/drizzleDisciplineGradeRepository.ts`
+  - [x] 25.3 Implementar `infrastructure/repositories/drizzleDisciplineGradeRepository.ts`
     - Implementar todos los métodos de `DisciplineGradeRepository`
     - Marcar con `import "server-only"`
     - _Requirements: 13.1, 13.5_
 
-  - [ ] 25.4 Implementar casos de uso de perfil marcial extendido
+  - [x] 25.4 Implementar casos de uso de perfil marcial extendido
     - `application/use-cases/updateDisciplineGrade.ts` — Admin: desactiva grado anterior, crea nuevo, registra en historial marcial con disciplina, sincroniza `practitioners.grade` si disciplina es `kombat_taekwondo`
     - `application/use-cases/getDisciplineGrades.ts`
     - `application/use-cases/getDisciplineGradeHistory.ts`
     - _Requirements: 13.1, 13.4, 13.5, 13.6, 13.7, 13.9_
 
-  - [ ] 25.5 Extender Server Action `updatePractitionerGradeAction` para aceptar disciplina opcional
+  - [x] 25.5 Extender Server Action `updatePractitionerGradeAction` para aceptar disciplina opcional
     - Si se especifica disciplina, delegar a `updateDisciplineGrade`
     - Si no se especifica, comportamiento existente (solo `kombat_taekwondo`)
     - _Requirements: 13.4, 13.7_
 
-  - [ ] 25.6 Crear ruta de grados por disciplina
+  - [x] 25.6 Crear ruta de grados por disciplina
     - `src/app/(dashboard)/profile/disciplines/page.tsx` — Server Component
     - Mostrar todos los `DisciplineGrade` activos del practicante autenticado ordenados por disciplina
     - _Requirements: 13.6_
@@ -552,7 +552,7 @@ Implementación incremental del módulo `practitioner-identity` siguiendo Clean 
     - **Property 48: Historial de grados por disciplina es inmutable**
     - **Validates: Requirements 13.3, 13.5, 13.9**
 
-- [ ] 26. Checkpoint — Verificar nuevos módulos
+- [x] 26. Checkpoint — Verificar nuevos módulos
   - Asegurar que todos los tests de los módulos 21–25 pasen
   - Verificar que las migraciones de BD son compatibles con el schema existente
   - Consultar al usuario si surgen dudas sobre integraciones entre módulos

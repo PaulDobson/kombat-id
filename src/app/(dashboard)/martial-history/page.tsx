@@ -15,13 +15,7 @@ const EVENT_TYPE_STYLES: Record<string, string> = {
   exam: "bg-success-900/50 text-success-400 border border-success-800",
 };
 
-function formatDate(iso: string) {
-  return new Date(iso + "T12:00:00").toLocaleDateString("es-CL", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
+import { formatDateLong as formatDate } from "@/lib/format-date";
 
 export default async function MartialHistoryPage() {
   const user = await requireUser();

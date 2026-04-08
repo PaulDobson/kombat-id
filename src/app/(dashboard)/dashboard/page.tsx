@@ -31,13 +31,7 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   exam: "Examen",
 };
 
-function formatDate(iso: string) {
-  return new Date(iso + "T12:00:00").toLocaleDateString("es-CL", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
+import { formatDateShort as formatDate } from "@/lib/format-date";
 
 export default async function DashboardPage() {
   const user = await requireUser();
@@ -52,8 +46,6 @@ export default async function DashboardPage() {
       .select("user_id")
       .eq("user_id", user.id)
       .maybeSingle();
-
-    if (adminData) redirect("/admin/practitioners");
 
     return (
       <main className="max-w-2xl mx-auto px-4 py-20 text-center space-y-6">

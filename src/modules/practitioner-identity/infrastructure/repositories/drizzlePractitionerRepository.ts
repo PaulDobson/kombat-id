@@ -8,6 +8,7 @@ import type {
   Practitioner,
   Grade,
   Gender,
+  PractitionerRole,
 } from "../../domain/entities/practitioner";
 import type {
   PractitionerRepository,
@@ -38,6 +39,14 @@ const PractitionerRowSchema = z.object({
   deactivation_reason: z.string().nullable(),
   updated_at: z.string().min(1),
   created_at: z.string().min(1),
+  role: z
+    .enum(["alumno", "instructor", "profesor", "maestro"])
+    .optional()
+    .nullable(),
+  address_street: z.string().nullable().optional(),
+  address_city: z.string().nullable().optional(),
+  address_region: z.string().nullable().optional(),
+  instructor_id: z.string().uuid().nullable().optional(),
 });
 
 export class DrizzlePractitionerRepository implements PractitionerRepository {
@@ -112,6 +121,21 @@ export class DrizzlePractitionerRepository implements PractitionerRepository {
     const { data, error } = await builder;
     if (error)
       throw new DomainError(`Failed to search practitioners: ${error.message}`);
+
+    return ((data as PractitionerRow[]) ?? []).map((row) => this.fromRow(row));
+  }
+
+  async findActiveByGrade(grade: Grade): Promise<Practitioner[]> {
+    const { data, error } = await adminSupabase
+      .from("practitioners")
+      .select("*")
+      .eq("grade", grade)
+      .eq("is_active", true);
+
+    if (error)
+      throw new DomainError(
+        `Failed to find active practitioners by grade: ${error.message}`,
+      );
 
     return ((data as PractitionerRow[]) ?? []).map((row) => this.fromRow(row));
   }
@@ -195,7 +219,7 @@ export class DrizzlePractitionerRepository implements PractitionerRepository {
   }
 
   private toEntity(row: PractitionerRow): Practitioner {
-    return {
+    const base: Practitioner = {
       id: row.id,
       authUserId: row.auth_user_id,
       rut: row.rut,
@@ -215,7 +239,13 @@ export class DrizzlePractitionerRepository implements PractitionerRepository {
       deactivationReason: row.deactivation_reason,
       updatedAt: row.updated_at,
       createdAt: row.created_at,
+      addressStreet: row.address_street ?? null,
+      addressCity: row.address_city ?? null,
+      addressRegion: row.address_region ?? null,
+      instructorId: row.instructor_id ?? null,
     };
+    if (row.role) base.role = row.role as PractitionerRole;
+    return base;
   }
 
   private toRow(practitioner: Practitioner): PractitionerInsert {
@@ -239,6 +269,10 @@ export class DrizzlePractitionerRepository implements PractitionerRepository {
       deactivation_reason: practitioner.deactivationReason,
       updated_at: practitioner.updatedAt,
       created_at: practitioner.createdAt,
+      address_street: practitioner.addressStreet,
+      address_city: practitioner.addressCity,
+      address_region: practitioner.addressRegion,
+      instructor_id: practitioner.instructorId,
     };
   }
 }

@@ -63,10 +63,26 @@ export default async function DashboardLayout({
             <NavLink href="/martial-history">Historial</NavLink>
             <NavLink href="/ranking">Ranking</NavLink>
             <NavLink href="/certifications">Certificaciones</NavLink>
+            {practitioner &&
+              ["instructor", "profesor", "maestro"].includes(
+                practitioner.role ?? "",
+              ) && <NavLink href="/instructor">Instructor</NavLink>}
             {isAdmin && (
-              <NavLink href="/admin/practitioners" highlight>
-                Admin
-              </NavLink>
+              <>
+                <span
+                  className="w-px h-4 bg-neutral-700 mx-1 shrink-0"
+                  aria-hidden="true"
+                />
+                <NavLink href="/admin/dashboard" highlight>
+                  Panel
+                </NavLink>
+                <NavLink href="/admin/practitioners">Practicantes</NavLink>
+                <NavLink href="/admin/academies">Academias</NavLink>
+                <NavLink href="/admin/events">Eventos</NavLink>
+                <NavLink href="/admin/certification-requests">
+                  Solicitudes
+                </NavLink>
+              </>
             )}
           </nav>
 

@@ -7,6 +7,7 @@ const PUBLIC_ROUTES = [
   "/auth/callback",
   "/verify",
   "/academies",
+  "/events",
   "/design",
   "/",
 ];

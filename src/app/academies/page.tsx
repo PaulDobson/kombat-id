@@ -1,8 +1,7 @@
 import { DrizzleAcademyRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzleAcademyRepository";
 import { DrizzlePractitionerRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzlePractitionerRepository";
+import { PublicNav } from "@/app/_components/PublicNav";
 import type { ChileanRegion } from "@/modules/practitioner-identity/domain/entities/academy";
-
-// Req 10.9 — Public page: no auth required
 
 const REGION_LABELS: Record<ChileanRegion, string> = {
   arica_y_parinacota: "Arica y Parinacota",
@@ -23,13 +22,18 @@ const REGION_LABELS: Record<ChileanRegion, string> = {
   magallanes: "Magallanes",
 };
 
+const ROLE_LABELS: Record<string, string> = {
+  instructor: "Instructor",
+  profesor: "Profesor",
+  maestro: "Maestro",
+};
+
 export default async function PublicAcademiesPage() {
   const academyRepo = new DrizzleAcademyRepository();
   const practitionerRepo = new DrizzlePractitionerRepository();
 
   const academies = await academyRepo.findAllActive();
 
-  // Fetch instructor names for each academy (only public-safe fields)
   const academiesWithInstructors = await Promise.all(
     academies.map(async (academy) => {
       const instructors = await Promise.all(
@@ -46,70 +50,148 @@ export default async function PublicAcademiesPage() {
     }),
   );
 
+  // Group by region for display
+  const byRegion = new Map<string, typeof academiesWithInstructors>();
+  for (const academy of academiesWithInstructors) {
+    const region = REGION_LABELS[academy.region] ?? academy.region;
+    if (!byRegion.has(region)) byRegion.set(region, []);
+    byRegion.get(region)!.push(academy);
+  }
+
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-neutral-50 tracking-tight">
-          Academias Kombat Taekwondo Chile
-        </h1>
-        <p className="text-neutral-400 mt-2 text-sm">
-          Red oficial de academias activas en todo el país.
-        </p>
-      </div>
+    <div className="min-h-screen bg-neutral-950 text-neutral-50">
+      <PublicNav />
 
-      {academiesWithInstructors.length === 0 ? (
-        <p className="text-neutral-500 text-sm text-center py-12">
-          No hay academias activas registradas.
-        </p>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {academiesWithInstructors.map((academy) => (
-            <div
-              key={academy.id}
-              className="bg-neutral-900 border border-neutral-700 rounded-xl p-5 space-y-3"
-            >
-              <div>
-                <h2 className="text-base font-semibold text-neutral-50">
-                  {academy.name}
-                </h2>
-                <p className="text-sm text-neutral-400 mt-0.5">
-                  {REGION_LABELS[academy.region] ?? academy.region} —{" "}
-                  {academy.city}
-                </p>
-              </div>
-
-              {academy.instructors.length > 0 && (
-                <div>
-                  <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-1">
-                    Instructores responsables
-                  </p>
-                  <ul className="space-y-1">
-                    {academy.instructors.map((instructor) => (
-                      <li
-                        key={instructor.id}
-                        className="text-sm text-neutral-300"
-                      >
-                        {instructor.fullName}
-                        {instructor.role && (
-                          <span className="text-neutral-500 ml-1 capitalize">
-                            ({instructor.role})
-                          </span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {academy.foundedDate && (
-                <p className="text-xs text-neutral-500">
-                  Fundada: {academy.foundedDate}
-                </p>
-              )}
+      <main className="pt-16">
+        {/* Header */}
+        <div className="relative border-b border-neutral-800 overflow-hidden">
+          <div
+            className="absolute inset-0 pointer-events-none"
+            aria-hidden="true"
+          >
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[200px] bg-primary-600/8 rounded-full blur-3xl" />
+          </div>
+          <div className="relative max-w-7xl mx-auto px-6 py-16 sm:py-20 space-y-3">
+            <div className="inline-flex items-center gap-2 bg-primary-900/40 border border-primary-800/60 text-primary-400 text-xs font-medium px-3 py-1.5 rounded-full">
+              <span aria-hidden="true">🏫</span>
+              Red oficial
             </div>
-          ))}
+            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
+              Academias Kombat Taekwondo
+            </h1>
+            <p className="text-neutral-400 text-sm max-w-lg">
+              Red oficial de academias activas en todo Chile. Encuentra la más
+              cercana a ti y conoce a sus instructores responsables.
+            </p>
+            <p className="text-xs text-neutral-600 pt-1">
+              {academiesWithInstructors.length} academia
+              {academiesWithInstructors.length !== 1 ? "s" : ""} activa
+              {academiesWithInstructors.length !== 1 ? "s" : ""}
+            </p>
+          </div>
         </div>
-      )}
-    </main>
+
+        {/* Content */}
+        <div className="max-w-7xl mx-auto px-6 py-12 sm:py-16">
+          {academiesWithInstructors.length === 0 ? (
+            <div className="text-center py-20">
+              <p className="text-neutral-500 text-sm">
+                No hay academias activas registradas.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-12">
+              {Array.from(byRegion.entries()).map(([region, list]) => (
+                <section key={region}>
+                  <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-5 flex items-center gap-3">
+                    <span>{region}</span>
+                    <span className="h-px flex-1 bg-neutral-800" />
+                    <span className="text-neutral-600 normal-case tracking-normal font-normal">
+                      {list.length} academia{list.length !== 1 ? "s" : ""}
+                    </span>
+                  </h2>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {list.map((academy) => (
+                      <div
+                        key={academy.id}
+                        className="group bg-neutral-900 hover:bg-neutral-800/80 border border-neutral-800 hover:border-neutral-700 rounded-2xl p-6 space-y-4 transition-colors"
+                      >
+                        {/* Name + city */}
+                        <div>
+                          <h3 className="text-base font-semibold text-neutral-50 leading-snug">
+                            {academy.name}
+                          </h3>
+                          <p className="text-sm text-neutral-400 mt-0.5">
+                            {academy.city}
+                          </p>
+                          {academy.address && (
+                            <p className="text-xs text-neutral-600 mt-0.5">
+                              {academy.address}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Instructors */}
+                        {academy.instructors.length > 0 && (
+                          <div className="space-y-1.5">
+                            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                              Instructores
+                            </p>
+                            <ul className="space-y-1">
+                              {academy.instructors.map((instructor) => (
+                                <li
+                                  key={instructor.id}
+                                  className="flex items-center gap-2 text-sm text-neutral-300"
+                                >
+                                  <span
+                                    className="w-1.5 h-1.5 rounded-full bg-primary-500 shrink-0"
+                                    aria-hidden="true"
+                                  />
+                                  {instructor.fullName}
+                                  {instructor.role && (
+                                    <span className="text-xs text-neutral-600 capitalize">
+                                      {ROLE_LABELS[instructor.role] ??
+                                        instructor.role}
+                                    </span>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Founded */}
+                        {academy.foundedDate && (
+                          <p className="text-xs text-neutral-600 border-t border-neutral-800 pt-3">
+                            Fundada en {academy.foundedDate.slice(0, 4)}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-neutral-800 px-6 py-8 mt-8">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-600">
+          <div className="flex items-center gap-2">
+            <div
+              className="w-5 h-5 rounded bg-primary-600 flex items-center justify-center"
+              aria-hidden="true"
+            >
+              <span className="text-white font-bold text-[9px]">KT</span>
+            </div>
+            <span>Kombat Taekwondo Chile</span>
+          </div>
+          <p>Red oficial de academias · {new Date().getFullYear()}</p>
+        </div>
+      </footer>
+    </div>
   );
 }

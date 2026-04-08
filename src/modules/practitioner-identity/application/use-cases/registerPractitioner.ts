@@ -12,6 +12,10 @@ export const RegisterPractitionerInputSchema = z.object({
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   weightKg: z.number().positive().optional(),
   authUserId: z.string().uuid().optional(),
+  addressStreet: z.string().max(200).optional().nullable(),
+  addressCity: z.string().max(100).optional().nullable(),
+  addressRegion: z.string().max(100).optional().nullable(),
+  instructorId: z.string().uuid().optional().nullable(),
 });
 
 export type RegisterPractitionerInput = z.infer<
@@ -49,6 +53,10 @@ export async function registerPractitioner(
     photoPath: null,
     deactivatedAt: null,
     deactivationReason: null,
+    addressStreet: validated.addressStreet ?? null,
+    addressCity: validated.addressCity ?? null,
+    addressRegion: validated.addressRegion ?? null,
+    instructorId: validated.instructorId ?? null,
     updatedAt: now,
     createdAt: now,
   };

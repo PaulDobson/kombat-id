@@ -22,13 +22,7 @@ const CERT_TYPE_STYLES: Record<string, string> = {
     "bg-neutral-800 text-neutral-400 border border-neutral-700",
 };
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("es-CL", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
+import { formatDateLong as formatDate } from "@/lib/format-date";
 
 export default async function CertificationsPage() {
   const user = await requireUser();

@@ -34,14 +34,10 @@ const EVENT_TYPE_STYLES: Record<EventType, string> = {
   exam: "bg-success-900/50 text-success-400 border border-success-800",
 };
 
-function formatDate(iso: string) {
-  return new Date(iso + "T12:00:00").toLocaleDateString("es-CL", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
+import {
+  formatDateWithWeekday as formatDate,
+  formatDateLong,
+} from "@/lib/format-date";
 
 export default async function EventDetailPage({
   params,
@@ -134,11 +130,7 @@ export default async function EventDetailPage({
               Creado el
             </dt>
             <dd className="text-neutral-400 text-xs">
-              {new Date(event.created_at).toLocaleDateString("es-CL", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
+              {formatDateLong(event.created_at.slice(0, 10))}
             </dd>
           </div>
         </dl>
