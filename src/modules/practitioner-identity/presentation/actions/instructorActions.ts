@@ -29,6 +29,11 @@ const INSTRUCTOR_ROLES = ["instructor", "profesor", "maestro"] as const;
 
 const RegisterStudentInputSchema = RegisterPractitionerInputSchema.omit({
   instructorId: true,
+  authUserId: true,
+}).extend({
+  // Optional: if provided, the system will look up the auth account by email
+  // and link it to the practitioner profile automatically.
+  studentEmail: z.string().email().optional().or(z.literal("")),
 });
 
 export type RegisterStudentInput = z.infer<typeof RegisterStudentInputSchema>;
@@ -418,8 +423,30 @@ export async function registerStudentAction(
   // 4. Execute use case with instructorId set to the logged-in instructor
   try {
     const practitionerRepo = new DrizzlePractitionerRepository();
+
+    // Resolve authUserId from studentEmail if provided
+    let authUserId: string | undefined;
+    const studentEmail = parsed.data.studentEmail?.trim();
+    if (studentEmail) {
+      const { data: authList } = await adminSupabase.auth.admin.listUsers({
+        perPage: 1000,
+      });
+      const match = authList?.users?.find(
+        (u) => u.email?.toLowerCase() === studentEmail.toLowerCase(),
+      );
+      if (match) {
+        authUserId = match.id;
+      }
+    }
+
     const result = await registerPractitioner(
-      { ...parsed.data, instructorId: practitioner.id as string },
+      {
+        ...parsed.data,
+        // Store email as contactEmail so auto-linking works if account is created later
+        contactEmail: studentEmail ?? undefined,
+        instructorId: practitioner.id as string,
+        authUserId,
+      },
       { practitionerRepo },
     );
 

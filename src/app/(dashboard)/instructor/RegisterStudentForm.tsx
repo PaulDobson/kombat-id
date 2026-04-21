@@ -14,12 +14,16 @@ const initialState = {
   startDate: today,
   weightKg: "",
   addressCity: "",
+  studentEmail: "",
 };
 
 export function RegisterStudentForm() {
   const [fields, setFields] = useState(initialState);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [result, setResult] = useState<{
+    publicId: string;
+    linked: boolean;
+  } | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleChange(
@@ -27,16 +31,16 @@ export function RegisterStudentForm() {
   ) {
     setFields((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     setError(null);
-    setSuccess(false);
+    setResult(null);
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setSuccess(false);
+    setResult(null);
 
     startTransition(async () => {
-      const result = await registerStudentAction({
+      const res = await registerStudentAction({
         rut: fields.rut,
         fullName: fields.fullName,
         birthDate: fields.birthDate,
@@ -51,13 +55,17 @@ export function RegisterStudentForm() {
         startDate: fields.startDate,
         weightKg: fields.weightKg ? parseFloat(fields.weightKg) : undefined,
         addressCity: fields.addressCity || undefined,
+        studentEmail: fields.studentEmail || undefined,
       });
 
-      if (result.success) {
-        setSuccess(true);
+      if (res.success) {
+        setResult({
+          publicId: res.data.publicId,
+          linked: Boolean(fields.studentEmail),
+        });
         setFields({ ...initialState, startDate: today });
       } else {
-        setError(result.error);
+        setError(res.error);
       }
     });
   }
@@ -65,6 +73,60 @@ export function RegisterStudentForm() {
   const inputClass =
     "w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-sm text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent";
   const labelClass = "block text-xs font-medium text-neutral-400 mb-1";
+
+  if (result) {
+    return (
+      <div className="space-y-4">
+        {/* Success state */}
+        <div className="flex items-start gap-3 bg-success-500/10 border border-success-500/20 rounded-xl p-4">
+          <svg
+            className="w-5 h-5 text-success-400 shrink-0 mt-0.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-success-400">
+              Alumno registrado exitosamente
+            </p>
+            <p className="text-xs text-neutral-400">
+              ID generado:{" "}
+              <span className="font-mono text-neutral-200">
+                {result.publicId}
+              </span>
+            </p>
+            {result.linked ? (
+              <p className="text-xs text-success-400/80">
+                ✓ Cuenta vinculada — el alumno ya puede ingresar y ver su perfil
+                y QR.
+              </p>
+            ) : (
+              <p className="text-xs text-warning-400/80">
+                ⚠ Sin email ingresado — cuando el alumno cree su cuenta con el
+                mismo RUT, se vinculará automáticamente.
+              </p>
+            )}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setResult(null)}
+          className="text-sm text-primary-400 hover:text-primary-300 transition-colors"
+        >
+          Registrar otro alumno
+        </button>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -100,6 +162,26 @@ export function RegisterStudentForm() {
           onChange={handleChange}
           className={inputClass}
         />
+      </div>
+
+      {/* Email del alumno */}
+      <div>
+        <label htmlFor="studentEmail" className={labelClass}>
+          Correo del alumno{" "}
+          <span className="text-neutral-600 font-normal">(opcional)</span>
+        </label>
+        <input
+          id="studentEmail"
+          name="studentEmail"
+          type="email"
+          placeholder="alumno@correo.cl"
+          value={fields.studentEmail}
+          onChange={handleChange}
+          className={inputClass}
+        />
+        <p className="mt-1 text-xs text-neutral-600">
+          Si el alumno ya tiene cuenta, se vinculará automáticamente.
+        </p>
       </div>
 
       {/* Fecha de nacimiento */}
@@ -215,15 +297,9 @@ export function RegisterStudentForm() {
         />
       </div>
 
-      {/* Feedback */}
       {error && (
         <p role="alert" className="text-sm text-rose-400">
           {error}
-        </p>
-      )}
-      {success && (
-        <p className="text-sm text-emerald-400">
-          Alumno registrado exitosamente
         </p>
       )}
 

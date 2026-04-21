@@ -38,18 +38,27 @@ export default async function ProfilePage() {
 
   const gradeLabel = `${GRADE_LABELS[practitioner.grade] ?? practitioner.grade}${practitioner.dan ? ` ${practitioner.dan}° Dan` : ""}`;
 
+  // Derive a short human-readable Kombat ID from the UUID
+  const kombatId = `KT-${practitioner.id.replace(/-/g, "").slice(0, 8).toUpperCase()}`;
+
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight text-neutral-50">
-          Mi Perfil
-        </h1>
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-neutral-50">
+            Mi Perfil
+          </h1>
+          <p className="text-xs font-mono text-neutral-500 mt-0.5">
+            {kombatId}
+          </p>
+        </div>
         {practitioner.isActive ? (
-          <span className="bg-success-900/50 text-success-400 border border-success-800 px-2.5 py-0.5 rounded-full text-xs">
+          <span className="bg-success-900/50 text-success-400 border border-success-800 px-2.5 py-0.5 rounded-full text-xs shrink-0">
             Activo
           </span>
         ) : (
-          <span className="bg-neutral-800 text-neutral-400 border border-neutral-700 px-2.5 py-0.5 rounded-full text-xs">
+          <span className="bg-neutral-800 text-neutral-400 border border-neutral-700 px-2.5 py-0.5 rounded-full text-xs shrink-0">
             Inactivo
           </span>
         )}
@@ -85,17 +94,21 @@ export default async function ProfilePage() {
 
         {/* QR Code */}
         <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6 flex flex-col items-center gap-4">
-          <h2 className="text-sm font-semibold text-neutral-50 self-start">
-            Código QR
-          </h2>
+          <div className="w-full flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-neutral-50">Código QR</h2>
+            <span className="text-xs font-mono text-neutral-500">
+              {kombatId}
+            </span>
+          </div>
           <div className="bg-white p-3 rounded-xl">
             <PractitionerQrCode
               qrToken={practitioner.qrToken}
               practitionerName={practitioner.fullName}
             />
           </div>
-          <p className="text-xs text-neutral-500 text-center">
-            Muestra este código para verificar tu identidad
+          <p className="text-xs text-neutral-500 text-center leading-relaxed">
+            Muestra este código para verificar tu identidad en eventos y
+            exámenes
           </p>
         </div>
 

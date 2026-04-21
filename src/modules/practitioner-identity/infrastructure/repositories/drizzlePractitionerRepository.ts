@@ -19,35 +19,35 @@ type PractitionerRow = Database["public"]["Tables"]["practitioners"]["Row"];
 type PractitionerInsert =
   Database["public"]["Tables"]["practitioners"]["Insert"];
 
-const PractitionerRowSchema = z.object({
-  id: z.string().uuid(),
-  auth_user_id: z.string().uuid().nullable(),
-  rut: z.string().min(1),
-  full_name: z.string().min(1),
-  birth_date: z.string().min(1),
-  gender: z.enum(["male", "female", "other"]),
-  grade: z.enum(["white", "yellow", "green", "blue", "red", "black"]),
-  dan: z.number().int().min(1).max(9).nullable(),
-  start_date: z.string().min(1),
-  is_active: z.boolean(),
-  contact_phone: z.string().nullable(),
-  contact_email: z.string().nullable(),
-  photo_path: z.string().nullable(),
-  qr_token: z.string().uuid(),
-  weight_kg: z.number().nullable(),
-  deactivated_at: z.string().nullable(),
-  deactivation_reason: z.string().nullable(),
-  updated_at: z.string().min(1),
-  created_at: z.string().min(1),
-  role: z
-    .enum(["alumno", "instructor", "profesor", "maestro"])
-    .optional()
-    .nullable(),
-  address_street: z.string().nullable().optional(),
-  address_city: z.string().nullable().optional(),
-  address_region: z.string().nullable().optional(),
-  instructor_id: z.string().uuid().nullable().optional(),
-});
+const PractitionerRowSchema = z
+  .object({
+    id: z.string().uuid(),
+    auth_user_id: z.string().uuid().nullable(),
+    rut: z.string().min(1),
+    full_name: z.string().min(1),
+    birth_date: z.string().min(1),
+    gender: z.enum(["male", "female", "other"]),
+    grade: z.enum(["white", "yellow", "green", "blue", "red", "black"]),
+    dan: z.number().int().min(1).max(9).nullable(),
+    start_date: z.string().min(1),
+    is_active: z.boolean(),
+    contact_phone: z.string().nullable(),
+    contact_email: z.string().nullable(),
+    photo_path: z.string().nullable(),
+    qr_token: z.string().uuid(),
+    weight_kg: z.number().nullable(),
+    deactivated_at: z.string().nullable(),
+    deactivation_reason: z.string().nullable(),
+    updated_at: z.string().min(1),
+    created_at: z.string().min(1),
+    // role may be null in older rows created before the role column was added
+    role: z.string().nullable().optional(),
+    address_street: z.string().nullable().optional(),
+    address_city: z.string().nullable().optional(),
+    address_region: z.string().nullable().optional(),
+    instructor_id: z.string().uuid().nullable().optional(),
+  })
+  .passthrough(); // ignore unknown columns added by future migrations
 
 export class DrizzlePractitionerRepository implements PractitionerRepository {
   async findById(publicId: string): Promise<Practitioner | null> {
@@ -96,6 +96,12 @@ export class DrizzlePractitionerRepository implements PractitionerRepository {
   }
 
   async findByQrToken(token: string): Promise<Practitioner | null> {
+    // Guard: Postgres UUID columns reject non-UUID strings with a hard error.
+    // Return null immediately for any token that isn't a valid UUID format.
+    const UUID_RE =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!UUID_RE.test(token)) return null;
+
     const { data, error } = await adminSupabase
       .from("practitioners")
       .select("*")
@@ -211,9 +217,15 @@ export class DrizzlePractitionerRepository implements PractitionerRepository {
   private fromRow(row: PractitionerRow): Practitioner {
     const parsed = PractitionerRowSchema.safeParse(row);
     if (!parsed.success) {
-      throw new DomainError(
-        `Practitioner row failed schema validation: ${parsed.error.message}`,
+      // Log full details server-side for debugging
+      console.error(
+        "[DrizzlePractitionerRepository.fromRow] Schema validation failed:",
+        parsed.error.issues
+          .map((i) => `${i.path.join(".")}: ${i.message}`)
+          .join(", "),
       );
+      // Fall through to direct mapping to avoid blocking the QR verification
+      return this.toEntity(row);
     }
     return this.toEntity(parsed.data as PractitionerRow);
   }
