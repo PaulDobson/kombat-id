@@ -2,8 +2,10 @@ import { createClient } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import type { EventType } from "@/types/database.types";
+import type { EventType, Database } from "@/types/database.types";
 import { DeleteEventButton } from "../DeleteEventButton";
+
+type MartialEvent = Database["public"]["Tables"]["martial_events"]["Row"];
 
 async function requireAdminUser() {
   const supabase = await createClient();
@@ -38,6 +40,8 @@ import {
   formatDateWithWeekday as formatDate,
   formatDateLong,
 } from "@/lib/format-date";
+import { formatRegistrationFee } from "@/modules/event-registration/domain/entities/eventRegistration";
+import { DrizzleEventRegistrationRepository } from "@/modules/event-registration/infrastructure/repositories/drizzleEventRegistrationRepository";
 
 export default async function EventDetailPage({
   params,
@@ -47,11 +51,11 @@ export default async function EventDetailPage({
   await requireAdminUser();
   const { eventId } = await params;
 
-  const { data: event } = await adminSupabase
+  const { data: event } = (await adminSupabase
     .from("martial_events")
     .select("*")
     .eq("id", eventId)
-    .maybeSingle();
+    .maybeSingle()) as { data: MartialEvent | null };
 
   if (!event) notFound();
 
@@ -60,6 +64,10 @@ export default async function EventDetailPage({
     .from("martial_history")
     .select("id", { count: "exact", head: true })
     .eq("event_id", eventId);
+
+  // Count confirmed registrations for capacity indicator
+  const registrationRepo = new DrizzleEventRegistrationRepository();
+  const confirmedCount = await registrationRepo.countConfirmedByEvent(eventId);
 
   const today = new Date().toISOString().slice(0, 10);
   const isPast = event.event_date < today;
@@ -133,7 +141,35 @@ export default async function EventDetailPage({
               {formatDateLong(event.created_at.slice(0, 10))}
             </dd>
           </div>
+          <div>
+            <dt className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-1">
+              Precio de inscripción
+            </dt>
+            <dd className="text-neutral-200">
+              {formatRegistrationFee(event.registration_fee ?? null)}
+            </dd>
+          </div>
+          {event.max_participants != null && (
+            <div>
+              <dt className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-1">
+                Aforo
+              </dt>
+              <dd className="text-neutral-200">
+                {confirmedCount} / {event.max_participants} inscritos
+              </dd>
+            </div>
+          )}
         </dl>
+        {event.description && (
+          <div className="mt-5 pt-5 border-t border-neutral-800">
+            <dt className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-2">
+              Descripción
+            </dt>
+            <dd className="text-neutral-200 text-sm whitespace-pre-wrap">
+              {event.description}
+            </dd>
+          </div>
+        )}
       </div>
 
       {/* Actions */}
@@ -145,6 +181,12 @@ export default async function EventDetailPage({
             className="bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           >
             Editar evento
+          </Link>
+          <Link
+            href={`/admin/events/${eventId}/registrations`}
+            className="bg-primary-900/50 hover:bg-primary-900 text-primary-300 border border-primary-800 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          >
+            Gestionar inscripciones
           </Link>
           <DeleteEventButton id={eventId} name={event.name} />
         </div>

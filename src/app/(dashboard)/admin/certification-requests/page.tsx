@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ApproveRequestButton } from "./ApproveRequestButton";
 import { RejectRequestButton } from "./RejectRequestButton";
+import { ObserveRequestButton } from "./ObserveRequestButton";
 
 // ---------------------------------------------------------------------------
 // Auth guard
@@ -214,9 +215,10 @@ export default async function CertificationRequestsPage({
                         {formatDate(req.created_at)}
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <ApproveRequestButton requestId={req.id} />
                           <RejectRequestButton requestId={req.id} />
+                          <ObserveRequestButton requestId={req.id} />
                         </div>
                       </td>
                     </tr>

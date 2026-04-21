@@ -291,15 +291,32 @@ async function main() {
   // ── Obtener o crear academias ─────────────────────────────────────────────
   const { data: existingAcademies } = await supabase
     .from("academies")
-    .select("id, name")
+    .select("id, name, responsible_instructor_ids")
     .eq("is_active", true);
 
-  let academyIds: string[] = (existingAcademies ?? []).map(
-    (a: { id: string }) => a.id,
-  );
+  let academies: Array<{
+    id: string;
+    name: string;
+    responsible_instructor_ids: string[];
+  }> = (existingAcademies ?? []) as Array<{
+    id: string;
+    name: string;
+    responsible_instructor_ids: string[];
+  }>;
 
-  if (academyIds.length < 5) {
+  if (academies.length < 5) {
     console.log("\n🏫  Creando academias de prueba...");
+
+    // Get available instructors to assign as responsible
+    const { data: instructorRows } = await supabase
+      .from("practitioners")
+      .select("id")
+      .in("role", ["instructor", "profesor", "maestro"])
+      .eq("is_active", true);
+    const availableInstructors = (instructorRows ?? []).map(
+      (r: { id: string }) => r.id,
+    );
+
     const academyDefs = [
       {
         name: "Academia KT Santiago Norte",
@@ -321,26 +338,41 @@ async function main() {
       { name: "Academia KT La Serena", region: "coquimbo", city: "La Serena" },
     ];
 
-    for (const def of academyDefs) {
+    for (let i = 0; i < academyDefs.length; i++) {
+      const def = academyDefs[i]!;
+      // Assign 1-2 instructors per academy (round-robin from available)
+      const responsibleIds =
+        availableInstructors.length > 0
+          ? [availableInstructors[i % availableInstructors.length]!]
+          : [];
+
       const { data } = await supabase
         .from("academies")
         .insert({
           ...def,
           address: `${pick(STREETS)} ${randomInt(100, 9999)}`,
           is_active: true,
-          responsible_instructor_ids: [],
+          responsible_instructor_ids: responsibleIds,
           created_by: adminId,
         })
-        .select("id")
+        .select("id, name, responsible_instructor_ids")
         .single();
       if (data) {
-        academyIds.push(data.id as string);
+        academies.push(
+          data as {
+            id: string;
+            name: string;
+            responsible_instructor_ids: string[];
+          },
+        );
         console.log(`   ✓ ${def.name}`);
       }
     }
   } else {
-    console.log(`✓ Usando ${academyIds.length} academias existentes`);
+    console.log(`✓ Usando ${academies.length} academias existentes`);
   }
+
+  const academyIds = academies.map((a) => a.id);
 
   // ── Obtener instructores existentes ───────────────────────────────────────
   const { data: instructorRows } = await supabase
@@ -405,6 +437,9 @@ async function main() {
 
       const isActive = Math.random() > 0.08; // ~8% inactivos
 
+      // Assign to exactly one academy (round-robin for even distribution)
+      const assignedAcademyId = academyIds[globalIdx % academyIds.length]!;
+
       rows.push({
         id: crypto.randomUUID(),
         qr_token: crypto.randomUUID(),
@@ -421,18 +456,19 @@ async function main() {
         address_street: `${pick(STREETS)} ${randomInt(100, 9999)}`,
         address_city: city,
         address_region: region,
-        instructor_id: instructorId,
+        instructor_id: null, // relationship is via academy, not direct
         contact_email: null,
         contact_phone: null,
         auth_user_id: null,
         deactivated_at: isActive ? null : new Date().toISOString(),
         deactivation_reason: isActive ? null : "Retiro voluntario",
+        _academyId: assignedAcademyId, // temp field for membership creation
       });
     }
 
     const { data: inserted, error } = await supabase
       .from("practitioners")
-      .insert(rows)
+      .insert(rows.map(({ _academyId: _, ...r }) => r)) // strip temp field
       .select("id");
 
     if (error) {
@@ -441,15 +477,14 @@ async function main() {
     } else {
       created += (inserted ?? []).length;
 
-      // Queue academy memberships — distribute evenly across academies
-      for (const p of inserted ?? []) {
-        if (Math.random() < 0.85 && academyIds.length > 0) {
-          membershipQueue.push({
-            practitioner_id: p.id as string,
-            academy_id:
-              academyIds[Math.floor(Math.random() * academyIds.length)]!,
-          });
-        }
+      // Each student gets exactly one membership to their pre-assigned academy
+      for (let i = 0; i < (inserted ?? []).length; i++) {
+        const p = inserted![i]!;
+        const academyId = rows[i]!._academyId;
+        membershipQueue.push({
+          practitioner_id: p.id as string,
+          academy_id: academyId,
+        });
       }
 
       process.stdout.write(`\r   Creados: ${created}/${TOTAL}`);
@@ -461,17 +496,12 @@ async function main() {
   // ── Crear membresías de academia ──────────────────────────────────────────
   console.log("\n🏫  Asignando practicantes a academias...");
 
-  // Enforce one-active-membership-per-practitioner by deduplicating
-  const seen = new Set<string>();
-  const uniqueMemberships = membershipQueue.filter((m) => {
-    if (seen.has(m.practitioner_id)) return false;
-    seen.add(m.practitioner_id);
-    return true;
-  });
+  // Every student already has exactly one academy assigned — no deduplication needed
+  const membershipsToInsert = membershipQueue;
 
   // Insert in batches
-  for (let i = 0; i < uniqueMemberships.length; i += BATCH_SIZE) {
-    const batch = uniqueMemberships.slice(i, i + BATCH_SIZE).map((m) => ({
+  for (let i = 0; i < membershipsToInsert.length; i += BATCH_SIZE) {
+    const batch = membershipsToInsert.slice(i, i + BATCH_SIZE).map((m) => ({
       ...m,
       is_active: true,
       joined_at: new Date().toISOString(),
@@ -480,7 +510,37 @@ async function main() {
     if (error) console.warn(`   ⚠️  Memberships batch error: ${error.message}`);
   }
 
-  console.log(`   ✓ ${uniqueMemberships.length} membresías creadas`);
+  console.log(
+    `   ✓ ${membershipsToInsert.length} membresías creadas (1 por alumno)`,
+  );
+
+  // ── Asignar instructores a academias ──────────────────────────────────────
+  // Ensure each academy has at least one instructor in responsible_instructor_ids
+  console.log("\n👨‍🏫  Verificando instructores por academia...");
+  for (const academy of academies) {
+    if (
+      academy.responsible_instructor_ids.length === 0 &&
+      instructorIds.length > 0
+    ) {
+      const assignedInstructor =
+        instructorIds[Math.floor(Math.random() * instructorIds.length)]!;
+      await supabase
+        .from("academies")
+        .update({ responsible_instructor_ids: [assignedInstructor] })
+        .eq("id", academy.id);
+      // Also ensure the instructor has a membership in this academy
+      await supabase.from("academy_memberships").upsert(
+        {
+          practitioner_id: assignedInstructor,
+          academy_id: academy.id,
+          is_active: true,
+          joined_at: new Date().toISOString(),
+        },
+        { onConflict: "practitioner_id,academy_id" },
+      );
+    }
+  }
+  console.log("   ✓ Instructores verificados");
 
   // ── Resumen ───────────────────────────────────────────────────────────────
   const { count } = await supabase

@@ -324,7 +324,21 @@ async function main() {
   // ── Crear academias por región ────────────────────────────────────────────
   console.log("🏫  Creando 100 academias...");
 
+  // Get available instructors to distribute across academies
+  const { data: instructorRows } = await supabase
+    .from("practitioners")
+    .select("id")
+    .in("role", ["instructor", "profesor", "maestro"])
+    .eq("is_active", true);
+  const availableInstructors = (instructorRows ?? []).map(
+    (r: { id: string }) => r.id,
+  );
+  console.log(
+    `   ${availableInstructors.length} instructores disponibles para asignar\n`,
+  );
+
   const allAcademyIds: string[] = [];
+  const academyInstructorMap = new Map<string, string[]>(); // academyId → instructorIds
   let academyNumber = 1;
 
   for (const regionDef of REGION_DISTRIBUTION) {
@@ -336,6 +350,20 @@ async function main() {
         `${prefix} ${suffix} ${city} ${i > 0 ? String(academyNumber) : ""}`.trim();
       const isActive = Math.random() > 0.1; // ~10% inactivas
 
+      // Assign 1-2 instructors per academy (round-robin)
+      const responsibleIds: string[] = [];
+      if (availableInstructors.length > 0) {
+        responsibleIds.push(
+          availableInstructors[academyNumber % availableInstructors.length]!,
+        );
+        // 30% chance of a second instructor
+        if (availableInstructors.length > 1 && Math.random() < 0.3) {
+          const secondIdx = (academyNumber + 1) % availableInstructors.length;
+          const secondId = availableInstructors[secondIdx]!;
+          if (secondId !== responsibleIds[0]) responsibleIds.push(secondId);
+        }
+      }
+
       const { data, error } = await supabase
         .from("academies")
         .insert({
@@ -345,7 +373,7 @@ async function main() {
           address: `${pick(STREETS)} ${randomInt(100, 9999)}`,
           founded_date: randomDate(1990, 2022),
           is_active: isActive,
-          responsible_instructor_ids: [],
+          responsible_instructor_ids: responsibleIds,
           created_by: adminId,
         })
         .select("id")
@@ -357,6 +385,7 @@ async function main() {
         );
       } else {
         allAcademyIds.push(data.id as string);
+        academyInstructorMap.set(data.id as string, responsibleIds);
         process.stdout.write(`\r   Creadas: ${allAcademyIds.length}/100`);
       }
 
@@ -374,6 +403,38 @@ async function main() {
   let totalPractitioners = 0;
   let totalMemberships = 0;
   const BATCH_SIZE = 50;
+
+  // First, create instructor memberships for each academy
+  console.log("\n👨‍🏫  Creando membresías de instructores...");
+  const instructorMemberships: Array<{
+    practitioner_id: string;
+    academy_id: string;
+    is_active: boolean;
+    joined_at: string;
+  }> = [];
+  for (const [academyId, instructorIds] of academyInstructorMap.entries()) {
+    for (const instructorId of instructorIds) {
+      instructorMemberships.push({
+        practitioner_id: instructorId,
+        academy_id: academyId,
+        is_active: true,
+        joined_at: new Date().toISOString(),
+      });
+    }
+  }
+  if (instructorMemberships.length > 0) {
+    for (let b = 0; b < instructorMemberships.length; b += BATCH_SIZE) {
+      const batch = instructorMemberships.slice(b, b + BATCH_SIZE);
+      await supabase
+        .from("academy_memberships")
+        .upsert(batch, { onConflict: "practitioner_id,academy_id" });
+    }
+    console.log(
+      `   ✓ ${instructorMemberships.length} membresías de instructores creadas`,
+    );
+  }
+
+  console.log("\n🥋  Generando alumnos...");
 
   for (let ai = 0; ai < allAcademyIds.length; ai++) {
     const academyId = allAcademyIds[ai];
@@ -419,6 +480,7 @@ async function main() {
         auth_user_id: null,
         deactivated_at: isActive ? null : new Date().toISOString(),
         deactivation_reason: isActive ? null : "Retiro voluntario",
+        // No instructor_id — relationship is via academy_memberships
       });
     }
 

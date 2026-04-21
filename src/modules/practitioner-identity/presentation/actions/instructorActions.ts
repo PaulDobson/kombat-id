@@ -56,6 +56,11 @@ const RejectCertificationRequestInputSchema = z.object({
   reason: z.string().optional(),
 });
 
+const ObserveCertificationRequestInputSchema = z.object({
+  requestId: z.string().uuid(),
+  observationNotes: z.string().min(1),
+});
+
 // ── Helper: require admin ─────────────────────────────────────────────────────
 
 async function requireAdmin(): Promise<{ userId: string } | null> {
@@ -298,6 +303,56 @@ export async function rejectCertificationRequestAction(
     return { success: true, data: undefined };
   } catch (err) {
     console.error("[rejectCertificationRequestAction] Unexpected error:", err);
+    return {
+      success: false,
+      error: "Error interno del servidor",
+      code: "INTERNAL_ERROR",
+    };
+  }
+}
+
+// ── observeCertificationRequestAction ────────────────────────────────────────
+
+export async function observeCertificationRequestAction(
+  rawInput: unknown,
+): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  if (!admin) {
+    return { success: false, error: "No autorizado", code: "UNAUTHORIZED" };
+  }
+
+  const parsed = ObserveCertificationRequestInputSchema.safeParse(rawInput);
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.message,
+      code: "VALIDATION_ERROR",
+    };
+  }
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (adminSupabase as any)
+      .from("certification_requests")
+      .update({
+        status: "observed",
+        observation_notes: parsed.data.observationNotes,
+      })
+      .eq("id", parsed.data.requestId);
+
+    if (error) {
+      console.error("[observeCertificationRequestAction] DB error:", error);
+      return {
+        success: false,
+        error: "Error al actualizar la solicitud",
+        code: "INTERNAL_ERROR",
+      };
+    }
+
+    revalidatePath("/admin/certification-requests");
+    return { success: true, data: undefined };
+  } catch (err) {
+    console.error("[observeCertificationRequestAction] Unexpected error:", err);
     return {
       success: false,
       error: "Error interno del servidor",
