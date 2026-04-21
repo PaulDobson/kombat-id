@@ -629,36 +629,67 @@ async function main() {
   for (let i = 1; i <= 3; i++) {
     const d = addDays(today, -i * 30);
     const label = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    await supabase
-      .from("ranking_snapshots")
-      .insert({
-        practitioner_id: maestroId,
-        period_type: "monthly",
-        period_label: label,
-        position: i,
-        total_points: 250 - i * 20,
-        category_count: 5,
-        grade: "black",
-        age_range: "30+",
-        weight_category: "middle",
-      });
+    await supabase.from("ranking_snapshots").insert({
+      practitioner_id: maestroId,
+      period_type: "monthly",
+      period_label: label,
+      position: i,
+      total_points: 250 - i * 20,
+      category_count: 5,
+      grade: "black",
+      age_range: "30+",
+      weight_category: "middle",
+    });
   }
   console.log(`   ✓ ${rankings.length} posiciones + 3 snapshots`);
 
-  // ── 9. Academia ───────────────────────────────────────────────────────────
-  console.log("\n🏫  Creando academia...");
-  const { error: acErr } = await supabase.from("academies").insert({
-    name: "Academia Kombat Taekwondo Santiago Centro",
-    region: "metropolitana",
-    city: "Santiago",
-    address: "Av. Libertador Bernardo O'Higgins 1234",
-    founded_date: "2005-03-15",
-    is_active: true,
-    responsible_instructor_ids: [maestroId, profesorId],
-    created_by: adminId,
-  });
+  // ── 9. Academia + membresías ──────────────────────────────────────────────
+  console.log("\n🏫  Creando academia y asignando miembros...");
+
+  const { data: acData, error: acErr } = await supabase
+    .from("academies")
+    .insert({
+      name: "Academia Kombat Taekwondo Santiago Centro",
+      region: "metropolitana",
+      city: "Santiago",
+      address: "Av. Libertador Bernardo O'Higgins 1234",
+      founded_date: "2005-03-15",
+      is_active: true,
+      // Instructores responsables de la academia
+      responsible_instructor_ids: [maestroId, profesorId, instructorId],
+      created_by: adminId,
+    })
+    .select("id")
+    .single();
   if (acErr) throw new Error(`academies: ${acErr.message}`);
+  const academyId = acData.id as string;
   console.log("   ✓ Academia Santiago Centro");
+
+  // Crear membresías para TODOS los practicantes de la academia
+  // (alumnos + instructores — todos pertenecen a la misma academia)
+  const allMemberIds = [
+    maestroId,
+    profesorId,
+    instructorId,
+    alumnoAdultoId,
+    alumnoJuvenilId,
+    practitionerIds["alumno.inactivo@kombat.cl"]!,
+  ];
+
+  const memberships = allMemberIds.map((pid) => ({
+    practitioner_id: pid,
+    academy_id: academyId,
+    is_active: true,
+    joined_at: new Date().toISOString(),
+  }));
+
+  const { error: memErr } = await supabase
+    .from("academy_memberships")
+    .insert(memberships);
+  if (memErr) throw new Error(`academy_memberships: ${memErr.message}`);
+  console.log(
+    `   ✓ ${memberships.length} membresías creadas (instructores + alumnos)`,
+  );
 
   // ── Resumen ───────────────────────────────────────────────────────────────
   console.log("\n✅  Seed completo!\n");

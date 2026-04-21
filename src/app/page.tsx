@@ -465,9 +465,10 @@ export default async function LandingPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {upcoming.map((event) => (
-                <div
+                <Link
                   key={event.id}
-                  className="group bg-neutral-900 hover:bg-neutral-800/80 border border-neutral-800 hover:border-neutral-700 rounded-2xl p-5 space-y-3 transition-all hover:-translate-y-0.5"
+                  href={`/events/${event.id}`}
+                  className="group bg-neutral-900 hover:bg-neutral-800/80 border border-neutral-800 hover:border-neutral-700 rounded-2xl p-5 space-y-3 transition-all hover:-translate-y-0.5 cursor-pointer"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span
@@ -491,7 +492,7 @@ export default async function LandingPage() {
                       {event.location}
                     </p>
                   )}
-                </div>
+                </Link>
               ))}
             </div>
           </div>

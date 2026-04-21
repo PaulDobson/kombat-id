@@ -4,15 +4,22 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Grade } from "@/modules/practitioner-identity/domain/entities/practitioner";
 import type { ChileanRegion } from "@/modules/practitioner-identity/domain/entities/academy";
+import type { PractitionerRole } from "@/types/database.types";
+import { formatDateShort } from "@/lib/format-date";
 import { RequestCertificationForm } from "./RequestCertificationForm";
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 10;
+const REQ_PAGE_SIZE = 10;
 
-const INSTRUCTOR_ROLES = ["instructor", "profesor", "maestro"];
+const INSTRUCTOR_ROLES: PractitionerRole[] = [
+  "instructor",
+  "profesor",
+  "maestro",
+];
 
 const GRADE_LABELS: Record<Grade, string> = {
   white: "Blanco",
@@ -55,6 +62,44 @@ const REGION_LABELS: Record<ChileanRegion, string> = {
 // Helpers
 // ---------------------------------------------------------------------------
 
+function getStatusBadge(status: string): { label: string; className: string } {
+  switch (status) {
+    case "pending":
+      return {
+        label: "Pendiente",
+        className: "bg-yellow-900/50 text-yellow-400 border-yellow-800",
+      };
+    case "approved":
+      return {
+        label: "Aprobada",
+        className: "bg-emerald-900/50 text-emerald-400 border-emerald-800",
+      };
+    case "rejected":
+      return {
+        label: "Rechazada",
+        className: "bg-red-900/50 text-red-400 border-red-800",
+      };
+    case "observed":
+      return {
+        label: "Observada",
+        className: "bg-blue-900/50 text-blue-400 border-blue-800",
+      };
+    default:
+      return {
+        label: status,
+        className: "bg-neutral-800 text-neutral-400 border-neutral-700",
+      };
+  }
+}
+
+const CERT_TYPE_LABELS: Record<string, string> = {
+  technical_grade: "Grado técnico",
+  instructor: "Instructor",
+  referee: "Árbitro",
+  coach: "Entrenador",
+  event_participation: "Participación en evento",
+};
+
 function buildUrl(
   base: Record<string, string | undefined>,
   overrides: Record<string, string | undefined>,
@@ -75,10 +120,11 @@ function buildUrl(
 export default async function InstructorPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; reqPage?: string; q?: string }>;
 }) {
   const user = await requireUser();
   const sp = await searchParams;
+  const searchQuery = sp.q?.trim() ?? "";
 
   // Find practitioner profile
   const { data: practitioner } = await adminSupabase
@@ -88,7 +134,10 @@ export default async function InstructorPage({
     .maybeSingle();
 
   // Guard: must be an instructor role
-  if (!practitioner || !INSTRUCTOR_ROLES.includes(practitioner.role ?? "")) {
+  if (
+    !practitioner ||
+    !INSTRUCTOR_ROLES.includes(practitioner.role as PractitionerRole)
+  ) {
     redirect("/dashboard");
   }
 
@@ -96,14 +145,55 @@ export default async function InstructorPage({
   const page = Math.max(1, parseInt(sp.page ?? "1", 10));
   const offset = (page - 1) * PAGE_SIZE;
 
-  const { data: studentRows, count } = await adminSupabase
+  // Get academies where this instructor is responsible
+  const { data: academyRows } = await adminSupabase
+    .from("academies")
+    .select("id, name, region, city, is_active")
+    .contains("responsible_instructor_ids", [practitioner.id]);
+
+  const academies = academyRows ?? [];
+  const academyIds = academies.map((a: { id: string }) => a.id);
+
+  // Get all active members of those academies
+  let academyMemberIds: string[] = [];
+  if (academyIds.length > 0) {
+    const { data: memberships } = await adminSupabase
+      .from("academy_memberships")
+      .select("practitioner_id")
+      .in("academy_id", academyIds)
+      .eq("is_active", true);
+    academyMemberIds = (memberships ?? []).map(
+      (m: { practitioner_id: string }) => m.practitioner_id,
+    );
+  }
+
+  // Build students query: only role='alumno' from the academy, with optional name search
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let studentsQuery: any = adminSupabase
     .from("practitioners")
     .select("id, full_name, rut, grade, dan, is_active, start_date", {
       count: "exact",
     })
-    .eq("instructor_id", practitioner.id)
-    .order("full_name")
-    .range(offset, offset + PAGE_SIZE - 1);
+    .eq("role", "alumno")
+    .order("full_name");
+
+  if (academyMemberIds.length > 0) {
+    studentsQuery = studentsQuery.in("id", academyMemberIds);
+  } else {
+    studentsQuery = studentsQuery.eq(
+      "id",
+      "00000000-0000-0000-0000-000000000000",
+    );
+  }
+
+  if (searchQuery) {
+    studentsQuery = studentsQuery.ilike("full_name", `%${searchQuery}%`);
+  }
+
+  const { data: studentRows, count } = await studentsQuery.range(
+    offset,
+    offset + PAGE_SIZE - 1,
+  );
 
   const students = (studentRows ?? []) as Array<{
     id: string;
@@ -117,12 +207,18 @@ export default async function InstructorPage({
   const totalCount = count ?? 0;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
-  // Active students for certification form (all pages, no pagination needed for the select)
+  // Active students for certification form — same academy-based filter
   const { data: allActiveStudentRows } = await adminSupabase
     .from("practitioners")
     .select("id, full_name, rut")
-    .eq("instructor_id", practitioner.id)
+    .eq("role", "alumno")
     .eq("is_active", true)
+    .in(
+      "id",
+      academyMemberIds.length > 0
+        ? academyMemberIds
+        : ["00000000-0000-0000-0000-000000000000"],
+    )
     .order("full_name")
     .limit(500);
 
@@ -134,13 +230,34 @@ export default async function InstructorPage({
     }),
   );
 
-  // ── Section B: Mis academias ──────────────────────────────────────────────
-  const { data: academyRows } = await adminSupabase
-    .from("academies")
-    .select("id, name, region, city, is_active")
-    .contains("responsible_instructor_ids", [practitioner.id]);
+  // ── Section B: Mis academias (already fetched above) ─────────────────────
 
-  const academies = academyRows ?? [];
+  // ── Section D: Mis solicitudes (paginated) ────────────────────────────────
+  const reqPage = Math.max(1, parseInt(sp.reqPage ?? "1", 10));
+  const reqOffset = (reqPage - 1) * REQ_PAGE_SIZE;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: requestRows, count: reqCount } = await (adminSupabase as any)
+    .from("certification_requests")
+    .select(
+      "id, cert_type, status, rejection_reason, observation_notes, created_at, practitioners!practitioner_id(full_name, rut)",
+      { count: "exact" },
+    )
+    .eq("requester_id", practitioner.id)
+    .order("created_at", { ascending: false })
+    .range(reqOffset, reqOffset + REQ_PAGE_SIZE - 1);
+
+  const certRequests = (requestRows ?? []) as Array<{
+    id: string;
+    cert_type: string;
+    status: string;
+    rejection_reason: string | null;
+    observation_notes: string | null;
+    created_at: string;
+    practitioners: { full_name: string; rut: string } | null;
+  }>;
+  const reqTotalCount = reqCount ?? 0;
+  const reqTotalPages = Math.ceil(reqTotalCount / REQ_PAGE_SIZE);
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -164,6 +281,7 @@ export default async function InstructorPage({
             </h2>
             <p className="text-xs text-neutral-500 mt-0.5">
               {totalCount.toLocaleString("es-CL")} registros
+              {searchQuery && ` para "${searchQuery}"`}
             </p>
           </div>
           <Link
@@ -174,11 +292,53 @@ export default async function InstructorPage({
           </Link>
         </div>
 
+        {/* Search bar */}
+        <form method="GET" action="/instructor" className="flex gap-2">
+          <div className="relative flex-1 max-w-sm">
+            <svg
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 pointer-events-none"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
+              />
+            </svg>
+            <input
+              type="search"
+              name="q"
+              defaultValue={searchQuery}
+              placeholder="Buscar por nombre..."
+              className="w-full pl-9 pr-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-sm text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+          </div>
+          <button
+            type="submit"
+            className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded-lg text-sm text-neutral-200 transition-colors"
+          >
+            Buscar
+          </button>
+          {searchQuery && (
+            <Link
+              href="/instructor"
+              className="px-4 py-2 bg-transparent border border-neutral-700 rounded-lg text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
+            >
+              Limpiar
+            </Link>
+          )}
+        </form>
+
         <div className="bg-neutral-900 border border-neutral-700 rounded-xl overflow-hidden">
           {students.length === 0 ? (
             <div className="text-center py-16">
               <p className="text-neutral-500 text-sm">
-                No tienes alumnos asignados.
+                {searchQuery
+                  ? `No se encontraron alumnos con el nombre "${searchQuery}".`
+                  : "No tienes alumnos asignados."}
               </p>
             </div>
           ) : (
@@ -242,7 +402,7 @@ export default async function InstructorPage({
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Link
-                          href={`/admin/practitioners/${s.id}`}
+                          href={`/instructor/students/${s.id}`}
                           className="text-primary-400 hover:text-primary-300 text-sm transition-colors"
                         >
                           Ver
@@ -266,7 +426,10 @@ export default async function InstructorPage({
             <div className="flex items-center gap-1">
               {page > 1 && (
                 <Link
-                  href={buildUrl({}, { page: String(page - 1) })}
+                  href={buildUrl(
+                    { q: searchQuery || undefined },
+                    { page: String(page - 1) },
+                  )}
                   className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded-lg text-xs text-neutral-200 transition-colors"
                 >
                   ← Anterior
@@ -278,7 +441,10 @@ export default async function InstructorPage({
                 return (
                   <Link
                     key={p2}
-                    href={buildUrl({}, { page: String(p2) })}
+                    href={buildUrl(
+                      { q: searchQuery || undefined },
+                      { page: String(p2) },
+                    )}
                     className={`px-3 py-1.5 rounded-lg text-xs transition-colors border ${
                       p2 === page
                         ? "bg-primary-600 border-primary-600 text-white"
@@ -291,7 +457,10 @@ export default async function InstructorPage({
               })}
               {page < totalPages && (
                 <Link
-                  href={buildUrl({}, { page: String(page + 1) })}
+                  href={buildUrl(
+                    { q: searchQuery || undefined },
+                    { page: String(page + 1) },
+                  )}
                   className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded-lg text-xs text-neutral-200 transition-colors"
                 >
                   Siguiente →
@@ -373,6 +542,144 @@ export default async function InstructorPage({
         <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6 max-w-lg">
           <RequestCertificationForm students={activeStudentsForForm} />
         </div>
+      </section>
+
+      {/* ── Section D: Mis solicitudes ── */}
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold text-neutral-100">
+            Mis solicitudes
+          </h2>
+          <p className="text-xs text-neutral-500 mt-0.5">
+            {reqTotalCount.toLocaleString("es-CL")} solicitudes enviadas
+          </p>
+        </div>
+
+        <div className="bg-neutral-900 border border-neutral-700 rounded-xl overflow-hidden">
+          {certRequests.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-neutral-500 text-sm">
+                Aún no has enviado solicitudes de certificación.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-neutral-700 bg-neutral-900/80">
+                    <th className="text-left px-4 py-3 text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                      Alumno
+                    </th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-neutral-400 uppercase tracking-wider hidden sm:table-cell">
+                      Tipo
+                    </th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-neutral-400 uppercase tracking-wider hidden md:table-cell">
+                      Fecha
+                    </th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                      Estado
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-800">
+                  {certRequests.map((r) => {
+                    const badge = getStatusBadge(r.status);
+                    const reason =
+                      r.status === "rejected"
+                        ? r.rejection_reason
+                        : r.status === "observed"
+                          ? r.observation_notes
+                          : null;
+                    return (
+                      <tr
+                        key={r.id}
+                        className="hover:bg-neutral-800/40 transition-colors"
+                      >
+                        <td className="px-4 py-3 text-neutral-100 font-medium">
+                          {r.practitioners?.full_name ?? (
+                            <span className="text-neutral-600">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-neutral-400 text-xs hidden sm:table-cell">
+                          {CERT_TYPE_LABELS[r.cert_type] ?? r.cert_type}
+                        </td>
+                        <td className="px-4 py-3 text-neutral-400 tabular-nums text-xs hidden md:table-cell">
+                          {formatDateShort(r.created_at)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${badge.className}`}
+                          >
+                            {badge.label}
+                          </span>
+                          {reason && (
+                            <p className="mt-1 text-xs text-neutral-400 max-w-xs">
+                              {reason}
+                            </p>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Pagination */}
+        {reqTotalPages > 1 && (
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-neutral-500">
+              Página {reqPage} de {reqTotalPages} ·{" "}
+              {reqTotalCount.toLocaleString("es-CL")} solicitudes
+            </p>
+            <div className="flex items-center gap-1">
+              {reqPage > 1 && (
+                <Link
+                  href={buildUrl(
+                    { page: sp.page },
+                    { reqPage: String(reqPage - 1) },
+                  )}
+                  className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded-lg text-xs text-neutral-200 transition-colors"
+                >
+                  ← Anterior
+                </Link>
+              )}
+              {Array.from({ length: Math.min(5, reqTotalPages) }, (_, i) => {
+                const start = Math.max(
+                  1,
+                  Math.min(reqPage - 2, reqTotalPages - 4),
+                );
+                const p2 = start + i;
+                return (
+                  <Link
+                    key={p2}
+                    href={buildUrl({ page: sp.page }, { reqPage: String(p2) })}
+                    className={`px-3 py-1.5 rounded-lg text-xs transition-colors border ${
+                      p2 === reqPage
+                        ? "bg-primary-600 border-primary-600 text-white"
+                        : "bg-neutral-800 hover:bg-neutral-700 border-neutral-700 text-neutral-300"
+                    }`}
+                  >
+                    {p2}
+                  </Link>
+                );
+              })}
+              {reqPage < reqTotalPages && (
+                <Link
+                  href={buildUrl(
+                    { page: sp.page },
+                    { reqPage: String(reqPage + 1) },
+                  )}
+                  className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded-lg text-xs text-neutral-200 transition-colors"
+                >
+                  Siguiente →
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
       </section>
     </main>
   );

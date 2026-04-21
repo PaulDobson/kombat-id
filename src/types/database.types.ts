@@ -50,6 +50,17 @@ export type Discipline =
   | "defensa_personal";
 
 // ============================================================
+// Event storage types (migration 031)
+// ============================================================
+
+export interface EventAttachment {
+  name: string;
+  path: string;
+  size: number;
+  type: string;
+}
+
+// ============================================================
 // JSONB payload stored inside certifications.practitioner_snapshot
 // ============================================================
 
@@ -61,6 +72,7 @@ export interface PractitionerSnapshot {
   dan: number | null;
   snapshotAt: string; // ISO timestamp
 }
+
 export type Json =
   | string
   | number
@@ -68,6 +80,8 @@ export type Json =
   | null
   | { [key: string]: Json | undefined }
   | Json[];
+
+// ============================================================
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
@@ -242,6 +256,57 @@ export type Database = {
           target_type?: string;
         };
         Relationships: [];
+      };
+      certification_requests: {
+        Row: {
+          cert_type: string;
+          created_at: string;
+          id: string;
+          notes: string | null;
+          observation_notes: string | null;
+          practitioner_id: string;
+          rejection_reason: string | null;
+          requester_id: string;
+          status: string;
+        };
+        Insert: {
+          cert_type: string;
+          created_at?: string;
+          id?: string;
+          notes?: string | null;
+          observation_notes?: string | null;
+          practitioner_id: string;
+          rejection_reason?: string | null;
+          requester_id: string;
+          status?: string;
+        };
+        Update: {
+          cert_type?: string;
+          created_at?: string;
+          id?: string;
+          notes?: string | null;
+          observation_notes?: string | null;
+          practitioner_id?: string;
+          rejection_reason?: string | null;
+          requester_id?: string;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "certification_requests_practitioner_id_fkey";
+            columns: ["practitioner_id"];
+            isOneToOne: false;
+            referencedRelation: "practitioners";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "certification_requests_requester_id_fkey";
+            columns: ["requester_id"];
+            isOneToOne: false;
+            referencedRelation: "practitioners";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       certifications: {
         Row: {
@@ -422,33 +487,346 @@ export type Database = {
           },
         ];
       };
-      martial_events: {
+      event_registrations: {
+        Row: {
+          cancelled_at: string | null;
+          cancelled_by: string | null;
+          confirmed_at: string | null;
+          confirmed_by: string | null;
+          created_at: string;
+          event_id: string;
+          id: string;
+          instructor_id: string;
+          notes: string | null;
+          practitioner_id: string;
+          registered_at: string;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          cancelled_at?: string | null;
+          cancelled_by?: string | null;
+          confirmed_at?: string | null;
+          confirmed_by?: string | null;
+          created_at?: string;
+          event_id: string;
+          id?: string;
+          instructor_id: string;
+          notes?: string | null;
+          practitioner_id: string;
+          registered_at?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          cancelled_at?: string | null;
+          cancelled_by?: string | null;
+          confirmed_at?: string | null;
+          confirmed_by?: string | null;
+          created_at?: string;
+          event_id?: string;
+          id?: string;
+          instructor_id?: string;
+          notes?: string | null;
+          practitioner_id?: string;
+          registered_at?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "event_registrations_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "martial_events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "event_registrations_instructor_id_fkey";
+            columns: ["instructor_id"];
+            isOneToOne: false;
+            referencedRelation: "practitioners";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "event_registrations_practitioner_id_fkey";
+            columns: ["practitioner_id"];
+            isOneToOne: false;
+            referencedRelation: "practitioners";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      exam_template_items: {
+        Row: {
+          created_at: string;
+          description: string | null;
+          id: string;
+          max_score: number;
+          name: string;
+          order: number;
+          template_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          max_score: number;
+          name: string;
+          order?: number;
+          template_id: string;
+        };
+        Update: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          max_score?: number;
+          name?: string;
+          order?: number;
+          template_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "exam_template_items_template_id_fkey";
+            columns: ["template_id"];
+            isOneToOne: false;
+            referencedRelation: "exam_templates";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      exam_templates: {
         Row: {
           created_at: string;
           created_by: string;
-          event_date: string;
-          event_type: string;
+          discipline: string;
+          from_grade: string;
           id: string;
-          location: string | null;
-          name: string;
+          is_active: boolean;
+          minimum_pass_score: number;
+          requires_admin_auth: boolean;
+          to_grade: string;
+          updated_at: string;
         };
         Insert: {
           created_at?: string;
           created_by: string;
-          event_date: string;
-          event_type: string;
+          discipline?: string;
+          from_grade: string;
           id?: string;
-          location?: string | null;
-          name: string;
+          is_active?: boolean;
+          minimum_pass_score?: number;
+          requires_admin_auth?: boolean;
+          to_grade: string;
+          updated_at?: string;
         };
         Update: {
           created_at?: string;
           created_by?: string;
+          discipline?: string;
+          from_grade?: string;
+          id?: string;
+          is_active?: boolean;
+          minimum_pass_score?: number;
+          requires_admin_auth?: boolean;
+          to_grade?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      grade_exam_items: {
+        Row: {
+          created_at: string;
+          exam_id: string;
+          id: string;
+          item_name: string;
+          max_score: number;
+          score: number;
+          template_item_id: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          exam_id: string;
+          id?: string;
+          item_name: string;
+          max_score: number;
+          score?: number;
+          template_item_id?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          exam_id?: string;
+          id?: string;
+          item_name?: string;
+          max_score?: number;
+          score?: number;
+          template_item_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "grade_exam_items_exam_id_fkey";
+            columns: ["exam_id"];
+            isOneToOne: false;
+            referencedRelation: "grade_exams";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "grade_exam_items_template_item_id_fkey";
+            columns: ["template_item_id"];
+            isOneToOne: false;
+            referencedRelation: "exam_template_items";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      grade_exams: {
+        Row: {
+          authorized_at: string | null;
+          authorized_by: string | null;
+          calculated_result: string | null;
+          created_at: string;
+          discipline: string;
+          exam_date: string;
+          final_result: string | null;
+          from_grade: string;
+          id: string;
+          instructor_id: string;
+          instructor_override: boolean;
+          max_possible_score: number | null;
+          notes: string | null;
+          override_justification: string | null;
+          override_result: string | null;
+          practitioner_id: string;
+          rejected_by: string | null;
+          rejection_reason: string | null;
+          score_percentage: number | null;
+          status: string;
+          template_id: string;
+          to_grade: string;
+          total_score: number | null;
+          updated_at: string;
+        };
+        Insert: {
+          authorized_at?: string | null;
+          authorized_by?: string | null;
+          calculated_result?: string | null;
+          created_at?: string;
+          discipline: string;
+          exam_date: string;
+          final_result?: string | null;
+          from_grade: string;
+          id?: string;
+          instructor_id: string;
+          instructor_override?: boolean;
+          max_possible_score?: number | null;
+          notes?: string | null;
+          override_justification?: string | null;
+          override_result?: string | null;
+          practitioner_id: string;
+          rejected_by?: string | null;
+          rejection_reason?: string | null;
+          score_percentage?: number | null;
+          status?: string;
+          template_id: string;
+          to_grade: string;
+          total_score?: number | null;
+          updated_at?: string;
+        };
+        Update: {
+          authorized_at?: string | null;
+          authorized_by?: string | null;
+          calculated_result?: string | null;
+          created_at?: string;
+          discipline?: string;
+          exam_date?: string;
+          final_result?: string | null;
+          from_grade?: string;
+          id?: string;
+          instructor_id?: string;
+          instructor_override?: boolean;
+          max_possible_score?: number | null;
+          notes?: string | null;
+          override_justification?: string | null;
+          override_result?: string | null;
+          practitioner_id?: string;
+          rejected_by?: string | null;
+          rejection_reason?: string | null;
+          score_percentage?: number | null;
+          status?: string;
+          template_id?: string;
+          to_grade?: string;
+          total_score?: number | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "grade_exams_instructor_id_fkey";
+            columns: ["instructor_id"];
+            isOneToOne: false;
+            referencedRelation: "practitioners";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "grade_exams_practitioner_id_fkey";
+            columns: ["practitioner_id"];
+            isOneToOne: false;
+            referencedRelation: "practitioners";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "grade_exams_template_id_fkey";
+            columns: ["template_id"];
+            isOneToOne: false;
+            referencedRelation: "exam_templates";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      martial_events: {
+        Row: {
+          attachments: Json;
+          cover_image_path: string | null;
+          created_at: string;
+          created_by: string;
+          description: string | null;
+          event_date: string;
+          event_type: string;
+          id: string;
+          location: string | null;
+          max_participants: number | null;
+          min_participants: number | null;
+          name: string;
+          registration_fee: number | null;
+        };
+        Insert: {
+          attachments?: Json;
+          cover_image_path?: string | null;
+          created_at?: string;
+          created_by: string;
+          description?: string | null;
+          event_date: string;
+          event_type: string;
+          id?: string;
+          location?: string | null;
+          max_participants?: number | null;
+          min_participants?: number | null;
+          name: string;
+          registration_fee?: number | null;
+        };
+        Update: {
+          attachments?: Json;
+          cover_image_path?: string | null;
+          created_at?: string;
+          created_by?: string;
+          description?: string | null;
           event_date?: string;
           event_type?: string;
           id?: string;
           location?: string | null;
+          max_participants?: number | null;
+          min_participants?: number | null;
           name?: string;
+          registration_fee?: number | null;
         };
         Relationships: [];
       };
@@ -578,6 +956,9 @@ export type Database = {
       };
       practitioners: {
         Row: {
+          address_city: string | null;
+          address_region: string | null;
+          address_street: string | null;
           auth_user_id: string | null;
           birth_date: string;
           contact_email: string | null;
@@ -590,6 +971,7 @@ export type Database = {
           gender: string;
           grade: string;
           id: string;
+          instructor_id: string | null;
           is_active: boolean;
           photo_path: string | null;
           qr_token: string;
@@ -598,12 +980,11 @@ export type Database = {
           start_date: string;
           updated_at: string;
           weight_kg: number | null;
-          address_street: string | null;
-          address_city: string | null;
-          address_region: string | null;
-          instructor_id: string | null;
         };
         Insert: {
+          address_city?: string | null;
+          address_region?: string | null;
+          address_street?: string | null;
           auth_user_id?: string | null;
           birth_date: string;
           contact_email?: string | null;
@@ -616,6 +997,7 @@ export type Database = {
           gender: string;
           grade?: string;
           id?: string;
+          instructor_id?: string | null;
           is_active?: boolean;
           photo_path?: string | null;
           qr_token?: string;
@@ -624,12 +1006,11 @@ export type Database = {
           start_date: string;
           updated_at?: string;
           weight_kg?: number | null;
-          address_street?: string | null;
-          address_city?: string | null;
-          address_region?: string | null;
-          instructor_id?: string | null;
         };
         Update: {
+          address_city?: string | null;
+          address_region?: string | null;
+          address_street?: string | null;
           auth_user_id?: string | null;
           birth_date?: string;
           contact_email?: string | null;
@@ -642,6 +1023,7 @@ export type Database = {
           gender?: string;
           grade?: string;
           id?: string;
+          instructor_id?: string | null;
           is_active?: boolean;
           photo_path?: string | null;
           qr_token?: string;
@@ -650,12 +1032,16 @@ export type Database = {
           start_date?: string;
           updated_at?: string;
           weight_kg?: number | null;
-          address_street?: string | null;
-          address_city?: string | null;
-          address_region?: string | null;
-          instructor_id?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "practitioners_instructor_id_fkey";
+            columns: ["instructor_id"];
+            isOneToOne: false;
+            referencedRelation: "practitioners";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       qr_scan_events: {
         Row: {
@@ -807,7 +1193,7 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      is_admin: { Args: never; Returns: boolean };
     };
     Enums: {
       [_ in never]: never;

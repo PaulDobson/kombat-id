@@ -74,6 +74,12 @@ export default async function PublicEventsPage({
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="mb-8">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-neutral-200 transition-colors mb-4"
+        >
+          ← Volver al inicio
+        </Link>
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-neutral-50 tracking-tight">

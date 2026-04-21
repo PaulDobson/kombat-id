@@ -10,7 +10,10 @@
     "type-check": "tsc --noEmit",
     "seed": "tsx scripts/seed.ts",
     "seed:users": "tsx scripts/create-auth-users.ts",
-    "seed:practitioners": "tsx scripts/seed-practitioners.ts"
+    "seed:practitioners": "tsx scripts/seed-practitioners.ts",
+    "assign:academies": "tsx scripts/assign-practitioners-to-academies.ts",
+    "seed:masters": "tsx scripts/seed-masters.ts",
+    "setup:storage": "tsx scripts/setup-event-storage.ts"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",
@@ -52,10 +55,12 @@
     "dotenv": "^16.6.1",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
+    "fast-check": "^4.6.0",
     "postcss": "^8.4.32",
     "tailwindcss": "^4",
     "tailwindcss-animate": "^1.0.7",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^2.1.9"
   }
 }
