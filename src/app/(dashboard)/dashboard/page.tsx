@@ -38,23 +38,61 @@ export default async function DashboardPage() {
   const practitionerRepo = new DrizzlePractitionerRepository();
   const practitioner = await practitionerRepo.findByAuthUserId(user.id);
 
-  // If no practitioner profile yet, show a welcome screen
+  // If no practitioner profile yet, show a clear pending state
   if (!practitioner) {
     return (
-      <main className="max-w-2xl mx-auto px-4 py-20 text-center space-y-6">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary-600 mb-2">
-          <span className="text-white font-bold text-2xl" aria-hidden="true">
-            KT
-          </span>
+      <main className="max-w-lg mx-auto px-4 py-20 text-center space-y-6">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-neutral-800 border border-neutral-700 mb-2">
+          <svg
+            className="w-8 h-8 text-neutral-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.5}
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+            />
+          </svg>
         </div>
-        <h1 className="text-2xl font-semibold text-neutral-50 tracking-tight">
-          Bienvenido a Kombat Taekwondo
-        </h1>
-        <p className="text-neutral-400 text-sm leading-relaxed">
-          Tu cuenta está activa pero aún no tienes un perfil de practicante
-          asociado. Contacta a un administrador para que registre tu perfil.
-        </p>
-        <p className="text-xs text-neutral-600">{user.email}</p>
+
+        <div className="space-y-2">
+          <h1 className="text-xl font-semibold text-neutral-50 tracking-tight">
+            Perfil pendiente de activación
+          </h1>
+          <p className="text-neutral-400 text-sm leading-relaxed">
+            Tu cuenta está activa. Tu instructor debe registrar tu ficha técnica
+            para que puedas acceder a tu identidad digital, QR y perfil marcial.
+          </p>
+        </div>
+
+        <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-5 text-left space-y-3">
+          <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+            Próximos pasos
+          </p>
+          <ol className="space-y-2">
+            {[
+              "Tu instructor ingresa tu ficha técnica al sistema",
+              "El sistema genera tu ID Kombat y QR personal",
+              "Vuelve aquí — tu perfil estará disponible",
+            ].map((step, i) => (
+              <li
+                key={i}
+                className="flex items-start gap-3 text-sm text-neutral-300"
+              >
+                <span className="shrink-0 w-5 h-5 rounded-full bg-neutral-800 border border-neutral-600 flex items-center justify-center text-xs text-neutral-500 font-medium mt-0.5">
+                  {i + 1}
+                </span>
+                {step}
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        <p className="text-xs text-neutral-600">Cuenta: {user.email}</p>
       </main>
     );
   }

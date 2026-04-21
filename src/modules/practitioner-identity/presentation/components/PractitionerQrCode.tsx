@@ -7,10 +7,7 @@ interface Props {
 }
 
 export async function PractitionerQrCode({ qrToken, practitionerName }: Props) {
-  const domain =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    process.env.NEXT_PUBLIC_SUPABASE_URL ??
-    "http://localhost:3000";
+  const domain = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   const verifyUrl = `${domain}/verify/qr/${qrToken}`;
 
   const dataUrl = await QRCode.toDataURL(verifyUrl, {

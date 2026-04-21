@@ -3,6 +3,7 @@ import type { QrScanRepository } from "../../domain/interfaces/qrScanRepository"
 import { PractitionerNotFoundError } from "../../domain/errors";
 
 export interface QrVerificationResult {
+  practitionerId: string;
   fullName: string;
   grade: string;
   isActive: boolean;
@@ -30,6 +31,7 @@ export async function verifyByQrToken(
   }
 
   return {
+    practitionerId: practitioner.id,
     fullName: practitioner.fullName,
     grade: practitioner.grade,
     isActive: practitioner.isActive,
