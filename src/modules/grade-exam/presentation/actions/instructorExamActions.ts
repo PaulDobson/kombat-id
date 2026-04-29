@@ -145,6 +145,48 @@ export async function startExamAction(
             .maybeSingle();
 
           if (!data) return null;
+
+          // If the practitioner has a direct instructor_id, use it
+          if (data.instructor_id) {
+            return {
+              id: data.id,
+              grade: data.grade as Grade,
+              instructorId: data.instructor_id,
+            };
+          }
+
+          // Fallback: check if the practitioner belongs to any academy
+          // where the current instructor is responsible
+          const { data: membership } = await adminSupabase
+            .from("academy_memberships")
+            .select("academy_id")
+            .eq("practitioner_id", practitionerId)
+            .eq("is_active", true)
+            .maybeSingle();
+
+          if (membership) {
+            const { data: academy } = await adminSupabase
+              .from("academies")
+              .select("responsible_instructor_ids")
+              .eq("id", membership.academy_id)
+              .eq("is_active", true)
+              .maybeSingle();
+
+            if (
+              academy &&
+              Array.isArray(academy.responsible_instructor_ids) &&
+              academy.responsible_instructor_ids.includes(instructor.id)
+            ) {
+              // Practitioner is in the instructor's academy — allow exam
+              return {
+                id: data.id,
+                grade: data.grade as Grade,
+                instructorId: instructor.id, // satisfy the ownership check
+              };
+            }
+          }
+
+          // No direct assignment and no academy match
           return {
             id: data.id,
             grade: data.grade as Grade,

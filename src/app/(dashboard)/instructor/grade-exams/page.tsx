@@ -9,7 +9,7 @@ import { formatDateShort } from "@/lib/format-date";
 // Constants
 // ---------------------------------------------------------------------------
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 const INSTRUCTOR_ROLES = ["instructor", "profesor", "maestro"];
 
@@ -49,12 +49,39 @@ const RESULT_LABELS: Record<string, string> = {
 
 async function fetchPractitionerNames(
   ids: string[],
+  instructorId: string,
 ): Promise<Map<string, string>> {
   if (ids.length === 0) return new Map();
+
+  // 1. Find the academies where this instructor is responsible
+  const { data: academies } = await adminSupabase
+    .from("academies")
+    .select("id")
+    .contains("responsible_instructor_ids", [instructorId])
+    .eq("is_active", true);
+
+  const academyIds = (academies ?? []).map((a) => a.id as string);
+  if (academyIds.length === 0) return new Map();
+
+  // 2. Find which of the requested IDs have an active membership in those academies
+  const { data: memberships } = await adminSupabase
+    .from("academy_memberships")
+    .select("practitioner_id")
+    .in("academy_id", academyIds)
+    .in("practitioner_id", ids)
+    .eq("is_active", true);
+
+  const allowedIds = (memberships ?? []).map(
+    (m) => m.practitioner_id as string,
+  );
+  if (allowedIds.length === 0) return new Map();
+
+  // 3. Fetch names only for practitioners that belong to the instructor's academy
   const { data } = await adminSupabase
     .from("practitioners")
     .select("id, full_name")
-    .in("id", ids);
+    .in("id", allowedIds);
+
   const map = new Map<string, string>();
   for (const row of data ?? []) {
     map.set(row.id, row.full_name ?? row.id);
@@ -90,7 +117,10 @@ export default async function InstructorGradeExamsPage() {
 
   // Batch-load practitioner names for the Alumno column
   const practitionerIds = [...new Set(exams.map((e) => e.practitionerId))];
-  const nameMap = await fetchPractitionerNames(practitionerIds);
+  const nameMap = await fetchPractitionerNames(
+    practitionerIds,
+    practitioner.id,
+  );
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-5">
