@@ -1,0 +1,2 @@
+ALTER TABLE practitioners
+  ADD COLUMN IF NOT EXISTS height_cm SMALLINT CHECK (height_cm BETWEEN 50 AND 250);

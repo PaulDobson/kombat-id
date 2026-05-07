@@ -17,9 +17,14 @@ import {
 import {
   DuplicateRutError,
   PractitionerNotFoundError,
+  PractitionerInactiveError,
   UnauthorizedError,
 } from "../../domain/errors";
 import { DomainError } from "@/lib/errors";
+import {
+  updateStudentProfile,
+  UpdateStudentProfileInputSchema,
+} from "../../application/use-cases/updateStudentProfile";
 
 type ActionResult<T = void> =
   | { success: true; data: T }
@@ -461,6 +466,137 @@ export async function registerStudentAction(
       };
     }
     console.error("[registerStudentAction] Unexpected error:", err);
+    return {
+      success: false,
+      error: "Error interno del servidor",
+      code: "INTERNAL_ERROR",
+    };
+  }
+}
+
+// ── updateStudentProfileAction ────────────────────────────────────────────────
+
+export async function updateStudentProfileAction(
+  rawInput: unknown,
+): Promise<ActionResult> {
+  // 1. Authentication
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: "No autenticado", code: "FORBIDDEN" };
+  }
+
+  // 2. Verify instructor role
+  const { data: instructor } = await adminSupabase
+    .from("practitioners")
+    .select("id, role")
+    .eq("auth_user_id", user.id)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (
+    !instructor ||
+    !INSTRUCTOR_ROLES.includes(
+      instructor.role as (typeof INSTRUCTOR_ROLES)[number],
+    )
+  ) {
+    return {
+      success: false,
+      error: "Solo instructores, profesores o maestros pueden editar alumnos",
+      code: "FORBIDDEN",
+    };
+  }
+
+  // 3. Validate input
+  const parsed = UpdateStudentProfileInputSchema.safeParse(rawInput);
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.message,
+      code: "VALIDATION_ERROR",
+    };
+  }
+
+  const { publicId } = parsed.data;
+
+  // 4. Verify the student belongs to this instructor (direct or via academy)
+  const { data: studentRow } = await adminSupabase
+    .from("practitioners")
+    .select("id, instructor_id")
+    .eq("id", publicId)
+    .maybeSingle();
+
+  if (!studentRow) {
+    return {
+      success: false,
+      error: "Alumno no encontrado",
+      code: "NOT_FOUND",
+    };
+  }
+
+  const isDirectStudent = studentRow.instructor_id === instructor.id;
+
+  let isAcademyStudent = false;
+  if (!isDirectStudent) {
+    const { data: studentMemberships } = await adminSupabase
+      .from("academy_memberships")
+      .select("academy_id")
+      .eq("practitioner_id", studentRow.id)
+      .eq("is_active", true);
+
+    const studentAcademyIds = (studentMemberships ?? []).map(
+      (m: { academy_id: string }) => m.academy_id,
+    );
+
+    if (studentAcademyIds.length > 0) {
+      const { data: instructorAcademies } = await adminSupabase
+        .from("academies")
+        .select("id")
+        .contains("responsible_instructor_ids", [instructor.id])
+        .in("id", studentAcademyIds);
+
+      isAcademyStudent = (instructorAcademies ?? []).length > 0;
+    }
+  }
+
+  if (!isDirectStudent && !isAcademyStudent) {
+    return {
+      success: false,
+      error: "No tienes permiso para editar este alumno",
+      code: "FORBIDDEN",
+    };
+  }
+
+  // 5. Execute use case
+  try {
+    const practitionerRepo = new DrizzlePractitionerRepository();
+    await updateStudentProfile(parsed.data, { practitionerRepo });
+
+    // 6. Revalidate
+    revalidatePath(`/instructor/students/${publicId}`);
+    revalidatePath(`/instructor/students/${publicId}/edit`);
+
+    // 7. Return success
+    return { success: true, data: undefined };
+  } catch (err) {
+    if (err instanceof PractitionerNotFoundError) {
+      return {
+        success: false,
+        error: "Alumno no encontrado",
+        code: "NOT_FOUND",
+      };
+    }
+    if (err instanceof PractitionerInactiveError) {
+      return {
+        success: false,
+        error: "El alumno está inactivo",
+        code: "FORBIDDEN",
+      };
+    }
+    console.error("[updateStudentProfileAction] Unexpected error:", err);
     return {
       success: false,
       error: "Error interno del servidor",

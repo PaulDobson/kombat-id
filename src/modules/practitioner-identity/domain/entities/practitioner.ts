@@ -23,6 +23,7 @@ export interface Practitioner {
   photoPath: string | null;
   qrToken: string; // UUID opaco para verificación QR
   weightKg: number | null;
+  heightCm: number | null; // estatura en centímetros (opcional)
   deactivatedAt: string | null;
   deactivationReason: string | null;
   updatedAt: string;
