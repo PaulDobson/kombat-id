@@ -225,6 +225,16 @@ export default async function InstructorStudentDetailPage({
               {academy && <> · {academy.name}</>}
             </p>
           </div>
+
+          {/* Actions */}
+          <div className="shrink-0">
+            <Link
+              href={`/instructor/students/${id}/edit`}
+              className="inline-flex items-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+            >
+              Editar alumno
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -252,6 +262,9 @@ export default async function InstructorStudentDetailPage({
               />
               {practitioner.weightKg && (
                 <Field label="Peso" value={`${practitioner.weightKg} kg`} />
+              )}
+              {practitioner.heightCm && (
+                <Field label="Estatura" value={`${practitioner.heightCm} cm`} />
               )}
               {practitioner.contactEmail && (
                 <Field label="Email" value={practitioner.contactEmail} />

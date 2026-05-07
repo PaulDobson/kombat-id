@@ -979,6 +979,7 @@ export type Database = {
           rut: string;
           start_date: string;
           updated_at: string;
+          height_cm: number | null;
           weight_kg: number | null;
         };
         Insert: {
@@ -1005,6 +1006,7 @@ export type Database = {
           rut: string;
           start_date: string;
           updated_at?: string;
+          height_cm?: number | null;
           weight_kg?: number | null;
         };
         Update: {
@@ -1031,6 +1033,7 @@ export type Database = {
           rut?: string;
           start_date?: string;
           updated_at?: string;
+          height_cm?: number | null;
           weight_kg?: number | null;
         };
         Relationships: [

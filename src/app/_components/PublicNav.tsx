@@ -9,10 +9,13 @@ export function PublicNav() {
       >
         {/* Brand */}
         <Link href="/" className="flex items-center gap-2.5 shrink-0">
-          <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center">
-            <span className="text-white font-bold text-xs" aria-hidden="true">
-              KT
-            </span>
+          <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/KombatLogoSquare.webp"
+              alt="Kombat Taekwondo"
+              className="w-full h-full object-cover"
+            />
           </div>
           <span className="font-semibold text-neutral-50 tracking-tight hidden sm:block">
             Kombat Taekwondo
@@ -32,6 +35,12 @@ export function PublicNav() {
             className="text-sm text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800 px-3 py-1.5 rounded-lg transition-colors"
           >
             Verificar
+          </Link>
+          <Link
+            href="/referee-registration"
+            className="text-sm text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800 px-3 py-1.5 rounded-lg transition-colors hidden md:block"
+          >
+            Árbitros
           </Link>
         </div>
 

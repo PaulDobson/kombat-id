@@ -41,10 +41,13 @@ export async function DashboardNav() {
     <header className="border-b border-neutral-800 bg-neutral-950 sticky top-0 z-30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
         <Link href="/dashboard" className="flex items-center gap-2.5 shrink-0">
-          <div className="w-7 h-7 rounded-lg bg-primary-600 flex items-center justify-center">
-            <span className="text-white font-bold text-xs" aria-hidden="true">
-              KT
-            </span>
+          <div className="w-7 h-7 rounded-lg overflow-hidden shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/KombatLogoSquare.webp"
+              alt="Kombat Taekwondo"
+              className="w-full h-full object-cover"
+            />
           </div>
           <span className="font-semibold text-neutral-50 text-sm tracking-tight hidden sm:block">
             Kombat Taekwondo
@@ -71,6 +74,7 @@ export async function DashboardNav() {
                   { href: "/admin/grade-exams", label: "Aprobaciones" },
                 ]}
               />
+              <NavLink href="/admin/referee-registrations">Árbitros</NavLink>
             </>
           ) : isInstructor ? (
             <>

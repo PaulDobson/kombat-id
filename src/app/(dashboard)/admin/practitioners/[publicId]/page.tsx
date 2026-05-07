@@ -261,6 +261,9 @@ export default async function AdminPractitionerDetailPage({
               {practitioner.weightKg && (
                 <Field label="Peso" value={`${practitioner.weightKg} kg`} />
               )}
+              {practitioner.heightCm && (
+                <Field label="Estatura" value={`${practitioner.heightCm} cm`} />
+              )}
               {practitioner.contactEmail && (
                 <Field label="Email" value={practitioner.contactEmail} />
               )}

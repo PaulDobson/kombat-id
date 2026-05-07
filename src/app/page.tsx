@@ -535,6 +535,12 @@ export default async function LandingPage() {
             >
               Ver academias →
             </Link>
+            <Link
+              href="/referee-registration"
+              className="w-full sm:w-auto hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 px-8 py-4 rounded-xl text-sm transition-colors"
+            >
+              Regístrate como árbitro →
+            </Link>
           </div>
         </div>
       </section>
@@ -543,11 +549,13 @@ export default async function LandingPage() {
       <footer className="border-t border-neutral-800 px-6 py-10">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-neutral-600">
           <div className="flex items-center gap-2.5">
-            <div
-              className="w-6 h-6 rounded-md bg-primary-600 flex items-center justify-center"
-              aria-hidden="true"
-            >
-              <span className="text-white font-bold text-[9px]">KT</span>
+            <div className="w-6 h-6 rounded-md overflow-hidden shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/images/KombatLogoSquare.webp"
+                alt="Kombat Taekwondo"
+                className="w-full h-full object-cover"
+              />
             </div>
             <span className="text-neutral-500 font-medium">
               Kombat Taekwondo Chile

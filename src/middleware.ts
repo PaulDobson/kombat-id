@@ -9,6 +9,7 @@ const PUBLIC_ROUTES = [
   "/academies",
   "/events",
   "/design",
+  "/referee-registration", // public referee registration form
   "/",
 ];
 
@@ -29,12 +30,25 @@ export async function middleware(request: NextRequest) {
 
   // Redirect authenticated users away from auth pages
   if (user && AUTH_ROUTES.some((r) => pathname.startsWith(r))) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    const role = user.app_metadata?.role as string | undefined;
+    const home = role === "referee" ? "/referee/dashboard" : "/dashboard";
+    return NextResponse.redirect(new URL(home, request.url));
   }
 
   // Redirect unauthenticated users away from protected routes
   if (!user) {
     return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  // Redirect referee users away from the practitioner dashboard
+  const role = user.app_metadata?.role as string | undefined;
+  if (role === "referee" && pathname.startsWith("/dashboard")) {
+    return NextResponse.redirect(new URL("/referee/dashboard", request.url));
+  }
+
+  // Redirect non-referee users away from the referee portal
+  if (role !== "referee" && pathname.startsWith("/referee")) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   return response;
