@@ -74,7 +74,7 @@ export async function DashboardNav() {
                   { href: "/admin/grade-exams", label: "Aprobaciones" },
                 ]}
               />
-              <NavLink href="/admin/referee-registrations">Árbitros</NavLink>
+              <NavLink href="/admin/referees">Lista de árbitros</NavLink>
             </>
           ) : isInstructor ? (
             <>
