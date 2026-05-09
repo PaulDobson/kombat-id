@@ -37,10 +37,16 @@ export function PublicNav() {
             Verificar
           </Link>
           <Link
-            href="/referee-registration"
+            href="/referees"
             className="text-sm text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800 px-3 py-1.5 rounded-lg transition-colors hidden md:block"
           >
             Árbitros
+          </Link>
+          <Link
+            href="/referee-registration"
+            className="text-sm text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800 px-3 py-1.5 rounded-lg transition-colors hidden md:block"
+          >
+            Registro
           </Link>
         </div>
 

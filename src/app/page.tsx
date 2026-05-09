@@ -4,6 +4,13 @@ import { PublicNav } from "@/app/_components/PublicNav";
 import { HeroCarousel } from "@/app/_components/HeroCarousel";
 import { formatDateShort } from "@/lib/format-date";
 import type { EventType } from "@/types/database.types";
+import {
+  type RefereeListItem,
+  toRefereeListItem,
+} from "@/modules/referee-registration/presentation/components/refereeListItem";
+import { RefereeGrid } from "@/modules/referee-registration/presentation/components/RefereeGrid";
+import { listRefereeRegistrations } from "@/modules/referee-registration/application/use-cases/listRefereeRegistrations";
+import { SupabaseRefereeRegistrationRepository } from "@/modules/referee-registration/infrastructure/repositories/supabaseRefereeRegistrationRepository";
 
 interface MartialEvent {
   id: string;
@@ -22,6 +29,15 @@ async function getUpcomingEvents(): Promise<MartialEvent[]> {
     .order("event_date", { ascending: true })
     .limit(6);
   return (data as MartialEvent[]) ?? [];
+}
+
+async function getApprovedReferees(): Promise<RefereeListItem[]> {
+  const repo = new SupabaseRefereeRegistrationRepository();
+  const { items } = await listRefereeRegistrations(
+    { status: "approved", pageSize: 200 },
+    { repo },
+  );
+  return items.map(toRefereeListItem);
 }
 
 const EVENT_TYPE_LABELS: Record<EventType, string> = {
@@ -87,8 +103,17 @@ const FEATURES = [
   },
 ];
 
-export default async function LandingPage() {
-  const upcoming = await getUpcomingEvents();
+export default async function LandingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ search?: string }>;
+}) {
+  const [upcoming, approvedReferees] = await Promise.all([
+    getUpcomingEvents(),
+    getApprovedReferees(),
+  ]);
+  const { search } = await searchParams;
+  const searchQuery = search?.trim() || undefined;
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-50 overflow-x-hidden">
@@ -498,6 +523,50 @@ export default async function LandingPage() {
           </div>
         </section>
       )}
+
+      {/* ── ÁRBITROS OFICIALES ───────────────────────────────────────────── */}
+      <section className="border-t border-neutral-800 bg-neutral-900/20">
+        <div className="max-w-7xl mx-auto px-6 py-20 sm:py-24">
+          <div className="flex items-end justify-between mb-10 gap-4 flex-wrap">
+            <div className="space-y-2">
+              <span className="inline-flex items-center gap-2 bg-neutral-800 border border-neutral-700 text-neutral-400 text-xs font-medium px-3 py-1.5 rounded-full">
+                Directorio
+              </span>
+              <h2 className="text-3xl font-bold tracking-tight">
+                Árbitros Oficiales
+              </h2>
+              <p className="text-sm text-neutral-400">
+                Árbitros certificados de Kombat Taekwondo Chile
+              </p>
+            </div>
+            <span className="text-sm text-neutral-500 shrink-0">
+              {approvedReferees.length}{" "}
+              {approvedReferees.length === 1 ? "árbitro" : "árbitros"}
+            </span>
+          </div>
+          <form method="GET" className="mb-8">
+            <div className="relative max-w-sm">
+              <span
+                aria-hidden="true"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm"
+              >
+                🔍
+              </span>
+              <input
+                type="search"
+                name="search"
+                defaultValue={searchQuery ?? ""}
+                placeholder="Buscar por nombre..."
+                className="w-full rounded-xl border border-neutral-700 bg-neutral-800/60 pl-9 pr-4 py-2.5 text-sm text-neutral-200 placeholder:text-neutral-500 focus:border-primary-600 focus:outline-none focus:ring-1 focus:ring-primary-600"
+              />
+            </div>
+          </form>
+          <RefereeGrid
+            referees={approvedReferees}
+            {...(searchQuery !== undefined && { searchQuery })}
+          />
+        </div>
+      </section>
 
       {/* ── CTA FINAL ─────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden border-t border-neutral-800">
