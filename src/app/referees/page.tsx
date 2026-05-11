@@ -1,3 +1,4 @@
+import { Search } from "lucide-react";
 import { PublicNav } from "@/app/_components/PublicNav";
 import {
   type RefereeListItem,
@@ -53,12 +54,11 @@ export default async function RefereesPage({
         {/* Search */}
         <form method="GET" className="mb-10">
           <div className="relative max-w-sm">
-            <span
+            <Search
               aria-hidden="true"
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm"
-            >
-              🔍
-            </span>
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500"
+              size={14}
+            />
             <input
               type="search"
               name="search"
