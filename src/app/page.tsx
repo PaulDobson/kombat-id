@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Search } from "lucide-react";
 import { adminSupabase } from "@/lib/supabase/admin";
 import { PublicNav } from "@/app/_components/PublicNav";
 import { HeroCarousel } from "@/app/_components/HeroCarousel";
@@ -539,19 +540,26 @@ export default async function LandingPage({
                 Árbitros certificados de Kombat Taekwondo Chile
               </p>
             </div>
-            <span className="text-sm text-neutral-500 shrink-0">
-              {approvedReferees.length}{" "}
-              {approvedReferees.length === 1 ? "árbitro" : "árbitros"}
-            </span>
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="text-sm text-neutral-500">
+                {approvedReferees.length}{" "}
+                {approvedReferees.length === 1 ? "árbitro" : "árbitros"}
+              </span>
+              <Link
+                href="/referees"
+                className="text-xs text-primary-400 hover:text-primary-300 transition-colors"
+              >
+                Ver todos →
+              </Link>
+            </div>
           </div>
           <form method="GET" className="mb-8">
             <div className="relative max-w-sm">
-              <span
+              <Search
                 aria-hidden="true"
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm"
-              >
-                🔍
-              </span>
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500"
+                size={14}
+              />
               <input
                 type="search"
                 name="search"
@@ -631,6 +639,12 @@ export default async function LandingPage({
             </span>
           </div>
           <nav className="flex items-center gap-6" aria-label="Footer">
+            <Link
+              href="/referees"
+              className="hover:text-neutral-400 transition-colors"
+            >
+              Árbitros
+            </Link>
             <Link
               href="/academies"
               className="hover:text-neutral-400 transition-colors"

@@ -10,6 +10,7 @@ const PUBLIC_ROUTES = [
   "/events",
   "/design",
   "/referee-registration", // public referee registration form
+  "/referees", // public referee directory
   "/",
 ];
 
