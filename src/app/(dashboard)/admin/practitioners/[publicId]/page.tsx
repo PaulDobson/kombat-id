@@ -6,6 +6,7 @@ import { DrizzleCertificationRepository } from "@/modules/practitioner-identity/
 import { DrizzleMartialHistoryRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzleMartialHistoryRepository";
 import Link from "next/link";
 import { DeactivateButton } from "./DeactivateButton";
+import { ROLE_LABELS } from "@/lib/roles";
 
 async function requireAdminUser() {
   const supabase = await createClient();
@@ -57,13 +58,6 @@ const GENDER_LABELS: Record<string, string> = {
   male: "Masculino",
   female: "Femenino",
   other: "Otro",
-};
-
-const ROLE_LABELS: Record<string, string> = {
-  alumno: "Alumno",
-  instructor: "Instructor",
-  profesor: "Profesor",
-  maestro: "Maestro",
 };
 
 const CERT_TYPE_LABELS: Record<string, string> = {

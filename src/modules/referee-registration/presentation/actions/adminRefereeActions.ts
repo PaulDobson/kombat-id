@@ -5,6 +5,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
+import { assignSystemRole } from "@/lib/roles";
 import { SupabaseRefereeRegistrationRepository } from "../../infrastructure/repositories/supabaseRefereeRegistrationRepository";
 import { SupabaseRefereePortalPublicationRepository } from "../../infrastructure/repositories/supabaseRefereePortalPublicationRepository";
 import { approveRefereeRegistration } from "../../application/use-cases/approveRefereeRegistration";
@@ -78,6 +79,8 @@ const refereeAuthService: RefereeAuthService = {
           );
         }
       }
+      // Sincronizar en tabla user_roles (idempotente)
+      await assignSystemRole(existing.id, "referee", null, adminSupabase);
       return { authUserId: existing.id };
     }
 
@@ -96,6 +99,9 @@ const refereeAuthService: RefereeAuthService = {
     if (error || !data?.user) {
       throw new Error(error?.message ?? "Unknown error creating auth user");
     }
+
+    // Sincronizar en tabla user_roles
+    await assignSystemRole(data.user.id, "referee", null, adminSupabase);
 
     return { authUserId: data.user.id };
   },

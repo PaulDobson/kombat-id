@@ -2,6 +2,7 @@ import { DrizzleAcademyRepository } from "@/modules/practitioner-identity/infras
 import { DrizzlePractitionerRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzlePractitionerRepository";
 import { PublicNav } from "@/app/_components/PublicNav";
 import type { ChileanRegion } from "@/modules/practitioner-identity/domain/entities/academy";
+import { ROLE_LABELS } from "@/lib/roles";
 
 const REGION_LABELS: Record<ChileanRegion, string> = {
   arica_y_parinacota: "Arica y Parinacota",
@@ -20,12 +21,6 @@ const REGION_LABELS: Record<ChileanRegion, string> = {
   los_lagos: "Los Lagos",
   aysen: "Aysén",
   magallanes: "Magallanes",
-};
-
-const ROLE_LABELS: Record<string, string> = {
-  instructor: "Instructor",
-  profesor: "Profesor",
-  maestro: "Maestro",
 };
 
 export default async function PublicAcademiesPage() {

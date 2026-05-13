@@ -482,7 +482,7 @@ export default async function LandingPage({
                 </p>
               </div>
               <Link
-                href="/login"
+                href="/events"
                 className="text-xs text-primary-400 hover:text-primary-300 transition-colors shrink-0"
               >
                 Ver todos →

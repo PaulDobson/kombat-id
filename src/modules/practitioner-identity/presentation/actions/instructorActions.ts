@@ -21,6 +21,7 @@ import {
   UnauthorizedError,
 } from "../../domain/errors";
 import { DomainError } from "@/lib/errors";
+import { INSTRUCTOR_ROLES } from "@/lib/roles";
 import {
   updateStudentProfile,
   UpdateStudentProfileInputSchema,
@@ -29,8 +30,6 @@ import {
 type ActionResult<T = void> =
   | { success: true; data: T }
   | { success: false; error: string; code: string };
-
-const INSTRUCTOR_ROLES = ["instructor", "profesor", "maestro"] as const;
 
 const RegisterStudentInputSchema = RegisterPractitionerInputSchema.omit({
   instructorId: true,

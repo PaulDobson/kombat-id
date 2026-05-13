@@ -7,6 +7,7 @@ import { adminSupabase } from "@/lib/supabase/admin";
 import { DrizzleEventRegistrationRepository } from "../../infrastructure/repositories/drizzleEventRegistrationRepository";
 import { enrollStudents } from "../../application/use-cases/enrollStudents";
 import { EventAtCapacityError } from "../../domain/errors";
+import { INSTRUCTOR_ROLES } from "@/lib/roles";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -15,8 +16,6 @@ import { EventAtCapacityError } from "../../domain/errors";
 type ActionResult<T = void> =
   | { success: true; data: T }
   | { success: false; error: string; code: string };
-
-const INSTRUCTOR_ROLES = ["instructor", "profesor", "maestro"] as const;
 
 // ---------------------------------------------------------------------------
 // Schema

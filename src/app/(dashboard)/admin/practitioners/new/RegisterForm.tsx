@@ -4,18 +4,13 @@ import { useTransition, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { registerPractitionerAction } from "@/modules/practitioner-identity/presentation/actions/practitionerActions";
+import { ROLE_LABELS } from "@/lib/roles";
 
 const inputClass =
   "w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-sm text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent";
 const labelClass = "block text-sm font-medium text-neutral-300 mb-1";
 const selectClass =
   "w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-sm text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent";
-
-const ROLE_LABELS: Record<string, string> = {
-  instructor: "Instructor",
-  profesor: "Profesor",
-  maestro: "Maestro",
-};
 
 interface InstructorOption {
   id: string;
