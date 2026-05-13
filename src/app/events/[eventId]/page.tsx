@@ -6,6 +6,7 @@ import Image from "next/image";
 import type { EventType, EventAttachment } from "@/types/database.types";
 import { formatDateWithWeekday, formatDateLong } from "@/lib/format-date";
 import { ShareButton } from "./ShareButton";
+import { ArrowLeft } from "lucide-react";
 
 async function getAdminStatus(): Promise<boolean> {
   try {
@@ -168,9 +169,10 @@ export default async function PublicEventDetailPage({
       <div className="max-w-4xl mx-auto px-6 pt-6 space-y-3">
         <Link
           href="/events"
-          className="text-sm text-neutral-400 hover:text-neutral-200 transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-neutral-200 transition-colors"
         >
-          ← Volver a eventos
+          <ArrowLeft size={16} />
+          Volver a eventos
         </Link>
 
         {isAdmin && (

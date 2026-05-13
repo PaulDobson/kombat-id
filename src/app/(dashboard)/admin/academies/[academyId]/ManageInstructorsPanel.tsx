@@ -6,6 +6,7 @@ import {
   addInstructorToAcademyAction,
   removeInstructorFromAcademyAction,
 } from "@/modules/practitioner-identity/presentation/actions/academyActions";
+import { ROLE_LABELS } from "@/lib/roles";
 
 interface InstructorOption {
   id: string;
@@ -13,12 +14,6 @@ interface InstructorOption {
   rut: string;
   role: string;
 }
-
-const ROLE_LABELS: Record<string, string> = {
-  instructor: "Instructor",
-  profesor: "Profesor",
-  maestro: "Maestro",
-};
 
 export function ManageInstructorsPanel({
   academyId,

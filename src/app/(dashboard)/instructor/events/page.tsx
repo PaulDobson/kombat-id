@@ -3,6 +3,7 @@ import { adminSupabase } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { EventType } from "@/types/database.types";
+import { isInstructorRole } from "@/lib/roles";
 import { formatDateWithWeekday } from "@/lib/format-date";
 import {
   formatRegistrationFee,
@@ -10,8 +11,6 @@ import {
 } from "@/modules/event-registration/domain/entities/eventRegistration";
 import { DrizzleEventRegistrationRepository } from "@/modules/event-registration/infrastructure/repositories/drizzleEventRegistrationRepository";
 import { EventDetailDialog } from "./EventDetailDialog";
-
-const INSTRUCTOR_ROLES = ["instructor", "profesor", "maestro"];
 
 const EVENT_TYPE_LABELS: Record<EventType, string> = {
   competition: "Competencia",
@@ -34,7 +33,7 @@ export default async function InstructorEventsPage() {
     .eq("auth_user_id", user.id)
     .maybeSingle();
 
-  if (!practitioner || !INSTRUCTOR_ROLES.includes(practitioner.role ?? "")) {
+  if (!practitioner || !isInstructorRole(practitioner.role ?? "")) {
     redirect("/dashboard");
   }
 

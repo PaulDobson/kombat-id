@@ -17,7 +17,18 @@ export type Grade = "white" | "yellow" | "green" | "blue" | "red" | "black";
 export type EventType = "competition" | "seminar" | "exam";
 export type EventScope = "national" | "international";
 export type RankingType = "national" | "international" | "combined";
+// Roles jerárquicos aplicables a practicantes (campo practitioners.role)
 export type PractitionerRole = "alumno" | "instructor" | "profesor" | "maestro";
+
+// Todos los roles del sistema (tabla roles)
+export type SystemRole =
+  | "administrador"
+  | "alumno"
+  | "instructor"
+  | "profesor"
+  | "maestro"
+  | "referee"
+  | (string & {});
 export type AgeCategory = "infantil" | "juvenil" | "adulto" | "senior";
 export type AgeRange = "under-12" | "12-17" | "18-30" | "30+";
 export type WeightCategory =
@@ -80,8 +91,6 @@ export type Json =
   | null
   | { [key: string]: Json | undefined }
   | Json[];
-
-// ============================================================
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
@@ -970,6 +979,7 @@ export type Database = {
           full_name: string;
           gender: string;
           grade: string;
+          height_cm: number | null;
           id: string;
           instructor_id: string | null;
           is_active: boolean;
@@ -979,7 +989,6 @@ export type Database = {
           rut: string;
           start_date: string;
           updated_at: string;
-          height_cm: number | null;
           weight_kg: number | null;
         };
         Insert: {
@@ -997,6 +1006,7 @@ export type Database = {
           full_name: string;
           gender: string;
           grade?: string;
+          height_cm?: number | null;
           id?: string;
           instructor_id?: string | null;
           is_active?: boolean;
@@ -1006,7 +1016,6 @@ export type Database = {
           rut: string;
           start_date: string;
           updated_at?: string;
-          height_cm?: number | null;
           weight_kg?: number | null;
         };
         Update: {
@@ -1024,6 +1033,7 @@ export type Database = {
           full_name?: string;
           gender?: string;
           grade?: string;
+          height_cm?: number | null;
           id?: string;
           instructor_id?: string | null;
           is_active?: boolean;
@@ -1033,7 +1043,6 @@ export type Database = {
           rut?: string;
           start_date?: string;
           updated_at?: string;
-          height_cm?: number | null;
           weight_kg?: number | null;
         };
         Relationships: [
@@ -1043,6 +1052,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "practitioners";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "practitioners_role_fkey";
+            columns: ["role"];
+            isOneToOne: false;
+            referencedRelation: "roles";
+            referencedColumns: ["name"];
           },
         ];
       };
@@ -1190,6 +1206,193 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      referee_event_registrations: {
+        Row: {
+          created_at: string;
+          id: string;
+          publication_id: string;
+          referee_user_id: string;
+          registered_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          publication_id: string;
+          referee_user_id: string;
+          registered_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          publication_id?: string;
+          referee_user_id?: string;
+          registered_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "referee_event_registrations_publication_id_fkey";
+            columns: ["publication_id"];
+            isOneToOne: false;
+            referencedRelation: "referee_portal_publications";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      referee_portal_publications: {
+        Row: {
+          body: string;
+          category: string;
+          cover_image_path: string | null;
+          created_at: string;
+          created_by: string;
+          event_date: string | null;
+          event_location: string | null;
+          id: string;
+          is_event: boolean;
+          max_participants: number | null;
+          published_at: string;
+          registration_deadline: string | null;
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          body: string;
+          category: string;
+          cover_image_path?: string | null;
+          created_at?: string;
+          created_by: string;
+          event_date?: string | null;
+          event_location?: string | null;
+          id?: string;
+          is_event?: boolean;
+          max_participants?: number | null;
+          published_at?: string;
+          registration_deadline?: string | null;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          body?: string;
+          category?: string;
+          cover_image_path?: string | null;
+          created_at?: string;
+          created_by?: string;
+          event_date?: string | null;
+          event_location?: string | null;
+          id?: string;
+          is_event?: boolean;
+          max_participants?: number | null;
+          published_at?: string;
+          registration_deadline?: string | null;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      roles: {
+        Row: {
+          name: string;
+          label: string;
+          description: string | null;
+          is_system: boolean;
+          created_at: string;
+        };
+        Insert: {
+          name: string;
+          label: string;
+          description?: string | null;
+          is_system?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          name?: string;
+          label?: string;
+          description?: string | null;
+          is_system?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      user_roles: {
+        Row: {
+          user_id: string;
+          role_name: string;
+          granted_at: string;
+          granted_by: string | null;
+        };
+        Insert: {
+          user_id: string;
+          role_name: string;
+          granted_at?: string;
+          granted_by?: string | null;
+        };
+        Update: {
+          user_id?: string;
+          role_name?: string;
+          granted_at?: string;
+          granted_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_role_name_fkey";
+            columns: ["role_name"];
+            isOneToOne: false;
+            referencedRelation: "roles";
+            referencedColumns: ["name"];
+          },
+        ];
+      };
+      referee_registrations: {
+        Row: {
+          approved_at: string | null;
+          approved_by: string | null;
+          auth_user_id: string | null;
+          certificate_path: string | null;
+          country: string;
+          created_at: string;
+          email: string;
+          full_name: string;
+          id: string;
+          registration_number: string;
+          rejected_at: string | null;
+          rejected_by: string | null;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          approved_at?: string | null;
+          approved_by?: string | null;
+          auth_user_id?: string | null;
+          certificate_path?: string | null;
+          country: string;
+          created_at?: string;
+          email: string;
+          full_name: string;
+          id?: string;
+          registration_number: string;
+          rejected_at?: string | null;
+          rejected_by?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          approved_at?: string | null;
+          approved_by?: string | null;
+          auth_user_id?: string | null;
+          certificate_path?: string | null;
+          country?: string;
+          created_at?: string;
+          email?: string;
+          full_name?: string;
+          id?: string;
+          registration_number?: string;
+          rejected_at?: string | null;
+          rejected_by?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
     };
     Views: {

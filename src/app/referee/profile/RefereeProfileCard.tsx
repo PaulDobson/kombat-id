@@ -2,6 +2,7 @@
 
 import type { RefereeRegistrationStatus } from "@/modules/referee-registration/domain/entities/refereeRegistration";
 import { DownloadCertificateButton } from "./DownloadCertificateButton";
+import { EditRefereeProfileForm } from "./EditRefereeProfileForm";
 
 interface RefereeProfile {
   id: string;
@@ -160,6 +161,16 @@ export function RefereeProfileCard({ profile }: Props) {
             <InfoRow label="Nombre completo" value={profile.fullName} />
             <InfoRow label="Correo electrónico" value={profile.email} />
             <InfoRow label="País" value={profile.country} />
+          </div>
+          <div className="pt-1 border-t border-neutral-800">
+            <EditRefereeProfileForm
+              registrationId={profile.id}
+              initialValues={{
+                fullName: profile.fullName,
+                country: profile.country,
+                registrationNumber: profile.registrationNumber,
+              }}
+            />
           </div>
         </div>
 

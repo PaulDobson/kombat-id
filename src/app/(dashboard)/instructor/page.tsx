@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Grade } from "@/modules/practitioner-identity/domain/entities/practitioner";
 import type { ChileanRegion } from "@/modules/practitioner-identity/domain/entities/academy";
-import type { PractitionerRole } from "@/types/database.types";
+import { isInstructorRole } from "@/lib/roles";
 import { formatDateShort } from "@/lib/format-date";
 import { RequestCertificationForm } from "./RequestCertificationForm";
 
@@ -14,12 +14,6 @@ import { RequestCertificationForm } from "./RequestCertificationForm";
 
 const PAGE_SIZE = 10;
 const REQ_PAGE_SIZE = 10;
-
-const INSTRUCTOR_ROLES: PractitionerRole[] = [
-  "instructor",
-  "profesor",
-  "maestro",
-];
 
 const GRADE_LABELS: Record<Grade, string> = {
   white: "Blanco",
@@ -134,10 +128,7 @@ export default async function InstructorPage({
     .maybeSingle();
 
   // Guard: must be an instructor role
-  if (
-    !practitioner ||
-    !INSTRUCTOR_ROLES.includes(practitioner.role as PractitionerRole)
-  ) {
+  if (!practitioner || !isInstructorRole(practitioner.role as string)) {
     redirect("/dashboard");
   }
 

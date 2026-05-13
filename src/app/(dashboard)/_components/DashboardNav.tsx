@@ -74,7 +74,16 @@ export async function DashboardNav() {
                   { href: "/admin/grade-exams", label: "Aprobaciones" },
                 ]}
               />
-              <NavLink href="/admin/referees">Lista de árbitros</NavLink>
+              <NavDropdown
+                label="Árbitros"
+                items={[
+                  { href: "/admin/referees", label: "Lista de árbitros" },
+                  {
+                    href: "/admin/referee-registrations",
+                    label: "Solicitudes de registro",
+                  },
+                ]}
+              />
             </>
           ) : isInstructor ? (
             <>
