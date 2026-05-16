@@ -454,6 +454,34 @@ export async function registerStudentAction(
       { practitionerRepo },
     );
 
+    // Students registered by instructors start as INACTIVE — they require
+    // admin membership verification before being activated.
+    await adminSupabase
+      .from("practitioners")
+      .update({ is_active: false })
+      .eq("id", result.publicId);
+
+    // Assign the new student to the instructor's first active academy automatically.
+    // This ensures the student appears in the instructor's panel immediately.
+    const { data: instructorAcademies } = await adminSupabase
+      .from("academies")
+      .select("id")
+      .contains("responsible_instructor_ids", [practitioner.id as string])
+      .eq("is_active", true)
+      .order("created_at", { ascending: true })
+      .limit(1);
+
+    const firstAcademy = instructorAcademies?.[0];
+    if (firstAcademy) {
+      await adminSupabase.from("academy_memberships").insert({
+        id: crypto.randomUUID(),
+        academy_id: firstAcademy.id as string,
+        practitioner_id: result.publicId,
+        is_active: true,
+        joined_at: new Date().toISOString(),
+      });
+    }
+
     revalidatePath("/instructor");
     return { success: true, data: { publicId: result.publicId } };
   } catch (err) {

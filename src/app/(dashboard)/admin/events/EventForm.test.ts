@@ -18,18 +18,18 @@ const EventFormSchema = z
       .optional(),
     isFree: z.boolean(),
     registration_fee: z
-      .number({ invalid_type_error: "El precio debe ser un número válido" })
+      .number({ error: "El precio debe ser un número válido" })
       .min(0, "El precio no puede ser negativo")
       .nullable()
       .optional(),
     min_participants: z
-      .number({ invalid_type_error: "El valor debe ser mayor que cero" })
+      .number({ error: "El valor debe ser mayor que cero" })
       .int()
       .min(1, "El valor debe ser mayor que cero")
       .nullable()
       .optional(),
     max_participants: z
-      .number({ invalid_type_error: "El valor debe ser mayor que cero" })
+      .number({ error: "El valor debe ser mayor que cero" })
       .int()
       .min(1, "El valor debe ser mayor que cero")
       .nullable()

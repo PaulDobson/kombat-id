@@ -158,14 +158,14 @@ export default async function InstructorPage({
     );
   }
 
-  // Build students query: only role='alumno' from the academy, with optional name search
+  // Build students query: members of the instructor's academies, with optional name search
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let studentsQuery: any = adminSupabase
     .from("practitioners")
     .select("id, full_name, rut, grade, dan, is_active, start_date", {
       count: "exact",
     })
-    .eq("role", "alumno")
+    .not("role", "in", '("instructor","profesor","maestro")')
     .order("full_name");
 
   if (academyMemberIds.length > 0) {
@@ -500,9 +500,17 @@ export default async function InstructorPage({
 
       {/* ── Section B: Mis academias ── */}
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-neutral-100">
-          Mis academias
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-neutral-100">
+            Mis academias
+          </h2>
+          <Link
+            href="/instructor/academies/new"
+            className="bg-primary-600 hover:bg-primary-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+          >
+            + Crear academia
+          </Link>
+        </div>
 
         {academies.length === 0 ? (
           <p className="text-neutral-500 text-sm py-4">
@@ -543,10 +551,10 @@ export default async function InstructorPage({
                       : ""}
                   </p>
                   <Link
-                    href={`/admin/academies/${a.id}`}
+                    href={`/instructor/academies/${a.id}`}
                     className="self-start text-xs text-primary-400 hover:text-primary-300 transition-colors"
                   >
-                    Ver academia →
+                    Administrar academia →
                   </Link>
                 </div>
               ),

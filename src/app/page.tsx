@@ -2,7 +2,6 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import { adminSupabase } from "@/lib/supabase/admin";
 import { PublicNav } from "@/app/_components/PublicNav";
-import { HeroCarousel } from "@/app/_components/HeroCarousel";
 import { formatDateShort } from "@/lib/format-date";
 import type { EventType } from "@/types/database.types";
 import {
@@ -122,24 +121,39 @@ export default async function LandingPage({
 
       {/* ── HERO ──────────────────────────────────────────────────────────── */}
       <section className="relative min-h-screen flex items-center pt-16 overflow-hidden">
-        {/* Deep background gradient — inspired by reference */}
+        {/* Background */}
         <div
-          className="absolute inset-0 bg-linear-to-br from-neutral-950 via-[#0d0d1a] to-[#0a0a1f]"
+          className="absolute inset-0 bg-linear-to-br from-neutral-950 via-[#0a0a18] to-[#080810]"
           aria-hidden="true"
         />
-        {/* Glow orbs */}
+        {/* Radial glow behind logo */}
         <div
-          className="absolute top-1/4 left-1/3 w-[600px] h-[600px] bg-primary-600/12 rounded-full blur-3xl pointer-events-none"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-primary-600/8 rounded-full blur-3xl pointer-events-none"
           aria-hidden="true"
         />
         <div
-          className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-indigo-600/8 rounded-full blur-3xl pointer-events-none"
+          className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-indigo-600/6 rounded-full blur-3xl pointer-events-none"
           aria-hidden="true"
         />
 
-        <div className="relative max-w-7xl mx-auto px-6 w-full py-16 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* Left — copy */}
-          <div className="space-y-8 order-2 lg:order-1">
+        <div className="relative max-w-7xl mx-auto px-6 w-full py-20 flex flex-col items-center gap-16">
+          {/* ── Brand block — centered, logo-first ── */}
+          <div className="flex flex-col items-center gap-6 text-center">
+            {/* Logo */}
+            <div className="relative">
+              <div
+                className="absolute -inset-6 bg-primary-600/10 rounded-full blur-2xl"
+                aria-hidden="true"
+              />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/images/KombatLogoSquare.webp"
+                alt="Kombat Taekwondo"
+                className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-2xl shadow-2xl shadow-primary-900/60 ring-1 ring-primary-700/30"
+              />
+            </div>
+
+            {/* Badge */}
             <div className="inline-flex items-center gap-2 bg-primary-900/40 border border-primary-800/60 text-primary-400 text-xs font-medium px-3 py-1.5 rounded-full">
               <span
                 className="w-1.5 h-1.5 rounded-full bg-primary-400 animate-pulse"
@@ -148,8 +162,9 @@ export default async function LandingPage({
               Plataforma oficial · Kombat Taekwondo Chile
             </div>
 
-            <div className="space-y-4">
-              <h1 className="text-5xl sm:text-6xl font-bold tracking-tight leading-[1.05]">
+            {/* Headline */}
+            <div className="space-y-3 max-w-3xl">
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-none">
                 Tu identidad
                 <br />
                 marcial,{" "}
@@ -157,15 +172,15 @@ export default async function LandingPage({
                   verificable
                 </span>
               </h1>
-              <p className="text-lg text-neutral-400 leading-relaxed max-w-lg">
+              <p className="text-lg sm:text-xl text-neutral-400 leading-relaxed max-w-2xl mx-auto">
                 La plataforma que centraliza tu perfil, historial, ranking y
                 certificaciones. Verificable por cualquier persona, en cualquier
                 momento.
               </p>
             </div>
 
-            {/* Mini feature pills */}
-            <div className="flex flex-wrap gap-2">
+            {/* Feature pills */}
+            <div className="flex flex-wrap justify-center gap-2">
               {[
                 "Historial marcial",
                 "Ranking nacional",
@@ -185,23 +200,24 @@ export default async function LandingPage({
               ))}
             </div>
 
+            {/* Primary CTAs */}
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <Link
                 href="/register"
-                className="inline-flex items-center justify-center gap-2 bg-primary-600 hover:bg-primary-500 text-white px-7 py-3.5 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-primary-900/50 hover:shadow-primary-900/70 hover:-translate-y-0.5"
+                className="inline-flex items-center justify-center gap-2 bg-primary-600 hover:bg-primary-500 text-white px-8 py-4 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-primary-900/50 hover:shadow-primary-900/70 hover:-translate-y-0.5"
               >
                 Crear mi perfil gratis
               </Link>
               <Link
                 href="/verify"
-                className="inline-flex items-center justify-center gap-2 bg-neutral-800/80 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 px-7 py-3.5 rounded-xl text-sm font-semibold transition-colors"
+                className="inline-flex items-center justify-center gap-2 bg-neutral-800/80 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 px-8 py-4 rounded-xl text-sm font-semibold transition-colors"
               >
                 Verificar certificación →
               </Link>
             </div>
 
             {/* Social proof */}
-            <div className="flex items-center gap-4 pt-2">
+            <div className="flex items-center gap-4">
               <div className="flex -space-x-2">
                 {["#6366f1", "#8b5cf6", "#06b6d4", "#10b981"].map((c, i) => (
                   <div
@@ -219,24 +235,70 @@ export default async function LandingPage({
             </div>
           </div>
 
-          {/* Right — carousel */}
-          <div className="order-1 lg:order-2 flex items-center justify-center">
-            <div className="relative w-full max-w-sm">
-              {/* Card glow border */}
+          {/* ── Glass cards row — key value props ── */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-4xl">
+            {[
+              {
+                icon: "🪪",
+                title: "Identidad verificable",
+                desc: "Perfil oficial con QR único. Cualquiera puede verificar tu grado al instante.",
+              },
+              {
+                icon: "📜",
+                title: "Historial permanente",
+                desc: "Cada competencia, examen y seminario queda registrado para siempre.",
+              },
+              {
+                icon: "🏆",
+                title: "Ranking nacional",
+                desc: "Tu posición en tiempo real frente a practicantes de todo Chile.",
+              },
+            ].map((card) => (
               <div
-                className="absolute -inset-0.5 bg-linear-to-br from-primary-600/40 to-indigo-600/20 rounded-3xl blur-sm"
-                aria-hidden="true"
-              />
-              <div className="relative bg-neutral-900/90 border border-neutral-700/60 rounded-3xl p-6 h-[420px] backdrop-blur-sm">
-                <HeroCarousel />
+                key={card.title}
+                className="group relative bg-neutral-900/60 backdrop-blur-sm border border-neutral-800 hover:border-primary-800/60 rounded-2xl p-6 space-y-3 transition-all hover:-translate-y-1 hover:shadow-lg hover:shadow-primary-900/20"
+              >
+                <div className="w-10 h-10 rounded-xl bg-primary-900/40 border border-primary-800/40 flex items-center justify-center text-xl">
+                  {card.icon}
+                </div>
+                <p className="text-sm font-semibold text-neutral-100">
+                  {card.title}
+                </p>
+                <p className="text-xs text-neutral-500 leading-relaxed">
+                  {card.desc}
+                </p>
               </div>
+            ))}
+          </div>
+
+          {/* ── Instructor CTA banner ── */}
+          <div className="w-full max-w-4xl">
+            <div className="flex flex-col sm:flex-row items-center gap-4 bg-linear-to-r from-indigo-950/60 to-primary-950/40 border border-indigo-800/30 rounded-2xl px-6 py-5">
+              <div className="w-10 h-10 rounded-xl bg-indigo-900/50 border border-indigo-700/40 flex items-center justify-center text-xl shrink-0">
+                🏫
+              </div>
+              <div className="flex-1 text-center sm:text-left">
+                <p className="text-sm font-semibold text-neutral-200">
+                  ¿Eres instructor o tienes una academia?
+                </p>
+                <p className="text-xs text-neutral-500 mt-0.5">
+                  Registra tu academia, gestiona tus alumnos y emite
+                  certificaciones digitales.
+                </p>
+              </div>
+              <Link
+                href="/instructor-registration"
+                className="shrink-0 inline-flex items-center gap-1.5 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-600/40 text-indigo-300 hover:text-indigo-200 px-4 py-2 rounded-xl text-xs font-semibold transition-colors whitespace-nowrap"
+              >
+                Solicitar acceso →
+              </Link>
             </div>
           </div>
         </div>
 
         {/* Bottom fade */}
         <div
-          className="absolute bottom-0 inset-x-0 h-24 bg-linear-to-t from-neutral-950 to-transparent pointer-events-none"
+          className="absolute bottom-0 inset-x-0 h-32 bg-linear-to-t from-neutral-950 to-transparent pointer-events-none"
           aria-hidden="true"
         />
       </section>
@@ -618,6 +680,12 @@ export default async function LandingPage({
             >
               Regístrate como árbitro →
             </Link>
+            <Link
+              href="/instructor-registration"
+              className="w-full sm:w-auto hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 px-8 py-4 rounded-xl text-sm transition-colors"
+            >
+              Solicitar cuenta de instructor →
+            </Link>
           </div>
         </div>
       </section>
@@ -644,6 +712,12 @@ export default async function LandingPage({
               className="hover:text-neutral-400 transition-colors"
             >
               Árbitros
+            </Link>
+            <Link
+              href="/instructor-registration"
+              className="hover:text-neutral-400 transition-colors"
+            >
+              Instructores
             </Link>
             <Link
               href="/academies"

@@ -38,6 +38,7 @@ export interface Practitioner {
   addressRegion: string | null;
   // Instructor/master reference
   instructorId: string | null; // UUID of the responsible instructor/master
+  certificatePath: string | null; // Storage path for membership certificate PDF
 }
 
 /**

@@ -970,6 +970,7 @@ export type Database = {
           address_street: string | null;
           auth_user_id: string | null;
           birth_date: string;
+          certificate_path: string | null;
           contact_email: string | null;
           contact_phone: string | null;
           created_at: string;
@@ -997,6 +998,7 @@ export type Database = {
           address_street?: string | null;
           auth_user_id?: string | null;
           birth_date: string;
+          certificate_path?: string | null;
           contact_email?: string | null;
           contact_phone?: string | null;
           created_at?: string;
@@ -1024,6 +1026,7 @@ export type Database = {
           address_street?: string | null;
           auth_user_id?: string | null;
           birth_date?: string;
+          certificate_path?: string | null;
           contact_email?: string | null;
           contact_phone?: string | null;
           created_at?: string;
