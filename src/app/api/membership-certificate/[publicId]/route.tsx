@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
 import { renderToBuffer } from "@react-pdf/renderer";
-import { createElement } from "react";
 import QRCode from "qrcode";
 import { MembershipCertificate } from "@/modules/practitioner-identity/presentation/components/MembershipCertificate";
 import path from "path";
@@ -85,7 +84,7 @@ export async function GET(
 
   // Generate QR code as base64 data URL
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  const verifyUrl = `${siteUrl}/verify/${practitioner.qr_token}`;
+  const verifyUrl = `${siteUrl}/verify/qr/${practitioner.qr_token}`;
   const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
     width: 200,
     margin: 1,
@@ -116,19 +115,17 @@ export async function GET(
   const logoDataUrl = `data:image/png;base64,${logoBase64}`;
 
   // Generate PDF buffer
-  // Cast needed: renderToBuffer expects ReactElement<DocumentProps>, but
-  // MembershipCertificate is a wrapper component with its own props.
   const pdfBuffer = await renderToBuffer(
-    createElement(MembershipCertificate, {
-      fullName: practitioner.full_name,
-      gradeLabel,
-      academyName: academy?.name ?? "Kombat Taekwondo Chile",
-      academyCity: academy?.city ?? null,
-      memberId,
-      activationDate,
-      qrDataUrl,
-      logoUrl: logoDataUrl,
-    }) as unknown as Parameters<typeof renderToBuffer>[0],
+    <MembershipCertificate
+      fullName={practitioner.full_name}
+      gradeLabel={gradeLabel}
+      academyName={academy?.name ?? "Kombat Taekwondo Chile"}
+      academyCity={academy?.city ?? null}
+      memberId={memberId}
+      activationDate={activationDate}
+      qrDataUrl={qrDataUrl}
+      logoUrl={logoDataUrl}
+    />,
   );
 
   // Upload to Supabase Storage

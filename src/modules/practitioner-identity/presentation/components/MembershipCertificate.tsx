@@ -11,21 +11,20 @@ import {
 } from "@react-pdf/renderer";
 
 // ---------------------------------------------------------------------------
-// Fonts — using built-in Helvetica family (no external font needed)
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Gold color palette matching the reference design
+// Paleta de colores
 // ---------------------------------------------------------------------------
 
 const GOLD = "#C9A84C";
 const GOLD_LIGHT = "#E8C96A";
 const GOLD_DARK = "#8B6914";
-const BG_DARK = "#1A1A1A";
+const BG_DARK = "#111111";
+const BG_PANEL = "#0C0C0C";
 const OFF_WHITE = "#F0E6C8";
+const MUTED = "#888877";
+const MUTED_LIGHT = "#BBAA99";
 
 // ---------------------------------------------------------------------------
-// Styles
+// Estilos
 // ---------------------------------------------------------------------------
 
 const styles = StyleSheet.create({
@@ -35,244 +34,277 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica",
   },
 
-  // Outer gold border frame
-  outerBorder: {
-    position: "absolute",
-    top: 12,
-    left: 12,
-    right: 12,
-    bottom: 12,
-    borderWidth: 3,
-    borderColor: GOLD,
-    borderStyle: "solid",
-  },
-
-  // Inner border
-  innerBorder: {
-    position: "absolute",
-    top: 18,
-    left: 18,
-    right: 18,
-    bottom: 18,
-    borderWidth: 1,
-    borderColor: GOLD_DARK,
-    borderStyle: "solid",
-  },
-
-  // Corner decorations (top-left, top-right, bottom-left, bottom-right)
+  // Acentos de esquina (L-brackets dorados)
   cornerTL: {
     position: "absolute",
-    top: 8,
-    left: 8,
-    width: 40,
-    height: 40,
-    borderTopWidth: 4,
-    borderLeftWidth: 4,
-    borderColor: GOLD_LIGHT,
-    borderStyle: "solid",
+    top: 10,
+    left: 10,
+    width: 24,
+    height: 24,
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+    borderColor: GOLD,
   },
   cornerTR: {
     position: "absolute",
-    top: 8,
-    right: 8,
-    width: 40,
-    height: 40,
-    borderTopWidth: 4,
-    borderRightWidth: 4,
-    borderColor: GOLD_LIGHT,
-    borderStyle: "solid",
+    top: 10,
+    right: 10,
+    width: 24,
+    height: 24,
+    borderTopWidth: 2,
+    borderRightWidth: 2,
+    borderColor: GOLD,
   },
   cornerBL: {
     position: "absolute",
-    bottom: 8,
-    left: 8,
-    width: 40,
-    height: 40,
-    borderBottomWidth: 4,
-    borderLeftWidth: 4,
-    borderColor: GOLD_LIGHT,
-    borderStyle: "solid",
+    bottom: 10,
+    left: 10,
+    width: 24,
+    height: 24,
+    borderBottomWidth: 2,
+    borderLeftWidth: 2,
+    borderColor: GOLD,
   },
   cornerBR: {
     position: "absolute",
-    bottom: 8,
-    right: 8,
-    width: 40,
-    height: 40,
-    borderBottomWidth: 4,
-    borderRightWidth: 4,
-    borderColor: GOLD_LIGHT,
-    borderStyle: "solid",
+    bottom: 10,
+    right: 10,
+    width: 24,
+    height: 24,
+    borderBottomWidth: 2,
+    borderRightWidth: 2,
+    borderColor: GOLD,
   },
 
-  // Main content container
-  content: {
+  // Layout principal en dos columnas
+  mainRow: {
     flex: 1,
-    paddingHorizontal: 50,
-    paddingVertical: 30,
-    alignItems: "center",
+    flexDirection: "row",
   },
 
-  // Logo
+  // ── Panel izquierdo ──────────────────────────────────────────────────────
+  leftPanel: {
+    width: 220,
+    backgroundColor: BG_PANEL,
+    borderRightWidth: 1,
+    borderRightColor: GOLD_DARK,
+    paddingHorizontal: 22,
+    paddingTop: 30,
+    paddingBottom: 24,
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  leftTop: {
+    alignItems: "center",
+    width: "100%",
+  },
+  leftBottom: {
+    alignItems: "center",
+    width: "100%",
+  },
+
   logo: {
-    width: 180,
-    height: 50,
+    width: 155,
+    height: 44,
     objectFit: "contain",
-    marginBottom: 8,
-  },
-
-  // Gold ribbon banner
-  ribbon: {
-    backgroundColor: GOLD,
-    paddingHorizontal: 40,
-    paddingVertical: 6,
-    marginBottom: 16,
-    alignItems: "center",
-  },
-  ribbonText: {
-    color: BG_DARK,
-    fontSize: 13,
-    fontFamily: "Helvetica-Bold",
-    letterSpacing: 3,
-    textTransform: "uppercase",
-  },
-
-  // "otorgado a:" label
-  grantedLabel: {
-    color: OFF_WHITE,
-    fontSize: 11,
-    fontFamily: "Helvetica-Oblique",
-    marginBottom: 6,
-    letterSpacing: 1,
-  },
-
-  // Student name
-  studentName: {
-    color: GOLD_LIGHT,
-    fontSize: 28,
-    fontFamily: "Helvetica-Bold",
-    textAlign: "center",
-    marginBottom: 6,
-    letterSpacing: 1,
-  },
-
-  // Grade
-  gradeText: {
-    color: GOLD,
-    fontSize: 14,
-    fontFamily: "Helvetica-Bold",
-    textAlign: "center",
-    marginBottom: 14,
-    letterSpacing: 0.5,
-  },
-
-  // Academy
-  academyText: {
-    color: OFF_WHITE,
-    fontSize: 11,
-    fontFamily: "Helvetica",
-    textAlign: "center",
-    marginBottom: 12,
-    letterSpacing: 0.5,
-  },
-
-  // Description paragraph
-  description: {
-    color: "#CCBBAA",
-    fontSize: 9.5,
-    fontFamily: "Helvetica-Oblique",
-    textAlign: "center",
-    lineHeight: 1.6,
-    maxWidth: 420,
     marginBottom: 20,
   },
 
-  // Divider line
-  divider: {
-    width: "80%",
+  leftDivider: {
+    width: "50%",
     height: 1,
     backgroundColor: GOLD_DARK,
-    marginBottom: 16,
+    marginBottom: 18,
   },
 
-  // Signature row
-  signatureRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "80%",
+  // QR con marco sutil
+  qrFrame: {
+    padding: 6,
+    borderWidth: 1,
+    borderColor: GOLD_DARK,
+    marginBottom: 8,
+  },
+  qrImage: {
+    width: 96,
+    height: 96,
+  },
+  qrLabel: {
+    color: MUTED,
+    fontSize: 6,
+    fontFamily: "Helvetica",
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
+    textAlign: "center",
     marginBottom: 20,
   },
-  signatureBlock: {
+
+  // Member ID
+  memberIdCaption: {
+    color: "#555544",
+    fontSize: 6,
+    fontFamily: "Helvetica",
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    textAlign: "center",
+    marginBottom: 3,
+  },
+  memberIdValue: {
+    color: GOLD,
+    fontSize: 10,
+    fontFamily: "Helvetica-Bold",
+    letterSpacing: 2,
+    textAlign: "center",
+  },
+
+  // ── Panel derecho ────────────────────────────────────────────────────────
+  rightPanel: {
+    flex: 1,
+    paddingHorizontal: 38,
+    paddingTop: 28,
+    paddingBottom: 22,
+    justifyContent: "space-between",
+  },
+
+  topSection: {},
+  bottomSection: {},
+
+  // Etiqueta organización
+  orgLabel: {
+    color: GOLD_DARK,
+    fontSize: 7,
+    fontFamily: "Helvetica-Bold",
+    letterSpacing: 4,
+    textTransform: "uppercase",
+    marginBottom: 10,
+  },
+
+  // Título principal
+  certTitle: {
+    color: OFF_WHITE,
+    fontSize: 30,
+    fontFamily: "Helvetica-Bold",
+    letterSpacing: 7,
+    textTransform: "uppercase",
+    marginBottom: 2,
+  },
+  certSubtitle: {
+    color: GOLD,
+    fontSize: 12,
+    fontFamily: "Helvetica-Bold",
+    letterSpacing: 4,
+    textTransform: "uppercase",
+    marginBottom: 14,
+  },
+
+  titleDivider: {
+    width: "100%",
+    height: 1,
+    backgroundColor: GOLD_DARK,
+    marginBottom: 14,
+  },
+
+  // "Este certificado se otorga a:"
+  grantedLabel: {
+    color: MUTED,
+    fontSize: 9,
+    fontFamily: "Helvetica-Oblique",
+    letterSpacing: 0.5,
+    marginBottom: 5,
+  },
+
+  // Nombre del alumno — Times-Bold para elegancia
+  studentName: {
+    color: GOLD_LIGHT,
+    fontSize: 30,
+    fontFamily: "Times-Bold",
+    letterSpacing: 0.5,
+    marginBottom: 10,
+  },
+
+  // Grado con acento de barra
+  gradeBadge: {
+    flexDirection: "row",
     alignItems: "center",
-    width: "45%",
+    marginBottom: 10,
+  },
+  gradeAccent: {
+    width: 3,
+    height: 16,
+    backgroundColor: GOLD,
+    marginRight: 10,
+  },
+  gradeText: {
+    color: GOLD_LIGHT,
+    fontSize: 13,
+    fontFamily: "Helvetica-Bold",
+    letterSpacing: 0.5,
+  },
+
+  // Academia
+  academyText: {
+    color: MUTED_LIGHT,
+    fontSize: 10,
+    fontFamily: "Helvetica",
+    letterSpacing: 0.3,
+    marginBottom: 12,
+  },
+
+  // Descripción
+  description: {
+    color: MUTED,
+    fontSize: 8.5,
+    fontFamily: "Helvetica-Oblique",
+    lineHeight: 1.75,
+  },
+
+  // Divisor firmas
+  sigDivider: {
+    width: "100%",
+    height: 1,
+    backgroundColor: GOLD_DARK,
+    marginBottom: 14,
+  },
+
+  // Firmas
+  signatureRow: {
+    flexDirection: "row",
+  },
+  signatureBlock: {
+    marginRight: 48,
+    alignItems: "flex-start",
+  },
+  signatureScript: {
+    color: GOLD_LIGHT,
+    fontSize: 18,
+    fontFamily: "Helvetica-BoldOblique",
+    marginBottom: 4,
+    letterSpacing: 0.5,
   },
   signatureLine: {
-    width: "100%",
+    width: 155,
     height: 1,
     backgroundColor: GOLD_DARK,
     marginBottom: 4,
   },
   signatureLabel: {
-    color: "#888877",
-    fontSize: 8,
-    fontFamily: "Helvetica",
-    letterSpacing: 1,
-    textTransform: "uppercase",
-  },
-
-  // QR section
-  qrSection: {
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  qrLabel: {
-    color: "#888877",
+    color: MUTED,
     fontSize: 7,
     fontFamily: "Helvetica",
-    letterSpacing: 2,
-    textTransform: "uppercase",
-    marginBottom: 6,
-  },
-  qrImage: {
-    width: 80,
-    height: 80,
-  },
-
-  // Bottom row: member ID
-  bottomRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    width: "100%",
-    paddingHorizontal: 30,
-    position: "absolute",
-    bottom: 28,
-    left: 0,
-    right: 0,
-  },
-  memberIdText: {
-    color: GOLD,
-    fontSize: 8,
-    fontFamily: "Helvetica-Bold",
     letterSpacing: 1.5,
     textTransform: "uppercase",
   },
 
-  // Gold seal placeholder (bottom-left)
-  seal: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 2,
-    borderColor: GOLD,
-    backgroundColor: GOLD_DARK,
-    alignItems: "center",
-    justifyContent: "center",
+  // Fecha de emisión
+  issueDateRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 8,
   },
-  sealText: {
-    color: GOLD_LIGHT,
-    fontSize: 16,
-    fontFamily: "Helvetica-Bold",
+  issueDateText: {
+    color: "#444433",
+    fontSize: 7.5,
+    fontFamily: "Helvetica-Oblique",
+    letterSpacing: 0.3,
   },
 });
 
@@ -315,75 +347,80 @@ export function MembershipCertificate({
       author="Kombat Taekwondo Chile"
     >
       <Page size="A4" orientation="landscape" style={styles.page}>
-        {/* Border frame */}
-        <View style={styles.outerBorder} />
-        <View style={styles.innerBorder} />
-
-        {/* Corner decorations */}
+        {/* Acentos de esquina */}
         <View style={styles.cornerTL} />
         <View style={styles.cornerTR} />
         <View style={styles.cornerBL} />
         <View style={styles.cornerBR} />
 
-        {/* Main content */}
-        <View style={styles.content}>
-          {/* Logo */}
-          {/* eslint-disable-next-line jsx-a11y/alt-text */}
-          <Image src={logoUrl} style={styles.logo} />
-
-          {/* Gold ribbon */}
-          <View style={styles.ribbon}>
-            <Text style={styles.ribbonText}>Certificado de Membresía</Text>
-          </View>
-
-          {/* Granted label */}
-          <Text style={styles.grantedLabel}>otorgado a:</Text>
-
-          {/* Student name */}
-          <Text style={styles.studentName}>{fullName}</Text>
-
-          {/* Grade */}
-          <Text style={styles.gradeText}>[{gradeLabel}]</Text>
-
-          {/* Description */}
-          <Text style={styles.description}>
-            Por haber demostrado la disciplina, constancia y valores requeridos
-            dentro de nuestra academia. Se concede este certificado con fecha de{" "}
-            {activationDate} en {locationText}.
-          </Text>
-
-          {/* Divider */}
-          <View style={styles.divider} />
-
-          {/* Signatures */}
-          <View style={styles.signatureRow}>
-            <View style={styles.signatureBlock}>
-              <View style={styles.signatureLine} />
-              <Text style={styles.signatureLabel}>Firma Instructor</Text>
+        {/* Layout principal dos columnas */}
+        <View style={styles.mainRow}>
+          {/* ── Panel izquierdo ── */}
+          <View style={styles.leftPanel}>
+            <View style={styles.leftTop}>
+              {/* eslint-disable-next-line jsx-a11y/alt-text */}
+              <Image src={logoUrl} style={styles.logo} />
+              <View style={styles.leftDivider} />
+              {/* QR */}
+              <View style={styles.qrFrame}>
+                {/* eslint-disable-next-line jsx-a11y/alt-text */}
+                <Image src={qrDataUrl} style={styles.qrImage} />
+              </View>
+              <Text style={styles.qrLabel}>Escanear para verificar</Text>
             </View>
-            <View style={styles.signatureBlock}>
-              <View style={styles.signatureLine} />
-              <Text style={styles.signatureLabel}>Firma Director</Text>
+            <View style={styles.leftBottom}>
+              <Text style={styles.memberIdCaption}>Member ID</Text>
+              <Text style={styles.memberIdValue}>{memberId}</Text>
             </View>
           </View>
 
-          {/* QR code */}
-          <View style={styles.qrSection}>
-            <Text style={styles.qrLabel}>Escanear para validar perfil</Text>
-            {/* eslint-disable-next-line jsx-a11y/alt-text */}
-            <Image src={qrDataUrl} style={styles.qrImage} />
-          </View>
-        </View>
+          {/* ── Panel derecho ── */}
+          <View style={styles.rightPanel}>
+            {/* Sección superior */}
+            <View style={styles.topSection}>
+              <Text style={styles.orgLabel}>Kombat Taekwondo Chile</Text>
+              <Text style={styles.certTitle}>Certificado</Text>
+              <Text style={styles.certSubtitle}>de Membresía</Text>
+              <View style={styles.titleDivider} />
+              <Text style={styles.grantedLabel}>
+                Este certificado se otorga a:
+              </Text>
+              <Text style={styles.studentName}>{fullName}</Text>
+              <View style={styles.gradeBadge}>
+                <View style={styles.gradeAccent} />
+                <Text style={styles.gradeText}>{gradeLabel}</Text>
+              </View>
+              <Text style={styles.academyText}>{locationText}</Text>
+              <Text style={styles.description}>
+                Por haber demostrado disciplina, constancia y los valores del
+                Taekwondo dentro de nuestra institución. Este documento acredita
+                su membresía activa y vigente en Kombat Taekwondo Chile.
+              </Text>
+            </View>
 
-        {/* Bottom row */}
-        <View style={styles.bottomRow}>
-          {/* Gold seal */}
-          <View style={styles.seal}>
-            <Text style={styles.sealText}>K</Text>
+            {/* Sección inferior — firmas */}
+            <View style={styles.bottomSection}>
+              <View style={styles.sigDivider} />
+              <View style={styles.signatureRow}>
+                <View style={styles.signatureBlock}>
+                  <Text style={styles.signatureScript}>Dir. Educacional</Text>
+                  <View style={styles.signatureLine} />
+                  <Text style={styles.signatureLabel}>
+                    Director Educacional
+                  </Text>
+                </View>
+                <View style={styles.signatureBlock}>
+                  <View style={styles.signatureLine} />
+                  <Text style={styles.signatureLabel}>Firma Director</Text>
+                </View>
+              </View>
+              <View style={styles.issueDateRow}>
+                <Text style={styles.issueDateText}>
+                  Emitido el {activationDate}
+                </Text>
+              </View>
+            </View>
           </View>
-
-          {/* Member ID */}
-          <Text style={styles.memberIdText}>Member ID: {memberId}</Text>
         </View>
       </Page>
     </Document>

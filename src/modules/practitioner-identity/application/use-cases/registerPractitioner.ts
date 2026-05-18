@@ -61,6 +61,7 @@ export async function registerPractitioner(
     addressRegion: validated.addressRegion ?? null,
     instructorId: validated.instructorId ?? null,
     certificatePath: null,
+    martialArt: null,
     updatedAt: now,
     createdAt: now,
   };

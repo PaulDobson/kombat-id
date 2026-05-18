@@ -28,6 +28,10 @@ import {
   InstructorAuthUserCreationError,
 } from "../../domain/errors";
 import type { InstructorAccountRequestListItem } from "../components/instructorAccountRequestListItem";
+import {
+  sendInstructorApprovalEmail,
+  sendInstructorRejectionEmail,
+} from "@/lib/email";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -218,6 +222,19 @@ export async function approveInstructorAccountRequestAction(
       });
     }
 
+    if (request) {
+      sendInstructorApprovalEmail(
+        request.email,
+        request.fullName,
+        temporaryPassword,
+      ).catch((err) =>
+        console.error(
+          "[approveInstructorAccountRequestAction] Email error:",
+          err,
+        ),
+      );
+    }
+
     // NOTE: revalidatePath is intentionally omitted here so the client
     // component can display the temporary password before the page refreshes.
     // The ApproveInstructorRequestButton shows a manual refresh button instead.
@@ -283,10 +300,22 @@ export async function rejectInstructorAccountRequestAction(
 
   try {
     const repo = new SupabaseInstructorAccountRequestRepository();
+    const requestForEmail = await repo.findById(parsed.data.requestId);
     await rejectInstructorAccountRequest(
       { requestId: parsed.data.requestId, adminId: admin.userId },
       { repo },
     );
+    if (requestForEmail) {
+      sendInstructorRejectionEmail(
+        requestForEmail.email,
+        requestForEmail.fullName,
+      ).catch((err) =>
+        console.error(
+          "[rejectInstructorAccountRequestAction] Email error:",
+          err,
+        ),
+      );
+    }
     revalidatePath(ADMIN_PATH);
     return { success: true, data: undefined };
   } catch (err) {
