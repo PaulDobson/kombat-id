@@ -22,6 +22,10 @@ import {
   PortalPublicationNotFoundError,
 } from "../../domain/errors";
 import type { RefereeAuthService } from "../../application/use-cases/approveRefereeRegistration";
+import {
+  sendRefereeApprovalEmail,
+  sendRefereeRejectionEmail,
+} from "@/lib/email";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -141,10 +145,17 @@ export async function approveRefereeRegistrationAction(
 
   try {
     const repo = new SupabaseRefereeRegistrationRepository();
+    const registration = await repo.findById(parsed.data.id);
     await approveRefereeRegistration(
       { id: parsed.data.id, adminId: admin.userId },
       { repo, authService: refereeAuthService },
     );
+    if (registration) {
+      sendRefereeApprovalEmail(registration.email, registration.fullName).catch(
+        (err) =>
+          console.error("[approveRefereeRegistrationAction] Email error:", err),
+      );
+    }
     revalidatePath(REGISTRATIONS_PATH);
     return { success: true, data: undefined };
   } catch (err) {
@@ -194,10 +205,19 @@ export async function rejectRefereeRegistrationAction(
 
   try {
     const repo = new SupabaseRefereeRegistrationRepository();
+    const registration = await repo.findById(parsed.data.id);
     await rejectRefereeRegistration(
       { id: parsed.data.id, adminId: admin.userId },
       { repo },
     );
+    if (registration) {
+      sendRefereeRejectionEmail(
+        registration.email,
+        registration.fullName,
+      ).catch((err) =>
+        console.error("[rejectRefereeRegistrationAction] Email error:", err),
+      );
+    }
     revalidatePath(REGISTRATIONS_PATH);
     return { success: true, data: undefined };
   } catch (err) {

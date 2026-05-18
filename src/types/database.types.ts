@@ -791,6 +791,69 @@ export type Database = {
           },
         ];
       };
+      instructor_account_requests: {
+        Row: {
+          academy_name: string | null;
+          approved_at: string | null;
+          approved_by: string | null;
+          auth_user_id: string | null;
+          created_at: string;
+          email: string;
+          full_name: string;
+          id: string;
+          message: string | null;
+          observation_notes: string | null;
+          observed_at: string | null;
+          observed_by: string | null;
+          phone: string | null;
+          rejected_at: string | null;
+          rejected_by: string | null;
+          rut: string;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          academy_name?: string | null;
+          approved_at?: string | null;
+          approved_by?: string | null;
+          auth_user_id?: string | null;
+          created_at?: string;
+          email: string;
+          full_name: string;
+          id?: string;
+          message?: string | null;
+          observation_notes?: string | null;
+          observed_at?: string | null;
+          observed_by?: string | null;
+          phone?: string | null;
+          rejected_at?: string | null;
+          rejected_by?: string | null;
+          rut?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          academy_name?: string | null;
+          approved_at?: string | null;
+          approved_by?: string | null;
+          auth_user_id?: string | null;
+          created_at?: string;
+          email?: string;
+          full_name?: string;
+          id?: string;
+          message?: string | null;
+          observation_notes?: string | null;
+          observed_at?: string | null;
+          observed_by?: string | null;
+          phone?: string | null;
+          rejected_at?: string | null;
+          rejected_by?: string | null;
+          rut?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       martial_events: {
         Row: {
           attachments: Json;
@@ -970,6 +1033,7 @@ export type Database = {
           address_street: string | null;
           auth_user_id: string | null;
           birth_date: string;
+          certificate_path: string | null;
           contact_email: string | null;
           contact_phone: string | null;
           created_at: string;
@@ -983,6 +1047,8 @@ export type Database = {
           id: string;
           instructor_id: string | null;
           is_active: boolean;
+          martial_art: string | null;
+          martial_grade: string | null;
           photo_path: string | null;
           qr_token: string;
           role: string;
@@ -997,6 +1063,7 @@ export type Database = {
           address_street?: string | null;
           auth_user_id?: string | null;
           birth_date: string;
+          certificate_path?: string | null;
           contact_email?: string | null;
           contact_phone?: string | null;
           created_at?: string;
@@ -1010,6 +1077,8 @@ export type Database = {
           id?: string;
           instructor_id?: string | null;
           is_active?: boolean;
+          martial_art?: string | null;
+          martial_grade?: string | null;
           photo_path?: string | null;
           qr_token?: string;
           role?: string;
@@ -1024,6 +1093,7 @@ export type Database = {
           address_street?: string | null;
           auth_user_id?: string | null;
           birth_date?: string;
+          certificate_path?: string | null;
           contact_email?: string | null;
           contact_phone?: string | null;
           created_at?: string;
@@ -1037,6 +1107,8 @@ export type Database = {
           id?: string;
           instructor_id?: string | null;
           is_active?: boolean;
+          martial_art?: string | null;
+          martial_grade?: string | null;
           photo_path?: string | null;
           qr_token?: string;
           role?: string;
@@ -1290,59 +1362,6 @@ export type Database = {
         };
         Relationships: [];
       };
-      roles: {
-        Row: {
-          name: string;
-          label: string;
-          description: string | null;
-          is_system: boolean;
-          created_at: string;
-        };
-        Insert: {
-          name: string;
-          label: string;
-          description?: string | null;
-          is_system?: boolean;
-          created_at?: string;
-        };
-        Update: {
-          name?: string;
-          label?: string;
-          description?: string | null;
-          is_system?: boolean;
-          created_at?: string;
-        };
-        Relationships: [];
-      };
-      user_roles: {
-        Row: {
-          user_id: string;
-          role_name: string;
-          granted_at: string;
-          granted_by: string | null;
-        };
-        Insert: {
-          user_id: string;
-          role_name: string;
-          granted_at?: string;
-          granted_by?: string | null;
-        };
-        Update: {
-          user_id?: string;
-          role_name?: string;
-          granted_at?: string;
-          granted_by?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "user_roles_role_name_fkey";
-            columns: ["role_name"];
-            isOneToOne: false;
-            referencedRelation: "roles";
-            referencedColumns: ["name"];
-          },
-        ];
-      };
       referee_registrations: {
         Row: {
           approved_at: string | null;
@@ -1393,6 +1412,59 @@ export type Database = {
           updated_at?: string;
         };
         Relationships: [];
+      };
+      roles: {
+        Row: {
+          created_at: string;
+          description: string | null;
+          is_system: boolean;
+          label: string;
+          name: string;
+        };
+        Insert: {
+          created_at?: string;
+          description?: string | null;
+          is_system?: boolean;
+          label: string;
+          name: string;
+        };
+        Update: {
+          created_at?: string;
+          description?: string | null;
+          is_system?: boolean;
+          label?: string;
+          name?: string;
+        };
+        Relationships: [];
+      };
+      user_roles: {
+        Row: {
+          granted_at: string;
+          granted_by: string | null;
+          role_name: string;
+          user_id: string;
+        };
+        Insert: {
+          granted_at?: string;
+          granted_by?: string | null;
+          role_name: string;
+          user_id: string;
+        };
+        Update: {
+          granted_at?: string;
+          granted_by?: string | null;
+          role_name?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_role_name_fkey";
+            columns: ["role_name"];
+            isOneToOne: false;
+            referencedRelation: "roles";
+            referencedColumns: ["name"];
+          },
+        ];
       };
     };
     Views: {

@@ -373,7 +373,7 @@ describe("LandingPage — Property 2c: Preservation — RefereeGrid props", () =
 // Property 2d: Upcoming events section preservation
 // Validates: Requirements 3.4
 //
-// The "Próximas actividades" section and its "Ver todos →" link to /login
+// The "Próximas actividades" section and its "Ver todos →" link to /events
 // must remain intact for any referee count.
 // ---------------------------------------------------------------------------
 
@@ -384,19 +384,19 @@ describe('LandingPage — Property 2d: Preservation — Sección "Próximas acti
    * **Validates: Requirements 3.4**
    *
    * The "Próximas actividades" section must contain the "Ver todos →" link
-   * pointing to /login for any referee count.
+   * pointing to /events for any referee count.
    */
   it(
-    'la sección "Próximas actividades" contiene el link "Ver todos →" hacia /login ' +
+    'la sección "Próximas actividades" contiene el link "Ver todos →" hacia /events ' +
       "para cualquier longitud de array de árbitros",
     () => {
       fc.assert(
         fc.property(refereeArrayLength, (_length) => {
           expect(
             upcomingSection,
-            'La sección "Próximas actividades" no contiene href="/login". ' +
+            'La sección "Próximas actividades" no contiene href="/events". ' +
               'El link "Ver todos →" fue eliminado o su destino fue modificado.',
-          ).toContain('href="/login"');
+          ).toContain('href="/events"');
 
           expect(
             upcomingSection,

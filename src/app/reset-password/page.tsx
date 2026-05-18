@@ -8,7 +8,16 @@ export default async function ResetPasswordPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (user) redirect("/dashboard");
+  if (user) {
+    const role = user.app_metadata?.role as string | undefined;
+    const home =
+      role === "referee"
+        ? "/referee/dashboard"
+        : role === "instructor"
+          ? "/instructor"
+          : "/dashboard";
+    redirect(home);
+  }
 
   return (
     <div className="min-h-screen bg-neutral-950 flex items-center justify-center px-4">

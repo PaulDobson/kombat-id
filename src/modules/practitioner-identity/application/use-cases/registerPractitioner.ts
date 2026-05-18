@@ -60,6 +60,8 @@ export async function registerPractitioner(
     addressCity: validated.addressCity ?? null,
     addressRegion: validated.addressRegion ?? null,
     instructorId: validated.instructorId ?? null,
+    certificatePath: null,
+    martialArt: null,
     updatedAt: now,
     createdAt: now,
   };

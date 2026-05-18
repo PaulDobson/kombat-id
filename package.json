@@ -14,7 +14,7 @@
     "assign:academies": "tsx scripts/assign-practitioners-to-academies.ts",
     "seed:masters": "tsx scripts/seed-masters.ts",
     "setup:storage": "tsx scripts/setup-event-storage.ts",
-    "setup:referee-portal-storage": "tsx scripts/setup-referee-portal-storage.ts"
+    "setup:certificates-storage": "tsx scripts/setup-membership-certificates-storage.ts"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",
@@ -33,6 +33,7 @@
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.8",
+    "@react-pdf/renderer": "4.5.1",
     "@supabase/ssr": "^0.10.0",
     "@supabase/supabase-js": "^2.101.1",
     "@vercel/analytics": "^2.0.1",
@@ -44,6 +45,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^3.7.0",
+    "resend": "^6.12.3",
     "tailwind-merge": "^2.2.0",
     "zod": "^4.3.6"
   },

@@ -10,6 +10,7 @@ const PUBLIC_ROUTES = [
   "/events",
   "/design",
   "/referee-registration", // public referee registration form
+  "/instructor-registration", // public instructor registration form
   "/referees", // public referee directory
   "/",
 ];
@@ -32,7 +33,12 @@ export async function middleware(request: NextRequest) {
   // Redirect authenticated users away from auth pages
   if (user && AUTH_ROUTES.some((r) => pathname.startsWith(r))) {
     const role = user.app_metadata?.role as string | undefined;
-    const home = role === "referee" ? "/referee/dashboard" : "/dashboard";
+    const home =
+      role === "referee"
+        ? "/referee/dashboard"
+        : role === "instructor"
+          ? "/instructor"
+          : "/dashboard";
     return NextResponse.redirect(new URL(home, request.url));
   }
 

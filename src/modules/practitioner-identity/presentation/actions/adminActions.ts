@@ -1,5 +1,6 @@
 "use server";
 
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
 import type { Practitioner } from "../../domain/entities/practitioner";
@@ -455,6 +456,74 @@ export async function searchPractitionersAction(
     return { success: true, data: practitioners };
   } catch (err) {
     console.error("[searchPractitionersAction] Unexpected error:", err);
+    return {
+      success: false,
+      error: "Error interno del servidor",
+      code: "INTERNAL_ERROR",
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// activatePractitionerAction
+// Activates an inactive practitioner after membership payment verification.
+// Sets is_active = true and records the activation timestamp.
+// ---------------------------------------------------------------------------
+
+export async function activatePractitionerAction(
+  rawInput: unknown,
+): Promise<ActionResult<{ qrToken: string }>> {
+  const admin = await requireAdmin();
+  if (!admin) {
+    return { success: false, error: "No autorizado", code: "UNAUTHORIZED" };
+  }
+
+  const parsed = z
+    .object({
+      publicId: z.string().uuid(),
+      membershipNote: z.string().max(500).optional(),
+    })
+    .safeParse(rawInput);
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Datos inválidos",
+      code: "VALIDATION_ERROR",
+    };
+  }
+
+  try {
+    const practitionerRepo = new DrizzlePractitionerRepository();
+    const practitioner = await practitionerRepo.findById(parsed.data.publicId);
+
+    if (!practitioner) {
+      return {
+        success: false,
+        error: "Practicante no encontrado",
+        code: "NOT_FOUND",
+      };
+    }
+
+    if (practitioner.isActive) {
+      return {
+        success: false,
+        error: "El practicante ya está activo",
+        code: "ALREADY_ACTIVE",
+      };
+    }
+
+    await practitionerRepo.save({
+      ...practitioner,
+      isActive: true,
+      deactivatedAt: null,
+      deactivationReason: null,
+      updatedAt: new Date().toISOString(),
+    });
+
+    return { success: true, data: { qrToken: practitioner.qrToken } };
+  } catch (err) {
+    console.error("[activatePractitionerAction] Unexpected error:", err);
     return {
       success: false,
       error: "Error interno del servidor",

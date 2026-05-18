@@ -1,5 +1,3 @@
-import "server-only";
-
 import { z } from "zod";
 import { adminSupabase } from "@/lib/supabase/admin";
 import { DomainError } from "@/lib/errors";
@@ -47,6 +45,7 @@ const PractitionerRowSchema = z
     address_city: z.string().nullable().optional(),
     address_region: z.string().nullable().optional(),
     instructor_id: z.string().uuid().nullable().optional(),
+    certificate_path: z.string().nullable().optional(),
   })
   .passthrough(); // ignore unknown columns added by future migrations
 
@@ -257,6 +256,8 @@ export class DrizzlePractitionerRepository implements PractitionerRepository {
       addressCity: row.address_city ?? null,
       addressRegion: row.address_region ?? null,
       instructorId: row.instructor_id ?? null,
+      certificatePath: row.certificate_path ?? null,
+      martialArt: row.martial_art ?? null,
     };
     if (row.role) base.role = row.role as PractitionerRole;
     return base;
@@ -288,6 +289,8 @@ export class DrizzlePractitionerRepository implements PractitionerRepository {
       address_city: practitioner.addressCity,
       address_region: practitioner.addressRegion,
       instructor_id: practitioner.instructorId,
+      certificate_path: practitioner.certificatePath ?? null,
+      martial_art: practitioner.martialArt ?? null,
     };
   }
 }

@@ -6,6 +6,7 @@ import { DrizzleCertificationRepository } from "@/modules/practitioner-identity/
 import { DrizzleMartialHistoryRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzleMartialHistoryRepository";
 import Link from "next/link";
 import { DeactivateButton } from "./DeactivateButton";
+import { ActivateButton } from "./ActivateButton";
 import { ROLE_LABELS } from "@/lib/roles";
 
 async function requireAdminUser() {
@@ -224,6 +225,9 @@ export default async function AdminPractitionerDetailPage({
             </Link>
             {practitioner.isActive && (
               <DeactivateButton publicId={publicId} adminId={adminUser.id} />
+            )}
+            {!practitioner.isActive && practitioner.instructorId && (
+              <ActivateButton publicId={publicId} />
             )}
           </div>
         </div>

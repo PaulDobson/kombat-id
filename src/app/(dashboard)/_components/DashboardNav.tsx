@@ -37,6 +37,25 @@ export async function DashboardNav() {
     practitioner &&
     ["instructor", "profesor", "maestro"].includes(practitioner.role ?? "");
 
+  // For instructors: fetch their academies to build the nav dropdown
+  let instructorAcademyItems: { href: string; label: string }[] = [];
+  if (isInstructor && practitioner) {
+    const { data: academyRows } = await adminSupabase
+      .from("academies")
+      .select("id, name")
+      .contains("responsible_instructor_ids", [practitioner.id])
+      .eq("is_active", true)
+      .order("name")
+      .limit(10);
+
+    instructorAcademyItems = (academyRows ?? []).map(
+      (a: { id: string; name: string }) => ({
+        href: `/instructor/academies/${a.id}`,
+        label: a.name,
+      }),
+    );
+  }
+
   return (
     <header className="border-b border-neutral-800 bg-neutral-950 sticky top-0 z-30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
@@ -62,6 +81,9 @@ export async function DashboardNav() {
             <>
               <NavLink href="/admin/dashboard">Panel</NavLink>
               <NavLink href="/admin/practitioners">Practicantes</NavLink>
+              <NavLink href="/admin/practitioners/pending-activation">
+                Activaciones
+              </NavLink>
               <NavLink href="/admin/academies">Academias</NavLink>
               <NavLink href="/admin/events">Eventos</NavLink>
               <NavLink href="/admin/certification-requests">
@@ -74,6 +96,7 @@ export async function DashboardNav() {
                   { href: "/admin/grade-exams", label: "Aprobaciones" },
                 ]}
               />
+              <NavLink href="/admin/instructor-requests">Instructores</NavLink>
               <NavDropdown
                 label="Árbitros"
                 items={[
@@ -87,11 +110,20 @@ export async function DashboardNav() {
             </>
           ) : isInstructor ? (
             <>
-              <NavLink href="/dashboard">Inicio</NavLink>
               <NavLink href="/instructor">Mis alumnos</NavLink>
               <NavLink href="/instructor/events">Eventos</NavLink>
               <NavLink href="/instructor/grade-exams">Exámenes</NavLink>
-              <NavLink href="/profile">Mi Perfil</NavLink>
+              <NavDropdown
+                label="Academia"
+                items={[
+                  ...instructorAcademyItems,
+                  {
+                    href: "/instructor/academies/new",
+                    label: "+ Crear academia",
+                  },
+                ]}
+              />
+              <NavLink href="/instructor/profile">Mi Perfil</NavLink>
               <NavLink href="/certifications">Certificaciones</NavLink>
             </>
           ) : (

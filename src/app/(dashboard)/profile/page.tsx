@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/supabase/server";
 import { DrizzlePractitionerRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzlePractitionerRepository";
 import { PractitionerQrCode } from "@/modules/practitioner-identity/presentation/components/PractitionerQrCode";
+import { CertificateDownloadButton } from "@/modules/practitioner-identity/presentation/components/CertificateDownloadButton";
 import { notFound } from "next/navigation";
 
 const GRADE_LABELS: Record<string, string> = {
@@ -153,6 +154,23 @@ export default async function ProfilePage() {
             </dl>
           </div>
         )}
+
+        {/* Membership certificate */}
+        <div className="lg:col-span-3 bg-neutral-900 border border-neutral-700 rounded-xl p-6 space-y-4">
+          <div>
+            <h2 className="text-sm font-semibold text-neutral-50">
+              Certificado de membresía
+            </h2>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              Documento oficial que acredita tu membresía en Kombat Taekwondo
+              Chile.
+            </p>
+          </div>
+          <CertificateDownloadButton
+            practitionerId={practitioner.id}
+            hasCertificate={!!practitioner.certificatePath}
+          />
+        </div>
       </div>
     </main>
   );
