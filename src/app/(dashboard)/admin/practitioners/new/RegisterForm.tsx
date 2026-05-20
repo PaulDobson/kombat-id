@@ -51,6 +51,7 @@ export function RegisterForm({
       instructorId: (instructorRaw as string) || null,
       martialArt: (fd.get("martialArt") as string) || null,
       martialGrade: (fd.get("martialGrade") as string) || null,
+      role: (fd.get("role") as string) || "alumno",
     };
 
     startTransition(async () => {
@@ -154,6 +155,28 @@ export function RegisterForm({
               className={inputClass}
             />
           </div>
+        </div>
+
+        <div>
+          <label htmlFor="role" className={labelClass}>
+            Rol en el sistema
+          </label>
+          <select
+            id="role"
+            name="role"
+            defaultValue="alumno"
+            className={selectClass}
+          >
+            {Object.entries(ROLE_LABELS)
+              .filter(([key]) =>
+                ["alumno", "instructor", "profesor", "maestro"].includes(key),
+              )
+              .map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+          </select>
         </div>
 
         <div>

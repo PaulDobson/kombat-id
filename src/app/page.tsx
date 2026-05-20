@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { Flag, School } from "lucide-react";
 import { adminSupabase } from "@/lib/supabase/admin";
 import { PublicNav } from "@/app/_components/PublicNav";
+import { RevealOnScroll } from "@/app/_components/RevealOnScroll";
 import { formatDateShort } from "@/lib/format-date";
 import type { EventType } from "@/types/database.types";
 import {
@@ -74,57 +75,6 @@ function formatDaysUntil(days: number): string {
   return `en ${days} días`;
 }
 
-const _HOW_IT_WORKS = [
-  {
-    step: "01",
-    title: "Crea tu perfil",
-    desc: "Regístrate con tu correo. Un administrador o instructor vincula tu cuenta a tu perfil oficial de practicante.",
-  },
-  {
-    step: "02",
-    title: "Acumula tu historial",
-    desc: "Cada competencia, seminario y examen queda registrado. Tu historial marcial crece con cada evento.",
-  },
-  {
-    step: "03",
-    title: "Verifica y comparte",
-    desc: "Descarga tus certificaciones digitales y comparte tu QR. Cualquiera puede verificar tu identidad al instante.",
-  },
-];
-
-const _FEATURES = [
-  {
-    icon: "🪪",
-    title: "Identidad digital",
-    desc: "Perfil oficial con RUT, grado y QR de verificación instantánea.",
-  },
-  {
-    icon: "📜",
-    title: "Historial marcial",
-    desc: "Registro permanente e inmutable de toda tu trayectoria.",
-  },
-  {
-    icon: "🏆",
-    title: "Ranking nacional",
-    desc: "Posición en tiempo real por grado, edad y categoría de peso.",
-  },
-  {
-    icon: "🎖️",
-    title: "Certificaciones",
-    desc: "Certificados digitales verificables con URL pública.",
-  },
-  {
-    icon: "🏫",
-    title: "Red de academias",
-    desc: "Encuentra academias oficiales en las 16 regiones de Chile.",
-  },
-  {
-    icon: "🔍",
-    title: "Verificación online",
-    desc: "Comprueba cualquier certificación o identidad en segundos.",
-  },
-];
-
 export default async function LandingPage({
   searchParams,
 }: {
@@ -143,28 +93,51 @@ export default async function LandingPage({
 
       {/* ── HERO ──────────────────────────────────────────────────────────── */}
       <section className="relative min-h-screen flex items-center pt-16 overflow-hidden">
-        {/* Background */}
+        {/* Layered background */}
         <div
           className="absolute inset-0 bg-linear-to-br from-neutral-950 via-[#0a0a18] to-[#080810]"
           aria-hidden="true"
         />
-        {/* Radial glow behind logo */}
+        {/* Animated grid overlay */}
         <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-primary-600/8 rounded-full blur-3xl pointer-events-none"
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(99,102,241,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.8) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
+          }}
+          aria-hidden="true"
+        />
+        {/* Slow-pulsing radial glows */}
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-primary-600/8 rounded-full blur-3xl pointer-events-none animate-glow-pulse"
           aria-hidden="true"
         />
         <div
-          className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-indigo-600/6 rounded-full blur-3xl pointer-events-none"
+          className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-indigo-600/6 rounded-full blur-3xl pointer-events-none animate-glow-pulse delay-300"
+          aria-hidden="true"
+        />
+        <div
+          className="absolute bottom-1/4 left-0 w-[400px] h-[400px] bg-primary-800/5 rounded-full blur-3xl pointer-events-none animate-glow-pulse delay-600"
           aria-hidden="true"
         />
 
         <div className="relative max-w-7xl mx-auto px-6 w-full py-20 flex flex-col items-center gap-16">
-          {/* ── Brand block — centered, logo-first ── */}
+          {/* ── Brand block ── */}
           <div className="flex flex-col items-center gap-6 text-center">
-            {/* Logo */}
-            <div className="relative">
+            {/* Logo with spinning ring */}
+            <div className="relative animate-fade-in">
               <div
                 className="absolute -inset-6 bg-primary-600/10 rounded-full blur-2xl"
+                aria-hidden="true"
+              />
+              {/* Spinning conic gradient ring */}
+              <div
+                className="absolute -inset-3 rounded-2xl animate-spin-slow opacity-40"
+                style={{
+                  background:
+                    "conic-gradient(from 0deg, transparent 60%, rgba(99,102,241,0.6) 80%, transparent 100%)",
+                }}
                 aria-hidden="true"
               />
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -176,7 +149,7 @@ export default async function LandingPage({
             </div>
 
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 bg-primary-900/40 border border-primary-800/60 text-primary-400 text-xs font-medium px-3 py-1.5 rounded-full">
+            <div className="animate-fade-in-up delay-100 inline-flex items-center gap-2 bg-primary-900/40 border border-primary-800/60 text-primary-400 text-xs font-medium px-3 py-1.5 rounded-full">
               <span
                 className="w-1.5 h-1.5 rounded-full bg-primary-400 animate-pulse"
                 aria-hidden="true"
@@ -186,15 +159,14 @@ export default async function LandingPage({
 
             {/* Headline */}
             <div className="space-y-3 max-w-3xl">
-              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-none">
+              <h1 className="animate-fade-in-up delay-200 text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-none">
                 Tu identidad
                 <br />
-                marcial,{" "}
-                <span className="text-transparent bg-clip-text bg-linear-to-r from-primary-400 via-indigo-400 to-primary-300">
-                  verificable
+                <span className="text-transparent bg-clip-text bg-linear-to-r from-primary-400 via-indigo-300 to-primary-400">
+                  marcial
                 </span>
               </h1>
-              <p className="text-lg sm:text-xl text-neutral-400 leading-relaxed max-w-2xl mx-auto">
+              <p className="animate-fade-in-up delay-300 text-lg sm:text-xl text-neutral-400 leading-relaxed max-w-2xl mx-auto">
                 La plataforma que centraliza tu perfil, historial, ranking y
                 certificaciones. Verificable por cualquier persona, en cualquier
                 momento.
@@ -202,7 +174,7 @@ export default async function LandingPage({
             </div>
 
             {/* Feature pills */}
-            <div className="flex flex-wrap justify-center gap-2">
+            <div className="animate-fade-in-up delay-400 flex flex-wrap justify-center gap-2">
               {[
                 "Historial marcial",
                 "Ranking nacional",
@@ -223,96 +195,12 @@ export default async function LandingPage({
             </div>
 
             {/* Primary CTAs */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Link
-                href="/register"
-                className="inline-flex items-center justify-center gap-2 bg-primary-600 hover:bg-primary-500 text-white px-8 py-4 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-primary-900/50 hover:shadow-primary-900/70 hover:-translate-y-0.5"
-              >
-                Crear mi perfil gratis
-              </Link>
+            <div className="animate-fade-in-up delay-500 flex flex-col sm:flex-row gap-3 pt-2">
               <Link
                 href="/verify"
-                className="inline-flex items-center justify-center gap-2 bg-neutral-800/80 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 px-8 py-4 rounded-xl text-sm font-semibold transition-colors"
+                className="inline-flex items-center justify-center gap-2 bg-neutral-800/80 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 px-8 py-4 rounded-xl text-sm font-semibold transition-all hover:-translate-y-0.5"
               >
-                Verificar certificación →
-              </Link>
-            </div>
-
-            {/* Social proof */}
-            <div className="flex items-center gap-4">
-              <div className="flex -space-x-2">
-                {["#6366f1", "#8b5cf6", "#06b6d4", "#10b981"].map((c, i) => (
-                  <div
-                    key={i}
-                    className="w-8 h-8 rounded-full border-2 border-neutral-950 flex items-center justify-center text-xs font-bold text-white"
-                    style={{ backgroundColor: c }}
-                  >
-                    {["JG", "MP", "CR", "AL"][i]}
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs text-neutral-500">
-                Practicantes de todo Chile ya tienen su perfil digital
-              </p>
-            </div>
-          </div>
-
-          {/* ── Glass cards row — key value props ── */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-4xl">
-            {[
-              {
-                icon: "🪪",
-                title: "Identidad verificable",
-                desc: "Perfil oficial con QR único. Cualquiera puede verificar tu grado al instante.",
-              },
-              {
-                icon: "📜",
-                title: "Historial permanente",
-                desc: "Cada competencia, examen y seminario queda registrado para siempre.",
-              },
-              {
-                icon: "🏆",
-                title: "Ranking nacional",
-                desc: "Tu posición en tiempo real frente a practicantes de todo Chile.",
-              },
-            ].map((card) => (
-              <div
-                key={card.title}
-                className="group relative bg-neutral-900/60 backdrop-blur-sm border border-neutral-800 hover:border-primary-800/60 rounded-2xl p-6 space-y-3 transition-all hover:-translate-y-1 hover:shadow-lg hover:shadow-primary-900/20"
-              >
-                <div className="w-10 h-10 rounded-xl bg-primary-900/40 border border-primary-800/40 flex items-center justify-center text-xl">
-                  {card.icon}
-                </div>
-                <p className="text-sm font-semibold text-neutral-100">
-                  {card.title}
-                </p>
-                <p className="text-xs text-neutral-500 leading-relaxed">
-                  {card.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          {/* ── Instructor CTA banner ── */}
-          <div className="w-full max-w-4xl">
-            <div className="flex flex-col sm:flex-row items-center gap-4 bg-linear-to-r from-indigo-950/60 to-primary-950/40 border border-indigo-800/30 rounded-2xl px-6 py-5">
-              <div className="w-10 h-10 rounded-xl bg-indigo-900/50 border border-indigo-700/40 flex items-center justify-center text-xl shrink-0">
-                🏫
-              </div>
-              <div className="flex-1 text-center sm:text-left">
-                <p className="text-sm font-semibold text-neutral-200">
-                  ¿Eres instructor o tienes una academia?
-                </p>
-                <p className="text-xs text-neutral-500 mt-0.5">
-                  Registra tu academia, gestiona tus alumnos y emite
-                  certificaciones digitales.
-                </p>
-              </div>
-              <Link
-                href="/instructor-registration"
-                className="shrink-0 inline-flex items-center gap-1.5 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-600/40 text-indigo-300 hover:text-indigo-200 px-4 py-2 rounded-xl text-xs font-semibold transition-colors whitespace-nowrap"
-              >
-                Solicitar acceso →
+                Verificar identificación
               </Link>
             </div>
           </div>
@@ -325,38 +213,581 @@ export default async function LandingPage({
         />
       </section>
 
-      {/* ── STATS ─────────────────────────────────────────────────────────── */}
-      <div className="border-y border-neutral-800/60 bg-neutral-900/20 backdrop-blur-sm">
-        <div className="max-w-5xl mx-auto px-6 py-10 grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
-          {[
-            { value: "16", label: "Regiones de Chile" },
-            { value: "6", label: "Grados técnicos" },
-            { value: "100%", label: "Verificación online" },
-            { value: "24/7", label: "Disponibilidad" },
-          ].map((s) => (
-            <div key={s.label} className="space-y-1">
-              <p className="text-3xl sm:text-4xl font-bold text-primary-400 tracking-tight">
-                {s.value}
-              </p>
-              <p className="text-xs text-neutral-500 uppercase tracking-wider">
-                {s.label}
-              </p>
+      {/* ── CALL TO ACTION INSTRUCTORES ───────────────────────────────────── */}
+      <section className="relative overflow-hidden py-20 sm:py-28">
+        <div
+          className="absolute inset-0 bg-linear-to-br from-indigo-950/60 via-neutral-950 to-primary-950/40 pointer-events-none"
+          aria-hidden="true"
+        />
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-indigo-600/8 rounded-full blur-3xl pointer-events-none animate-glow-pulse"
+          aria-hidden="true"
+        />
+        <div
+          className="absolute top-0 right-0 w-[400px] h-[400px] bg-primary-600/6 rounded-full blur-3xl pointer-events-none animate-glow-pulse delay-400"
+          aria-hidden="true"
+        />
+
+        <div className="relative max-w-6xl mx-auto px-6">
+          {/* Encabezado */}
+          <RevealOnScroll className="text-center mb-14 space-y-4">
+            <div className="inline-flex items-center gap-2 bg-indigo-900/40 border border-indigo-700/50 text-indigo-300 text-xs font-semibold px-4 py-2 rounded-full tracking-widest uppercase">
+              <span
+                className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"
+                aria-hidden="true"
+              />
+              Para instructores y academias
             </div>
-          ))}
+            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-none">
+              El registro{" "}
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-indigo-400 via-primary-400 to-indigo-300">
+                nacional y oficial
+              </span>
+              <br />
+              de tu academia
+            </h2>
+            <p className="text-neutral-400 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
+              Kombat ID es la plataforma oficial de la federación. Inscribe tu
+              academia, registra a tus alumnos y gestiona toda su trayectoria
+              marcial desde un solo lugar.
+            </p>
+          </RevealOnScroll>
+
+          {/* Grid de beneficios */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-14">
+            {/* Registro oficial */}
+            <RevealOnScroll className="delay-100 card-shimmer relative group bg-neutral-900/70 backdrop-blur-sm border border-neutral-800 hover:border-indigo-700/50 rounded-2xl p-6 space-y-4 transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-950/40">
+              <div className="w-11 h-11 rounded-xl bg-indigo-900/50 border border-indigo-700/40 flex items-center justify-center">
+                <svg
+                  className="w-5 h-5 text-indigo-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0 0 12 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75Z"
+                  />
+                </svg>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-sm font-bold text-neutral-100">
+                  Registro federado oficial
+                </p>
+                <p className="text-xs text-neutral-500 leading-relaxed">
+                  Tu academia queda inscrita en el padrón nacional de Kombat
+                  Taekwondo Chile, con validez ante la federación.
+                </p>
+              </div>
+              <div className="inline-flex items-center gap-1.5 bg-indigo-900/30 border border-indigo-800/40 text-indigo-400 text-[10px] font-medium px-2.5 py-1 rounded-full">
+                <span
+                  className="w-1 h-1 rounded-full bg-indigo-400"
+                  aria-hidden="true"
+                />
+                Avalado por la federación
+              </div>
+            </RevealOnScroll>
+
+            {/* Gestión de alumnos */}
+            <RevealOnScroll className="delay-200 card-shimmer relative group bg-neutral-900/70 backdrop-blur-sm border border-neutral-800 hover:border-primary-700/50 rounded-2xl p-6 space-y-4 transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-primary-950/40">
+              <div className="w-11 h-11 rounded-xl bg-primary-900/50 border border-primary-700/40 flex items-center justify-center">
+                <svg
+                  className="w-5 h-5 text-primary-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z"
+                  />
+                </svg>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-sm font-bold text-neutral-100">
+                  Gestión completa de alumnos
+                </p>
+                <p className="text-xs text-neutral-500 leading-relaxed">
+                  Registra y administra el padrón de tu academia. Cada alumno
+                  obtiene su perfil digital verificable con QR único.
+                </p>
+              </div>
+              <div className="inline-flex items-center gap-1.5 bg-primary-900/30 border border-primary-800/40 text-primary-400 text-[10px] font-medium px-2.5 py-1 rounded-full">
+                <span
+                  className="w-1 h-1 rounded-full bg-primary-400"
+                  aria-hidden="true"
+                />
+                Perfil QR por alumno
+              </div>
+            </RevealOnScroll>
+
+            {/* Eventos marciales */}
+            <RevealOnScroll className="delay-300 card-shimmer relative group bg-neutral-900/70 backdrop-blur-sm border border-neutral-800 hover:border-rose-700/50 rounded-2xl p-6 space-y-4 transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-rose-950/30">
+              <div className="w-11 h-11 rounded-xl bg-rose-900/40 border border-rose-700/30 flex items-center justify-center">
+                <svg
+                  className="w-5 h-5 text-rose-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M16.5 18.75h-9m9 0a3 3 0 0 1 3 3h-15a3 3 0 0 1 3-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 0 1-.982-3.172M9.497 14.25a7.454 7.454 0 0 0 .981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 0 0 7.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 0 0 2.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 0 1 2.916.52 6.003 6.003 0 0 1-5.395 4.972m0 0a6.726 6.726 0 0 1-2.749 1.35m0 0a6.772 6.772 0 0 1-3.044 0"
+                  />
+                </svg>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-sm font-bold text-neutral-100">
+                  Eventos, seminarios y competencias
+                </p>
+                <p className="text-xs text-neutral-500 leading-relaxed">
+                  Con tus alumnos registrados, pueden participar en torneos,
+                  seminarios y competencias oficiales de la federación.
+                </p>
+              </div>
+              <div className="inline-flex items-center gap-1.5 bg-rose-900/30 border border-rose-800/40 text-rose-400 text-[10px] font-medium px-2.5 py-1 rounded-full">
+                <span
+                  className="w-1 h-1 rounded-full bg-rose-400"
+                  aria-hidden="true"
+                />
+                Inscripción con un clic
+              </div>
+            </RevealOnScroll>
+
+            {/* Exámenes de grado */}
+            <RevealOnScroll className="delay-100 card-shimmer relative group bg-neutral-900/70 backdrop-blur-sm border border-neutral-800 hover:border-amber-700/50 rounded-2xl p-6 space-y-4 transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-950/30">
+              <div className="w-11 h-11 rounded-xl bg-amber-900/40 border border-amber-700/30 flex items-center justify-center">
+                <svg
+                  className="w-5 h-5 text-amber-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 3.741-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5"
+                  />
+                </svg>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-sm font-bold text-neutral-100">
+                  Exámenes de grado oficial
+                </p>
+                <p className="text-xs text-neutral-500 leading-relaxed">
+                  Postula a tus alumnos a exámenes de grado certificados por la
+                  federación. El resultado queda en su historial permanente.
+                </p>
+              </div>
+              <div className="inline-flex items-center gap-1.5 bg-amber-900/30 border border-amber-800/40 text-amber-400 text-[10px] font-medium px-2.5 py-1 rounded-full">
+                <span
+                  className="w-1 h-1 rounded-full bg-amber-400"
+                  aria-hidden="true"
+                />
+                Certificación digital
+              </div>
+            </RevealOnScroll>
+
+            {/* Certificaciones digitales */}
+            <RevealOnScroll className="delay-200 card-shimmer relative group bg-neutral-900/70 backdrop-blur-sm border border-neutral-800 hover:border-emerald-700/50 rounded-2xl p-6 space-y-4 transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-950/30">
+              <div className="w-11 h-11 rounded-xl bg-emerald-900/40 border border-emerald-700/30 flex items-center justify-center">
+                <svg
+                  className="w-5 h-5 text-emerald-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z"
+                  />
+                </svg>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-sm font-bold text-neutral-100">
+                  Emite certificaciones digitales
+                </p>
+                <p className="text-xs text-neutral-500 leading-relaxed">
+                  Genera certificados verificables para tus alumnos: grados,
+                  participación, instructor y árbitro — todo en la nube.
+                </p>
+              </div>
+              <div className="inline-flex items-center gap-1.5 bg-emerald-900/30 border border-emerald-800/40 text-emerald-400 text-[10px] font-medium px-2.5 py-1 rounded-full">
+                <span
+                  className="w-1 h-1 rounded-full bg-emerald-400"
+                  aria-hidden="true"
+                />
+                Verificable con QR
+              </div>
+            </RevealOnScroll>
+
+            {/* CTA card */}
+            <RevealOnScroll className="delay-300 card-shimmer relative group bg-linear-to-br from-indigo-900/50 to-primary-900/30 border border-indigo-700/40 hover:border-indigo-600/60 rounded-2xl p-6 flex flex-col justify-between gap-6 transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-950/50">
+              <div className="space-y-3">
+                <div className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+                  <School
+                    className="w-5 h-5 text-indigo-300"
+                    aria-hidden="true"
+                  />
+                </div>
+                <p className="text-sm font-bold text-neutral-100 leading-snug">
+                  ¿Listo para unirte al registro nacional?
+                </p>
+                <p className="text-xs text-neutral-400 leading-relaxed">
+                  Solicita el acceso de instructor y registra tu academia hoy
+                  mismo. Es gratuito.
+                </p>
+              </div>
+              <Link
+                href="/instructor-registration"
+                className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-3 rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-900/50 hover:shadow-indigo-900/70 hover:-translate-y-0.5 w-full"
+              >
+                Registrar mi academia →
+              </Link>
+            </RevealOnScroll>
+          </div>
+
+          {/* Banner destacado */}
+          <RevealOnScroll>
+            <div className="relative overflow-hidden bg-linear-to-r from-indigo-950 via-neutral-900 to-primary-950 border border-indigo-800/40 rounded-2xl px-8 py-8 sm:py-10">
+              <div
+                className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"
+                aria-hidden="true"
+              />
+              <div
+                className="absolute bottom-0 left-0 w-48 h-48 bg-primary-600/8 rounded-full blur-3xl pointer-events-none"
+                aria-hidden="true"
+              />
+              <div className="relative flex flex-col sm:flex-row items-center gap-6 sm:gap-10 text-center sm:text-left">
+                <div className="shrink-0 w-16 h-16 rounded-2xl bg-indigo-900/60 border border-indigo-700/50 flex items-center justify-center shadow-xl shadow-indigo-950/50">
+                  <Flag
+                    className="w-7 h-7 text-indigo-300"
+                    aria-hidden="true"
+                  />
+                </div>
+                <div className="flex-1 space-y-1.5">
+                  <p className="text-lg sm:text-xl font-black text-neutral-100 tracking-tight">
+                    ¿Eres instructor? Registra tu academia gratis
+                  </p>
+                  <p className="text-sm text-neutral-400 leading-relaxed max-w-xl">
+                    Solicita tu cuenta de instructor, inscribe tu academia en el
+                    padrón federado y empieza a gestionar a tus alumnos. Tú
+                    controlas quién accede a la plataforma desde tu academia.
+                  </p>
+                </div>
+                <Link
+                  href="/instructor-registration"
+                  className="shrink-0 inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-indigo-900/50 hover:shadow-indigo-900/70 hover:-translate-y-0.5 whitespace-nowrap"
+                >
+                  Crear cuenta de instructor →
+                </Link>
+              </div>
+            </div>
+          </RevealOnScroll>
         </div>
-      </div>
+      </section>
+
+      {/* ── CÓMO OBTENER TU CUENTA DE ALUMNO ─────────────────────────────── */}
+      <section className="relative overflow-hidden border-t border-neutral-800 py-20 sm:py-24">
+        {/* Fondo sutil */}
+        <div
+          className="absolute inset-0 bg-linear-to-b from-neutral-900/30 to-neutral-950 pointer-events-none"
+          aria-hidden="true"
+        />
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] bg-primary-600/5 rounded-full blur-3xl pointer-events-none animate-glow-pulse"
+          aria-hidden="true"
+        />
+
+        <div className="relative max-w-4xl mx-auto px-6">
+          <RevealOnScroll className="text-center mb-12 space-y-4">
+            <div className="inline-flex items-center gap-2 bg-primary-900/40 border border-primary-800/60 text-primary-400 text-xs font-semibold px-4 py-2 rounded-full tracking-widest uppercase">
+              <span
+                className="w-1.5 h-1.5 rounded-full bg-primary-400 animate-pulse"
+                aria-hidden="true"
+              />
+              Para practicantes
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
+              ¿Cómo obtengo mi{" "}
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-primary-400 via-indigo-300 to-primary-400">
+                cuenta de alumno?
+              </span>
+            </h2>
+            <p className="text-neutral-400 text-base max-w-xl mx-auto leading-relaxed">
+              Las cuentas de practicante son habilitadas por tu instructor. No
+              puedes registrarte de forma independiente — tu perfil debe estar
+              vinculado a una academia oficial de Kombat Taekwondo Chile.
+            </p>
+          </RevealOnScroll>
+
+          {/* Pasos */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-12">
+            {[
+              {
+                step: "01",
+                color: "primary",
+                iconPath:
+                  "M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z",
+                title: "Habla con tu instructor",
+                desc: "Pídele a tu instructor que te registre en la plataforma. Él tiene acceso para crear y vincular tu perfil a la academia.",
+                ring: "border-primary-700/40",
+                glow: "bg-primary-600/10",
+                iconColor: "text-primary-400",
+                iconBg: "bg-primary-900/50 border-primary-700/40",
+              },
+              {
+                step: "02",
+                color: "indigo",
+                iconPath:
+                  "M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75",
+                title: "Recibe tu invitación",
+                desc: "Tu instructor enviará una invitación a tu correo electrónico para que actives tu cuenta y accedas a tu perfil oficial.",
+                ring: "border-indigo-700/40",
+                glow: "bg-indigo-600/10",
+                iconColor: "text-indigo-400",
+                iconBg: "bg-indigo-900/50 border-indigo-700/40",
+              },
+              {
+                step: "03",
+                color: "emerald",
+                iconPath:
+                  "M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z",
+                title: "Activa tu perfil",
+                desc: "Completa tu registro, accede a tu historial marcial, descarga tus certificaciones y comparte tu QR de identidad.",
+                ring: "border-emerald-700/40",
+                glow: "bg-emerald-600/10",
+                iconColor: "text-emerald-400",
+                iconBg: "bg-emerald-900/50 border-emerald-700/40",
+              },
+            ].map((item, idx) => (
+              <RevealOnScroll
+                key={item.step}
+                className={`delay-${(idx + 1) * 100} card-shimmer relative bg-neutral-900/70 backdrop-blur-sm border border-neutral-800 hover:border-neutral-700 rounded-2xl p-6 space-y-4 transition-all hover:-translate-y-1`}
+              >
+                {/* Número de paso */}
+                <div className="flex items-center justify-between">
+                  <div
+                    className={`w-11 h-11 rounded-xl border flex items-center justify-center ${item.iconBg}`}
+                  >
+                    <svg
+                      className={`w-5 h-5 ${item.iconColor}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={1.5}
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d={item.iconPath}
+                      />
+                    </svg>
+                  </div>
+                  <span
+                    className={`text-2xl font-black tabular-nums ${item.iconColor} opacity-20`}
+                  >
+                    {item.step}
+                  </span>
+                </div>
+                <div className="space-y-1.5">
+                  <p className="text-sm font-bold text-neutral-100">
+                    {item.title}
+                  </p>
+                  <p className="text-xs text-neutral-500 leading-relaxed">
+                    {item.desc}
+                  </p>
+                </div>
+              </RevealOnScroll>
+            ))}
+          </div>
+
+          {/* Callout informativo */}
+          <RevealOnScroll className="delay-400">
+            <div className="relative overflow-hidden bg-neutral-900/60 border border-primary-800/30 rounded-2xl px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div
+                className="absolute inset-0 bg-linear-to-r from-primary-950/40 to-transparent pointer-events-none"
+                aria-hidden="true"
+              />
+              <div className="relative shrink-0 w-10 h-10 rounded-xl bg-primary-900/60 border border-primary-700/40 flex items-center justify-center">
+                <svg
+                  className="w-5 h-5 text-primary-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
+                  />
+                </svg>
+              </div>
+              <div className="relative flex-1 space-y-0.5">
+                <p className="text-sm font-semibold text-neutral-100">
+                  ¿Tu instructor aún no está en la plataforma?
+                </p>
+                <p className="text-xs text-neutral-400 leading-relaxed">
+                  Comparte el enlace de registro de instructores con él. Una vez
+                  que su academia esté activa, podrá habilitarte el acceso.
+                </p>
+              </div>
+              <Link
+                href="/instructor-registration"
+                className="relative shrink-0 inline-flex items-center gap-1.5 bg-primary-600/20 hover:bg-primary-600/30 border border-primary-700/50 text-primary-300 px-4 py-2 rounded-lg text-xs font-semibold transition-all whitespace-nowrap"
+              >
+                Registro de instructores →
+              </Link>
+            </div>
+          </RevealOnScroll>
+        </div>
+      </section>
+
+      {/* ── FEATURES GRID ─────────────────────────────────────────────────── */}
+      <section className="border-y border-neutral-800 bg-neutral-900/20">
+        <div className="max-w-7xl mx-auto px-6 py-20 sm:py-24">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            {/* Columna izquierda: copy */}
+            <RevealOnScroll className="space-y-6">
+              <span className="inline-flex items-center gap-2 bg-primary-900/40 border border-primary-800/60 text-primary-400 text-xs font-medium px-3 py-1.5 rounded-full">
+                Funcionalidades
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
+                Todo lo que necesitas{" "}
+                <span className="text-primary-400">en un solo lugar</span>
+              </h2>
+              <p className="text-neutral-400 text-sm leading-relaxed max-w-md">
+                Una plataforma completa diseñada para practicantes, instructores
+                y administradores de Kombat Taekwondo Chile.
+              </p>
+              <Link
+                href="/register"
+                className="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-500 text-white px-6 py-3 rounded-xl text-sm font-semibold transition-all hover:-translate-y-0.5 shadow-lg shadow-primary-900/40"
+              >
+                Comenzar ahora →
+              </Link>
+            </RevealOnScroll>
+
+            {/* Columna derecha: grid de características */}
+            <RevealOnScroll className="delay-200 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                {
+                  color: "primary",
+                  iconPath:
+                    "M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z",
+                  title: "Identidad digital",
+                  desc: "Perfil oficial con RUT, grado y QR de verificación instantánea.",
+                  bg: "bg-primary-600/10 border-primary-500/15",
+                  icon: "text-primary-400",
+                },
+                {
+                  color: "amber",
+                  iconPath: "M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z",
+                  title: "Historial marcial",
+                  desc: "Registro permanente e inmutable de toda tu trayectoria competitiva.",
+                  bg: "bg-amber-600/10 border-amber-500/15",
+                  icon: "text-amber-400",
+                },
+                {
+                  color: "rose",
+                  iconPath:
+                    "M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0",
+                  title: "Ranking nacional",
+                  desc: "Posición en tiempo real por grado, edad y categoría de peso.",
+                  bg: "bg-rose-600/10 border-rose-500/15",
+                  icon: "text-rose-400",
+                },
+                {
+                  color: "violet",
+                  iconPath:
+                    "M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.745 3.745 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.745 3.745 0 013.296-1.043A3.745 3.745 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.745 3.745 0 013.296 1.043 3.745 3.745 0 011.043 3.296A3.745 3.745 0 0121 12z",
+                  title: "Certificaciones",
+                  desc: "Certificados digitales verificables con URL pública y estado en tiempo real.",
+                  bg: "bg-violet-600/10 border-violet-500/15",
+                  icon: "text-violet-400",
+                },
+                {
+                  color: "sky",
+                  iconPath:
+                    "M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z",
+                  title: "Red de academias",
+                  desc: "Encuentra academias oficiales en las 16 regiones de Chile.",
+                  bg: "bg-sky-600/10 border-sky-500/15",
+                  icon: "text-sky-400",
+                },
+                {
+                  color: "emerald",
+                  iconPath:
+                    "M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z",
+                  title: "Verificación online",
+                  desc: "Comprueba cualquier certificación o identidad en segundos, sin cuenta.",
+                  bg: "bg-emerald-600/10 border-emerald-500/15",
+                  icon: "text-emerald-400",
+                },
+              ].map((card) => (
+                <div
+                  key={card.title}
+                  className="card-shimmer group flex items-start gap-3 bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-xl p-4 transition-all hover:-translate-y-0.5"
+                >
+                  <div
+                    className={`w-9 h-9 rounded-lg border flex items-center justify-center shrink-0 mt-0.5 ${card.bg}`}
+                  >
+                    <svg
+                      className={`w-4 h-4 ${card.icon}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={1.5}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d={card.iconPath}
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-neutral-100 mb-1">
+                      {card.title}
+                    </p>
+                    <p className="text-xs text-neutral-500 leading-relaxed">
+                      {card.desc}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </RevealOnScroll>
+          </div>
+        </div>
+      </section>
 
       {/* ── CÓMO FUNCIONA ─────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden py-24 sm:py-32">
-        {/* Fondo radial sutil */}
         <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-225 h-150 rounded-full bg-primary-600/5 blur-3xl pointer-events-none"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[600px] rounded-full bg-primary-600/5 blur-3xl pointer-events-none animate-glow-pulse"
           aria-hidden="true"
         />
 
         <div className="relative max-w-5xl mx-auto px-6">
           {/* Encabezado */}
-          <div className="text-center mb-20 space-y-5">
+          <RevealOnScroll className="text-center mb-20 space-y-5">
             <div className="inline-flex items-center gap-2 bg-primary-900/30 border border-primary-700/40 text-primary-400 text-xs font-semibold px-4 py-2 rounded-full tracking-widest uppercase">
               <span
                 className="w-1.5 h-1.5 rounded-full bg-primary-400 animate-pulse"
@@ -370,11 +801,11 @@ export default async function LandingPage({
             <p className="text-neutral-400 text-base max-w-md mx-auto leading-relaxed">
               Tres pasos para tener tu identidad marcial digital y verificable.
             </p>
-          </div>
+          </RevealOnScroll>
 
           {/* Grid de pasos */}
           <div className="relative grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-6">
-            {/* Conector horizontal con shimmer (solo desktop) */}
+            {/* Conector horizontal */}
             <div
               className="hidden md:block absolute top-13 left-[calc(16.67%+3.5rem)] right-[calc(16.67%+3.5rem)] h-px overflow-hidden"
               aria-hidden="true"
@@ -383,8 +814,8 @@ export default async function LandingPage({
               <div className="absolute inset-0 w-1/3 bg-linear-to-r from-transparent via-white/50 to-transparent animate-[shimmer_2.5s_ease-in-out_infinite]" />
             </div>
 
-            {/* ── Paso 01 — Crea tu perfil ── */}
-            <div className="flex flex-col items-center text-center gap-6">
+            {/* Paso 01 */}
+            <RevealOnScroll className="delay-100 flex flex-col items-center text-center gap-6">
               <div className="relative">
                 <div
                   className="absolute -inset-4 bg-primary-600/10 rounded-full blur-2xl"
@@ -410,7 +841,6 @@ export default async function LandingPage({
                   </span>
                 </div>
               </div>
-
               <div className="space-y-2.5">
                 <h3 className="text-lg font-bold text-neutral-100">
                   Crea tu perfil
@@ -420,8 +850,6 @@ export default async function LandingPage({
                   perfil oficial de practicante.
                 </p>
               </div>
-
-              {/* Mini mockup — tarjeta de perfil */}
               <div className="w-full bg-neutral-900/80 border border-neutral-800 hover:border-primary-800/40 rounded-2xl p-4 space-y-3 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-primary-800/50 border border-primary-700/40 flex items-center justify-center text-primary-300 text-xs font-bold shrink-0">
@@ -444,10 +872,10 @@ export default async function LandingPage({
                   <div className="h-full w-3/4 bg-linear-to-r from-primary-600 to-primary-400 rounded-full" />
                 </div>
               </div>
-            </div>
+            </RevealOnScroll>
 
-            {/* ── Paso 02 — Acumula tu historial ── */}
-            <div className="flex flex-col items-center text-center gap-6">
+            {/* Paso 02 */}
+            <RevealOnScroll className="delay-300 flex flex-col items-center text-center gap-6">
               <div className="relative">
                 <div
                   className="absolute -inset-4 bg-amber-600/10 rounded-full blur-2xl"
@@ -473,7 +901,6 @@ export default async function LandingPage({
                   </span>
                 </div>
               </div>
-
               <div className="space-y-2.5">
                 <h3 className="text-lg font-bold text-neutral-100">
                   Acumula tu historial
@@ -483,8 +910,6 @@ export default async function LandingPage({
                   trayectoria crece con cada evento.
                 </p>
               </div>
-
-              {/* Mini mockup — timeline de eventos */}
               <div className="w-full bg-neutral-900/80 border border-neutral-800 hover:border-amber-800/30 rounded-2xl p-4 space-y-2.5 transition-colors">
                 {(
                   [
@@ -523,10 +948,10 @@ export default async function LandingPage({
                   </div>
                 ))}
               </div>
-            </div>
+            </RevealOnScroll>
 
-            {/* ── Paso 03 — Verifica y comparte ── */}
-            <div className="flex flex-col items-center text-center gap-6">
+            {/* Paso 03 */}
+            <RevealOnScroll className="delay-500 flex flex-col items-center text-center gap-6">
               <div className="relative">
                 <div
                   className="absolute -inset-4 bg-emerald-600/10 rounded-full blur-2xl"
@@ -557,7 +982,6 @@ export default async function LandingPage({
                   </span>
                 </div>
               </div>
-
               <div className="space-y-2.5">
                 <h3 className="text-lg font-bold text-neutral-100">
                   Verifica y comparte
@@ -567,8 +991,6 @@ export default async function LandingPage({
                   puede verificar tu identidad al instante.
                 </p>
               </div>
-
-              {/* Mini mockup — verificación QR */}
               <div className="w-full bg-neutral-900/80 border border-neutral-800 hover:border-emerald-800/30 rounded-2xl p-4 space-y-3 transition-colors">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[10px] text-neutral-600 font-mono truncate">
@@ -582,7 +1004,6 @@ export default async function LandingPage({
                     Vigente
                   </span>
                 </div>
-                {/* QR decorativo */}
                 <div className="mx-auto w-14 h-14 grid grid-cols-5 grid-rows-5 gap-0.5">
                   {[
                     1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1,
@@ -590,9 +1011,7 @@ export default async function LandingPage({
                   ].map((fill, i) => (
                     <div
                       key={i}
-                      className={`rounded-[2px] ${
-                        fill ? "bg-emerald-400/70" : "bg-neutral-800"
-                      }`}
+                      className={`rounded-[2px] ${fill ? "bg-emerald-400/70" : "bg-neutral-800"}`}
                     />
                   ))}
                 </div>
@@ -605,204 +1024,7 @@ export default async function LandingPage({
                   </p>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── FEATURES GRID ─────────────────────────────────────────────────── */}
-      <section className="border-y border-neutral-800 bg-neutral-900/20">
-        <div className="max-w-7xl mx-auto px-6 py-20 sm:py-24">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            {/* Columna izquierda: copy */}
-            <div className="space-y-6">
-              <span className="inline-flex items-center gap-2 bg-primary-900/40 border border-primary-800/60 text-primary-400 text-xs font-medium px-3 py-1.5 rounded-full">
-                Funcionalidades
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
-                Todo lo que necesitas{" "}
-                <span className="text-primary-400">en un solo lugar</span>
-              </h2>
-              <p className="text-neutral-400 text-sm leading-relaxed max-w-md">
-                Una plataforma completa diseñada para practicantes, instructores
-                y administradores de Kombat Taekwondo Chile.
-              </p>
-              <Link
-                href="/register"
-                className="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-500 text-white px-6 py-3 rounded-xl text-sm font-semibold transition-all hover:-translate-y-0.5"
-              >
-                Comenzar ahora →
-              </Link>
-            </div>
-
-            {/* Columna derecha: grid de características */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Identidad digital */}
-              <div className="group flex items-start gap-3 bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-xl p-4 transition-colors">
-                <div className="w-9 h-9 rounded-lg bg-primary-600/10 border border-primary-500/15 flex items-center justify-center shrink-0 mt-0.5">
-                  <svg
-                    className="w-4 h-4 text-primary-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1.5}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-neutral-100 mb-1">
-                    Identidad digital
-                  </p>
-                  <p className="text-xs text-neutral-500 leading-relaxed">
-                    Perfil oficial con RUT, grado y QR de verificación
-                    instantánea.
-                  </p>
-                </div>
-              </div>
-
-              {/* Historial marcial */}
-              <div className="group flex items-start gap-3 bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-xl p-4 transition-colors">
-                <div className="w-9 h-9 rounded-lg bg-amber-600/10 border border-amber-500/15 flex items-center justify-center shrink-0 mt-0.5">
-                  <svg
-                    className="w-4 h-4 text-amber-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1.5}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-neutral-100 mb-1">
-                    Historial marcial
-                  </p>
-                  <p className="text-xs text-neutral-500 leading-relaxed">
-                    Registro permanente e inmutable de toda tu trayectoria
-                    competitiva.
-                  </p>
-                </div>
-              </div>
-
-              {/* Ranking nacional */}
-              <div className="group flex items-start gap-3 bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-xl p-4 transition-colors">
-                <div className="w-9 h-9 rounded-lg bg-rose-600/10 border border-rose-500/15 flex items-center justify-center shrink-0 mt-0.5">
-                  <svg
-                    className="w-4 h-4 text-rose-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1.5}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-neutral-100 mb-1">
-                    Ranking nacional
-                  </p>
-                  <p className="text-xs text-neutral-500 leading-relaxed">
-                    Posición en tiempo real por grado, edad y categoría de peso.
-                  </p>
-                </div>
-              </div>
-
-              {/* Certificaciones */}
-              <div className="group flex items-start gap-3 bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-xl p-4 transition-colors">
-                <div className="w-9 h-9 rounded-lg bg-violet-600/10 border border-violet-500/15 flex items-center justify-center shrink-0 mt-0.5">
-                  <svg
-                    className="w-4 h-4 text-violet-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1.5}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.745 3.745 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.745 3.745 0 013.296-1.043A3.745 3.745 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.745 3.745 0 013.296 1.043 3.745 3.745 0 011.043 3.296A3.745 3.745 0 0121 12z"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-neutral-100 mb-1">
-                    Certificaciones
-                  </p>
-                  <p className="text-xs text-neutral-500 leading-relaxed">
-                    Certificados digitales verificables con URL pública y estado
-                    en tiempo real.
-                  </p>
-                </div>
-              </div>
-
-              {/* Red de academias */}
-              <div className="group flex items-start gap-3 bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-xl p-4 transition-colors">
-                <div className="w-9 h-9 rounded-lg bg-sky-600/10 border border-sky-500/15 flex items-center justify-center shrink-0 mt-0.5">
-                  <svg
-                    className="w-4 h-4 text-sky-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1.5}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-neutral-100 mb-1">
-                    Red de academias
-                  </p>
-                  <p className="text-xs text-neutral-500 leading-relaxed">
-                    Encuentra academias oficiales en las 16 regiones de Chile.
-                  </p>
-                </div>
-              </div>
-
-              {/* Verificación online */}
-              <div className="group flex items-start gap-3 bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-xl p-4 transition-colors">
-                <div className="w-9 h-9 rounded-lg bg-emerald-600/10 border border-emerald-500/15 flex items-center justify-center shrink-0 mt-0.5">
-                  <svg
-                    className="w-4 h-4 text-emerald-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1.5}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-neutral-100 mb-1">
-                    Verificación online
-                  </p>
-                  <p className="text-xs text-neutral-500 leading-relaxed">
-                    Comprueba cualquier certificación o identidad en segundos,
-                    sin cuenta.
-                  </p>
-                </div>
-              </div>
-            </div>
+            </RevealOnScroll>
           </div>
         </div>
       </section>
@@ -811,12 +1033,12 @@ export default async function LandingPage({
       <section className="max-w-7xl mx-auto px-6 py-20 sm:py-28">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Mock UI */}
-          <div className="relative">
+          <RevealOnScroll className="relative">
             <div
               className="absolute -inset-4 bg-emerald-600/5 rounded-3xl blur-2xl"
               aria-hidden="true"
             />
-            <div className="relative bg-neutral-900 border border-neutral-700 rounded-2xl overflow-hidden shadow-2xl">
+            <div className="relative bg-neutral-900 border border-neutral-700 rounded-2xl overflow-hidden shadow-2xl shadow-neutral-950/80">
               {/* Browser bar */}
               <div className="px-4 py-3 border-b border-neutral-800 flex items-center gap-2 bg-neutral-900/80">
                 <div className="flex gap-1.5">
@@ -864,10 +1086,10 @@ export default async function LandingPage({
                 ))}
               </div>
             </div>
-          </div>
+          </RevealOnScroll>
 
           {/* Copy */}
-          <div className="space-y-6">
+          <RevealOnScroll className="delay-200 space-y-6">
             <span className="inline-flex items-center gap-2 bg-emerald-900/30 border border-emerald-800/50 text-emerald-400 text-xs font-medium px-3 py-1.5 rounded-full">
               <span
                 className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"
@@ -903,7 +1125,7 @@ export default async function LandingPage({
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <Link
                 href="/verify"
-                className="inline-flex items-center justify-center gap-2 bg-primary-600 hover:bg-primary-500 text-white px-6 py-3 rounded-xl text-sm font-semibold transition-all hover:-translate-y-0.5"
+                className="inline-flex items-center justify-center gap-2 bg-primary-600 hover:bg-primary-500 text-white px-6 py-3 rounded-xl text-sm font-semibold transition-all hover:-translate-y-0.5 shadow-lg shadow-primary-900/40"
               >
                 Ir al verificador →
               </Link>
@@ -914,7 +1136,7 @@ export default async function LandingPage({
                 Ver academias
               </Link>
             </div>
-          </div>
+          </RevealOnScroll>
         </div>
       </section>
 
@@ -923,7 +1145,7 @@ export default async function LandingPage({
         <section className="relative border-t border-neutral-800 overflow-hidden">
           <div className="relative max-w-7xl mx-auto px-6 py-20 sm:py-24">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-12">
+            <RevealOnScroll className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-12">
               <div className="space-y-3">
                 <span className="inline-flex items-center gap-2 bg-primary-900/40 border border-primary-800/60 text-primary-400 text-xs font-semibold px-3 py-1.5 rounded-full uppercase tracking-widest">
                   <span
@@ -959,11 +1181,11 @@ export default async function LandingPage({
                   />
                 </svg>
               </Link>
-            </div>
+            </RevealOnScroll>
 
             {/* Tarjetas de eventos */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {upcoming.map((event) => {
+              {upcoming.map((event, idx) => {
                 const days = daysUntil(event.event_date);
                 const daysLabel = formatDaysUntil(days);
                 const urgencyClass =
@@ -972,92 +1194,92 @@ export default async function LandingPage({
                     : days <= 14
                       ? "bg-amber-500/15 text-amber-400 border border-amber-500/25"
                       : "bg-neutral-800 text-neutral-400 border border-neutral-700";
+                const delayClass =
+                  [
+                    "delay-100",
+                    "delay-200",
+                    "delay-300",
+                    "delay-400",
+                    "delay-500",
+                    "delay-600",
+                  ][idx] ?? "";
 
                 return (
-                  <Link
-                    key={event.id}
-                    href={`/events/${event.id}`}
-                    className="group relative flex flex-col bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-neutral-950/50"
-                  >
-                    {/* Barra de acento por tipo */}
-                    <div
-                      className={`h-0.5 w-full shrink-0 ${EVENT_TYPE_ACCENT_BG[event.event_type]}`}
-                    />
-
-                    <div className="flex flex-col gap-3 p-5 flex-1">
-                      {/* Tipo + fecha */}
-                      <div className="flex items-start justify-between gap-2">
-                        <span
-                          className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${EVENT_TYPE_STYLES[event.event_type]}`}
-                        >
-                          {EVENT_TYPE_LABELS[event.event_type]}
-                        </span>
-                        <time
-                          dateTime={event.event_date}
-                          className="text-xs text-neutral-500 shrink-0 mt-0.5"
-                        >
-                          {formatDateShort(event.event_date)}
-                        </time>
-                      </div>
-
-                      {/* Nombre del evento */}
-                      <p className="text-base font-bold text-neutral-100 leading-snug group-hover:text-white transition-colors">
-                        {event.name}
-                      </p>
-
-                      {/* Ubicación */}
-                      {event.location && (
-                        <p className="text-xs text-neutral-500 flex items-center gap-1.5">
-                          <svg
-                            className="w-3.5 h-3.5 shrink-0 text-neutral-600"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth={1.5}
+                  <RevealOnScroll key={event.id} className={delayClass}>
+                    <Link
+                      href={`/events/${event.id}`}
+                      className="card-shimmer group relative flex flex-col bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-neutral-950/50 h-full"
+                    >
+                      <div
+                        className={`h-0.5 w-full shrink-0 ${EVENT_TYPE_ACCENT_BG[event.event_type]}`}
+                      />
+                      <div className="flex flex-col gap-3 p-5 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <span
+                            className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${EVENT_TYPE_STYLES[event.event_type]}`}
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"
-                            />
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"
-                            />
-                          </svg>
-                          {event.location}
+                            {EVENT_TYPE_LABELS[event.event_type]}
+                          </span>
+                          <time
+                            dateTime={event.event_date}
+                            className="text-xs text-neutral-500 shrink-0 mt-0.5"
+                          >
+                            {formatDateShort(event.event_date)}
+                          </time>
+                        </div>
+                        <p className="text-base font-bold text-neutral-100 leading-snug group-hover:text-white transition-colors">
+                          {event.name}
                         </p>
-                      )}
-
-                      <div className="flex-1 min-h-2" />
-
-                      {/* Footer: countdown + CTA */}
-                      <div className="flex items-center justify-between pt-3 border-t border-neutral-800/80">
-                        <span
-                          className={`text-xs font-medium px-2 py-0.5 rounded-full ${urgencyClass}`}
-                        >
-                          {daysLabel}
-                        </span>
-                        <span className="text-xs text-neutral-500 group-hover:text-primary-400 transition-colors flex items-center gap-1">
-                          Ver evento
-                          <svg
-                            className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth={2}
+                        {event.location && (
+                          <p className="text-xs text-neutral-500 flex items-center gap-1.5">
+                            <svg
+                              className="w-3.5 h-3.5 shrink-0 text-neutral-600"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={1.5}
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"
+                              />
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"
+                              />
+                            </svg>
+                            {event.location}
+                          </p>
+                        )}
+                        <div className="flex-1 min-h-2" />
+                        <div className="flex items-center justify-between pt-3 border-t border-neutral-800/80">
+                          <span
+                            className={`text-xs font-medium px-2 py-0.5 rounded-full ${urgencyClass}`}
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
-                            />
-                          </svg>
-                        </span>
+                            {daysLabel}
+                          </span>
+                          <span className="text-xs text-neutral-500 group-hover:text-primary-400 transition-colors flex items-center gap-1">
+                            Ver evento
+                            <svg
+                              className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={2}
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
+                              />
+                            </svg>
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </Link>
+                    </Link>
+                  </RevealOnScroll>
                 );
               })}
             </div>
@@ -1068,8 +1290,7 @@ export default async function LandingPage({
       {/* ── ÁRBITROS OFICIALES ───────────────────────────────────────────── */}
       <section className="border-t border-neutral-800 bg-neutral-900/20">
         <div className="max-w-7xl mx-auto px-6 py-20 sm:py-24">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">
+          <RevealOnScroll className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">
             <div className="space-y-3">
               <span className="inline-flex items-center gap-2 bg-emerald-900/30 border border-emerald-800/50 text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-full uppercase tracking-widest">
                 <span
@@ -1111,30 +1332,14 @@ export default async function LandingPage({
                 />
               </svg>
             </Link>
-          </div>
+          </RevealOnScroll>
 
-          {/* Buscador */}
-          <form method="GET" className="mb-8">
-            <div className="relative max-w-md">
-              <Search
-                aria-hidden="true"
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500"
-                size={14}
-              />
-              <input
-                type="search"
-                name="search"
-                defaultValue={searchQuery ?? ""}
-                placeholder="Buscar árbitro por nombre..."
-                className="w-full rounded-xl border border-neutral-700 bg-neutral-800/60 pl-9 pr-4 py-2.5 text-sm text-neutral-200 placeholder:text-neutral-500 focus:border-primary-600 focus:outline-none focus:ring-1 focus:ring-primary-600 transition-colors"
-              />
-            </div>
-          </form>
-
-          <RefereeGrid
-            referees={approvedReferees}
-            {...(searchQuery !== undefined && { searchQuery })}
-          />
+          <RevealOnScroll className="delay-200">
+            <RefereeGrid
+              referees={approvedReferees}
+              {...(searchQuery !== undefined && { searchQuery })}
+            />
+          </RevealOnScroll>
         </div>
       </section>
 
@@ -1144,49 +1349,77 @@ export default async function LandingPage({
           className="absolute inset-0 bg-linear-to-br from-primary-950/40 via-neutral-950 to-neutral-950"
           aria-hidden="true"
         />
+        {/* Pulsing glow ring */}
         <div
-          className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-primary-600/8 rounded-full blur-3xl pointer-events-none"
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-primary-600/8 rounded-full blur-3xl pointer-events-none animate-glow-pulse"
           aria-hidden="true"
         />
-        <div className="relative max-w-3xl mx-auto px-6 py-24 sm:py-32 text-center space-y-8">
-          <div className="space-y-4">
-            <h2 className="text-4xl sm:text-5xl font-bold tracking-tight">
-              ¿Listo para digitalizar
-              <br />
-              tu identidad marcial?
-            </h2>
-            <p className="text-neutral-400 text-sm leading-relaxed max-w-xl mx-auto">
-              Únete a la plataforma oficial de Kombat Taekwondo Chile. Crea tu
-              perfil, accede a tu historial y comparte tus certificaciones con
-              el mundo.
-            </p>
-          </div>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link
-              href="/register"
-              className="w-full sm:w-auto bg-primary-600 hover:bg-primary-500 text-white px-8 py-4 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-primary-900/50 hover:shadow-primary-900/70 hover:-translate-y-0.5"
-            >
-              Crear mi perfil gratuito
-            </Link>
-            <Link
-              href="/academies"
-              className="w-full sm:w-auto hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 px-8 py-4 rounded-xl text-sm transition-colors"
-            >
-              Ver academias →
-            </Link>
-            <Link
-              href="/referee-registration"
-              className="w-full sm:w-auto hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 px-8 py-4 rounded-xl text-sm transition-colors"
-            >
-              Regístrate como árbitro →
-            </Link>
-            <Link
-              href="/instructor-registration"
-              className="w-full sm:w-auto hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 px-8 py-4 rounded-xl text-sm transition-colors"
-            >
-              Solicitar cuenta de instructor →
-            </Link>
-          </div>
+        <div
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-[300px] h-[150px] bg-primary-500/6 rounded-full blur-2xl pointer-events-none animate-glow-pulse delay-400"
+          aria-hidden="true"
+        />
+
+        <div className="relative max-w-3xl mx-auto px-6 py-24 sm:py-32 text-center">
+          <RevealOnScroll className="space-y-8">
+            <div className="space-y-4">
+              <h2 className="text-4xl sm:text-5xl font-bold tracking-tight">
+                ¿Listo para digitalizar
+                <br />
+                <span className="text-transparent bg-clip-text bg-linear-to-r from-primary-400 via-indigo-300 to-primary-400">
+                  tu identidad marcial?
+                </span>
+              </h2>
+              <p className="text-neutral-400 text-sm leading-relaxed max-w-xl mx-auto">
+                Únete a la plataforma oficial de Kombat Taekwondo Chile. Crea tu
+                perfil, accede a tu historial y comparte tus certificaciones con
+                el mundo.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link
+                href="/register"
+                className="w-full sm:w-auto bg-primary-600 hover:bg-primary-500 text-white px-8 py-4 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-primary-900/50 hover:shadow-primary-900/70 hover:-translate-y-0.5"
+              >
+                Crear mi perfil gratuito
+              </Link>
+              <Link
+                href="/academies"
+                className="w-full sm:w-auto hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 px-8 py-4 rounded-xl text-sm transition-colors"
+              >
+                Ver academias
+              </Link>
+              <Link
+                href="/referee-registration"
+                className="w-full sm:w-auto hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 px-8 py-4 rounded-xl text-sm transition-colors"
+              >
+                Regístrate como árbitro
+              </Link>
+              <Link
+                href="/instructor-registration"
+                className="w-full sm:w-auto hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 px-8 py-4 rounded-xl text-sm transition-colors"
+              >
+                Solicitar cuenta de instructor
+              </Link>
+            </div>
+
+            {/* Social proof */}
+            <div className="flex items-center justify-center gap-4">
+              <div className="flex -space-x-2">
+                {["#6366f1", "#8b5cf6", "#06b6d4", "#10b981"].map((c, i) => (
+                  <div
+                    key={i}
+                    className="w-8 h-8 rounded-full border-2 border-neutral-950 flex items-center justify-center text-xs font-bold text-white"
+                    style={{ backgroundColor: c }}
+                  >
+                    {["JG", "MP", "CR", "AL"][i]}
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-neutral-500">
+                Practicantes de todo Chile ya tienen su perfil digital
+              </p>
+            </div>
+          </RevealOnScroll>
         </div>
       </section>
 
