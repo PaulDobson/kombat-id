@@ -18,6 +18,8 @@ export const RegisterPractitionerInputSchema = z.object({
   addressCity: z.string().max(100).optional().nullable(),
   addressRegion: z.string().max(100).optional().nullable(),
   instructorId: z.string().uuid().optional().nullable(),
+  martialArt: z.string().max(100).optional().nullable(),
+  martialGrade: z.string().max(100).optional().nullable(),
 });
 
 export type RegisterPractitionerInput = z.infer<
@@ -61,7 +63,8 @@ export async function registerPractitioner(
     addressRegion: validated.addressRegion ?? null,
     instructorId: validated.instructorId ?? null,
     certificatePath: null,
-    martialArt: null,
+    martialArt: validated.martialArt ?? null,
+    martialGrade: validated.martialGrade ?? null,
     updatedAt: now,
     createdAt: now,
   };

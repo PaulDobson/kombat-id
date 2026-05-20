@@ -107,6 +107,7 @@ function makeActivePractitioner(
     instructorId: "c0ffee00-dead-4bee-beef-a00000000001",
     certificatePath: null,
     martialArt: null,
+    martialGrade: null,
     ...overrides,
   };
 }

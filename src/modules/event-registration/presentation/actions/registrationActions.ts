@@ -156,3 +156,55 @@ export async function cancelRegistrationAction(input: {
     return { success: false, ...mapped };
   }
 }
+
+/**
+ * Agrega o actualiza una observación en una inscripción.
+ * Requiere autenticación de administrador.
+ */
+export async function updateNotesAction(input: {
+  registrationId: string;
+  eventId: string;
+  notes: string;
+}): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  if (!admin) {
+    return { success: false, error: "No autorizado", code: "UNAUTHORIZED" };
+  }
+
+  const parsed = z
+    .object({
+      registrationId: z.string().min(1, "El ID de inscripción es obligatorio"),
+      eventId: z.string().min(1, "El ID del evento es obligatorio"),
+      notes: z
+        .string()
+        .max(500, "La observación no puede superar 500 caracteres"),
+    })
+    .safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Datos inválidos",
+      code: "VALIDATION_ERROR",
+    };
+  }
+
+  const { registrationId, eventId, notes } = parsed.data;
+
+  const { error } = await adminSupabase
+    .from("event_registrations")
+    .update({ notes: notes.trim() || null })
+    .eq("id", registrationId);
+
+  if (error) {
+    console.error("[updateNotesAction]", error);
+    return {
+      success: false,
+      error: "Error al guardar la observación",
+      code: "INTERNAL_ERROR",
+    };
+  }
+
+  revalidatePath(`/admin/events/${eventId}/registrations`);
+  return { success: true, data: undefined };
+}

@@ -359,6 +359,7 @@ function EditableForm({
   const [overrideJustification, setOverrideJustification] = useState(
     exam.overrideJustification ?? "",
   );
+  const [showConfirm, setShowConfirm] = useState(false);
 
   // Validation errors per item
   const scoreErrors = useMemo(() => {
@@ -436,11 +437,11 @@ function EditableForm({
       setError("La justificación del override es obligatoria.");
       return;
     }
-    const confirmed = window.confirm(
-      "¿Estás seguro de que deseas enviar el examen? Esta acción no se puede deshacer.",
-    );
-    if (!confirmed) return;
+    setShowConfirm(true);
+  }
 
+  function handleConfirmSubmit() {
+    setShowConfirm(false);
     setError(null);
     setSuccessMsg(null);
     startTransition(async () => {
@@ -676,6 +677,46 @@ function EditableForm({
         </p>
       )}
 
+      {/* Confirmation dialog */}
+      {showConfirm && (
+        <div
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="confirm-submit-title"
+          aria-describedby="confirm-submit-desc"
+          className="bg-neutral-800 border border-amber-700/50 rounded-xl p-5 space-y-3"
+        >
+          <p
+            id="confirm-submit-title"
+            className="text-sm font-semibold text-neutral-50"
+          >
+            ¿Confirmar envío del examen?
+          </p>
+          <p id="confirm-submit-desc" className="text-xs text-neutral-400">
+            Esta acción no se puede deshacer. El examen será enviado para
+            revisión.
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleConfirmSubmit}
+              disabled={isPending}
+              className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isPending ? "Enviando..." : "Sí, enviar"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowConfirm(false)}
+              disabled={isPending}
+              className="bg-neutral-700 hover:bg-neutral-600 text-neutral-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex flex-wrap items-center gap-3 print:hidden">
         <button
@@ -689,7 +730,7 @@ function EditableForm({
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={isPending || hasScoreErrors}
+          disabled={isPending || hasScoreErrors || showConfirm}
           className="bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isPending ? "Enviando..." : "Enviar examen"}

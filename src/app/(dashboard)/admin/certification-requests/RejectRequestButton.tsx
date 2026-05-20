@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { rejectCertificationRequestAction } from "@/modules/practitioner-identity/presentation/actions/instructorActions";
+import { rejectCertificationRequestAction } from "@/modules/practitioner-identity/presentation/actions/adminCertificationActions";
 
 interface Props {
   requestId: string;

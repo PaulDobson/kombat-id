@@ -4,6 +4,25 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateStudentProfileAction } from "@/modules/practitioner-identity/presentation/actions/instructorActions";
 
+const REGIONS = [
+  { value: "arica_y_parinacota", label: "Arica y Parinacota" },
+  { value: "tarapaca", label: "Tarapacá" },
+  { value: "antofagasta", label: "Antofagasta" },
+  { value: "atacama", label: "Atacama" },
+  { value: "coquimbo", label: "Coquimbo" },
+  { value: "valparaiso", label: "Valparaíso" },
+  { value: "metropolitana", label: "Metropolitana" },
+  { value: "ohiggins", label: "O'Higgins" },
+  { value: "maule", label: "Maule" },
+  { value: "nuble", label: "Ñuble" },
+  { value: "biobio", label: "Biobío" },
+  { value: "araucania", label: "Araucanía" },
+  { value: "los_rios", label: "Los Ríos" },
+  { value: "los_lagos", label: "Los Lagos" },
+  { value: "aysen", label: "Aysén" },
+  { value: "magallanes", label: "Magallanes" },
+];
+
 interface StudentEditData {
   publicId: string;
   weightKg: number | null;
@@ -17,10 +36,17 @@ interface StudentEditData {
 
 interface Props {
   student: StudentEditData;
-  backHref: string;
+  backHref?: string;
+  onSuccess?: () => void;
+  onCancel?: () => void;
 }
 
-export function EditStudentForm({ student, backHref }: Props) {
+export function EditStudentForm({
+  student,
+  backHref,
+  onSuccess,
+  onCancel,
+}: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +88,11 @@ export function EditStudentForm({ student, backHref }: Props) {
       });
 
       if (res.success) {
-        router.push(backHref);
+        if (onSuccess) {
+          onSuccess();
+        } else if (backHref) {
+          router.push(backHref);
+        }
       } else {
         setError(res.error);
       }
@@ -177,15 +207,20 @@ export function EditStudentForm({ student, backHref }: Props) {
         <label htmlFor="addressRegion" className={labelClass}>
           Región
         </label>
-        <input
+        <select
           id="addressRegion"
           name="addressRegion"
-          type="text"
-          placeholder="Metropolitana"
           value={addressRegion}
           onChange={(e) => setAddressRegion(e.target.value)}
           className={inputClass}
-        />
+        >
+          <option value="">Seleccionar región</option>
+          {REGIONS.map((r) => (
+            <option key={r.value} value={r.value}>
+              {r.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       {error && (
@@ -205,7 +240,9 @@ export function EditStudentForm({ student, backHref }: Props) {
 
         <button
           type="button"
-          onClick={() => router.push(backHref)}
+          onClick={() =>
+            onCancel ? onCancel() : backHref ? router.push(backHref) : undefined
+          }
           disabled={isPending}
           className="px-4 py-2 rounded-lg text-sm font-medium text-neutral-400 hover:text-neutral-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >

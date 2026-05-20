@@ -1,23 +1,9 @@
-import { requireUser } from "@/lib/supabase/server";
-import { adminSupabase } from "@/lib/supabase/admin";
-import { redirect } from "next/navigation";
 import Link from "next/link";
+import { requireInstructor } from "@/lib/auth-guards";
 import { RegisterStudentForm } from "../RegisterStudentForm";
 
-const INSTRUCTOR_ROLES = ["instructor", "profesor", "maestro"];
-
 export default async function RegisterStudentPage() {
-  const user = await requireUser();
-
-  const { data: practitioner } = await adminSupabase
-    .from("practitioners")
-    .select("id, role")
-    .eq("auth_user_id", user.id)
-    .maybeSingle();
-
-  if (!practitioner || !INSTRUCTOR_ROLES.includes(practitioner.role ?? "")) {
-    redirect("/dashboard");
-  }
+  await requireInstructor();
 
   return (
     <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">

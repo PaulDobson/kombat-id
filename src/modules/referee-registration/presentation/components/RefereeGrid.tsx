@@ -22,10 +22,25 @@ export function RefereeGrid({ referees, searchQuery }: RefereeGridProps) {
   if (filtered.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-xl border border-neutral-800 bg-neutral-900/50 px-6 py-16 text-center">
-        <span aria-hidden="true" className="text-4xl">
-          🏅
-        </span>
-        <p className="mt-4 text-base font-semibold text-neutral-200">
+        <div
+          aria-hidden="true"
+          className="w-12 h-12 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center mb-4"
+        >
+          <svg
+            className="w-6 h-6 text-neutral-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.5}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
+            />
+          </svg>
+        </div>
+        <p className="text-base font-semibold text-neutral-200">
           No hay árbitros registrados
         </p>
         <p className="mt-1 text-sm text-neutral-500">

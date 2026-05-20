@@ -258,6 +258,7 @@ export class DrizzlePractitionerRepository implements PractitionerRepository {
       instructorId: row.instructor_id ?? null,
       certificatePath: row.certificate_path ?? null,
       martialArt: row.martial_art ?? null,
+      martialGrade: row.martial_grade ?? null,
     };
     if (row.role) base.role = row.role as PractitionerRole;
     return base;
@@ -291,6 +292,7 @@ export class DrizzlePractitionerRepository implements PractitionerRepository {
       instructor_id: practitioner.instructorId,
       certificate_path: practitioner.certificatePath ?? null,
       martial_art: practitioner.martialArt ?? null,
+      martial_grade: practitioner.martialGrade ?? null,
     };
   }
 }

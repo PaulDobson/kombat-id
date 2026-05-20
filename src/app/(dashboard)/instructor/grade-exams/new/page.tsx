@@ -1,13 +1,6 @@
-import { requireUser } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
-import { redirect } from "next/navigation";
+import { requireInstructor } from "@/lib/auth-guards";
 import { StartExamForm } from "./StartExamForm";
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const INSTRUCTOR_ROLES = ["instructor", "profesor", "maestro"];
 
 // ---------------------------------------------------------------------------
 // Page (Server Component)
@@ -18,26 +11,14 @@ export default async function NewGradeExamPage({
 }: {
   searchParams: Promise<{ practitionerId?: string }>;
 }) {
-  const user = await requireUser();
+  const session = await requireInstructor();
   const sp = await searchParams;
-
-  // Auth guard: must be an instructor
-  const { data: instructor } = await adminSupabase
-    .from("practitioners")
-    .select("id, full_name, role")
-    .eq("auth_user_id", user.id)
-    .eq("is_active", true)
-    .maybeSingle();
-
-  if (!instructor || !INSTRUCTOR_ROLES.includes(instructor.role ?? "")) {
-    redirect("/dashboard");
-  }
 
   // Fetch instructor's active students via academy membership
   const { data: academyRows } = await adminSupabase
     .from("academies")
     .select("id")
-    .contains("responsible_instructor_ids", [instructor.id]);
+    .contains("responsible_instructor_ids", [session.practitionerId]);
 
   const academyIds = (academyRows ?? []).map((a: { id: string }) => a.id);
 

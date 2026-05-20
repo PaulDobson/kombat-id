@@ -3,11 +3,10 @@ import { adminSupabase } from "@/lib/supabase/admin";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { DrizzleEventRegistrationRepository } from "@/modules/event-registration/infrastructure/repositories/drizzleEventRegistrationRepository";
-import { ConfirmPaymentButton } from "./ConfirmPaymentButton";
-import { CancelRegistrationButton } from "./CancelRegistrationButton";
 import { RegistrationsGrouped } from "./RegistrationsGrouped";
+import { RegistrationsList } from "./RegistrationsList";
+import { RegistrationsStats } from "./RegistrationsStats";
 import type { RegistrationRow } from "./RegistrationsGrouped";
-import { formatDateShort } from "@/lib/format-date";
 import type { Database } from "@/types/database.types";
 
 type MartialEvent = Database["public"]["Tables"]["martial_events"]["Row"];
@@ -28,19 +27,6 @@ async function requireAdminUser() {
   if (!data) redirect("/");
   return user;
 }
-
-const STATUS_LABELS: Record<string, string> = {
-  pendiente_pago: "Pendiente pago",
-  confirmada: "Confirmada",
-  cancelada: "Cancelada",
-};
-
-const STATUS_STYLES: Record<string, string> = {
-  pendiente_pago:
-    "bg-warning-500/10 text-warning-400 border border-warning-500/30",
-  confirmada: "bg-success-900/50 text-success-400 border border-success-800",
-  cancelada: "bg-neutral-800 text-neutral-500 border border-neutral-700",
-};
 
 type ViewMode = "agrupado" | "lista";
 
@@ -65,11 +51,18 @@ export default async function EventRegistrationsPage({
   if (!event) notFound();
 
   const repo = new DrizzleEventRegistrationRepository();
-  const [registrations, statusCounts, confirmedCount] = await Promise.all([
-    repo.findByEvent(eventId),
-    repo.countByEventGroupedByStatus(eventId),
-    repo.countConfirmedByEvent(eventId),
-  ]);
+  const registrations = await repo.findByEvent(eventId);
+
+  // Derivar conteos desde los datos ya cargados (elimina 2 consultas extra a BD)
+  const statusCounts = { pendiente_pago: 0, confirmada: 0, cancelada: 0 };
+  let confirmedCount = 0;
+  for (const r of registrations) {
+    if (r.status === "pendiente_pago") statusCounts.pendiente_pago++;
+    else if (r.status === "confirmada") {
+      statusCounts.confirmada++;
+      confirmedCount++;
+    } else if (r.status === "cancelada") statusCounts.cancelada++;
+  }
 
   const maxParticipants = event.max_participants;
   const totalRegistrations =
@@ -87,35 +80,43 @@ export default async function EventRegistrationsPage({
     string,
     { id: string; name: string; city: string; region: string }
   >();
+  const rutById = new Map<string, string>();
 
   if (practitionerIds.length > 0) {
-    const { data: memberships } = await adminSupabase
-      .from("academy_memberships")
-      .select("practitioner_id, academy_id")
-      .in("practitioner_id", practitionerIds)
-      .eq("is_active", true);
+    // Obtener academia (join embebido) y RUT en paralelo — 2 consultas en vez de 3
+    type AcademyInfo = {
+      id: string;
+      name: string;
+      city: string;
+      region: string;
+    };
+    type MembershipWithAcademy = {
+      practitioner_id: string;
+      academies: AcademyInfo | AcademyInfo[] | null;
+    };
 
-    if (memberships && memberships.length > 0) {
-      const academyIds = [...new Set(memberships.map((m) => m.academy_id))];
-      const { data: academies } = await adminSupabase
-        .from("academies")
-        .select("id, name, city, region")
-        .in("id", academyIds);
+    const [membershipsResult, rutsResult] = await Promise.all([
+      adminSupabase
+        .from("academy_memberships")
+        .select("practitioner_id, academies(id, name, city, region)")
+        .in("practitioner_id", practitionerIds)
+        .eq("is_active", true),
+      adminSupabase
+        .from("practitioners")
+        .select("id, rut")
+        .in("id", practitionerIds),
+    ]);
 
-      const academyMap = new Map(
-        (academies ?? []).map((a) => [
-          a.id,
-          a as { id: string; name: string; city: string; region: string },
-        ]),
-      );
+    for (const p of rutsResult.data ?? []) {
+      rutById.set(p.id, p.rut);
+    }
 
-      // Use first active membership per practitioner
-      for (const m of memberships) {
-        if (!academyByPractitioner.has(m.practitioner_id)) {
-          const academy = academyMap.get(m.academy_id);
-          if (academy) academyByPractitioner.set(m.practitioner_id, academy);
-        }
-      }
+    for (const m of (membershipsResult.data ?? []) as MembershipWithAcademy[]) {
+      if (academyByPractitioner.has(m.practitioner_id)) continue;
+      // Supabase puede devolver la relación embebida como objeto o array
+      const raw = m.academies;
+      const academy = Array.isArray(raw) ? raw[0] : raw;
+      if (academy) academyByPractitioner.set(m.practitioner_id, academy);
     }
   }
 
@@ -123,10 +124,13 @@ export default async function EventRegistrationsPage({
     const academy = academyByPractitioner.get(reg.practitionerId) ?? null;
     return {
       id: reg.id,
+      practitionerId: reg.practitionerId,
       practitionerName: reg.practitionerName,
       instructorName: reg.instructorName,
+      rut: rutById.get(reg.practitionerId) ?? null,
       status: reg.status,
       registeredAt: reg.registeredAt,
+      notes: reg.notes ?? null,
       academyId: academy?.id ?? null,
       academyName: academy?.name ?? null,
       academyCity: academy?.city ?? null,
@@ -140,85 +144,47 @@ export default async function EventRegistrationsPage({
       <div>
         <Link
           href={`/admin/events/${eventId}`}
-          className="text-sm text-neutral-400 hover:text-neutral-200 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-500 hover:text-neutral-200 transition-colors group mb-3"
         >
-          ← Volver al evento
+          <svg
+            className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+          Volver al evento
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight text-neutral-50 mt-2">
-          Inscripciones — {event.name}
+        <h1 className="text-2xl font-bold tracking-tight text-neutral-50">
+          {event.name}
         </h1>
+        <p className="text-sm text-neutral-400 mt-0.5">
+          Gestión de inscripciones
+        </p>
       </div>
 
-      {/* Stats header */}
-      <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">
-        <div className="flex flex-wrap items-center gap-6">
-          <div className="flex flex-wrap gap-4 flex-1">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
-                Total
-              </span>
-              <span className="text-neutral-100 font-semibold tabular-nums">
-                {totalRegistrations}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span
-                className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES.pendiente_pago}`}
-              >
-                Pendiente pago
-              </span>
-              <span className="text-neutral-100 font-semibold tabular-nums">
-                {statusCounts.pendiente_pago}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span
-                className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES.confirmada}`}
-              >
-                Confirmada
-              </span>
-              <span className="text-neutral-100 font-semibold tabular-nums">
-                {statusCounts.confirmada}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span
-                className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES.cancelada}`}
-              >
-                Cancelada
-              </span>
-              <span className="text-neutral-100 font-semibold tabular-nums">
-                {statusCounts.cancelada}
-              </span>
-            </div>
-          </div>
-
-          {maxParticipants != null && (
-            <div className="flex items-center gap-2 bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-2">
-              <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
-                Aforo
-              </span>
-              <span
-                className={`text-sm font-semibold tabular-nums ${confirmedCount >= maxParticipants ? "text-error-400" : "text-neutral-100"}`}
-              >
-                {confirmedCount} / {maxParticipants}
-              </span>
-              <span className="text-xs text-neutral-500">
-                inscritos confirmados
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Stats */}
+      <RegistrationsStats
+        statusCounts={statusCounts}
+        totalRegistrations={totalRegistrations}
+        maxParticipants={maxParticipants}
+        confirmedCount={confirmedCount}
+      />
 
       {/* View toggle */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 bg-neutral-900 border border-neutral-700/60 rounded-xl p-1 self-start">
         <Link
           href={`/admin/events/${eventId}/registrations?vista=agrupado`}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
             view === "agrupado"
-              ? "bg-neutral-900 border-neutral-600 text-neutral-100"
-              : "bg-transparent border-neutral-700 text-neutral-500 hover:text-neutral-300"
+              ? "bg-neutral-700 text-neutral-100 shadow-sm"
+              : "text-neutral-500 hover:text-neutral-300"
           }`}
         >
           <svg
@@ -238,10 +204,10 @@ export default async function EventRegistrationsPage({
         </Link>
         <Link
           href={`/admin/events/${eventId}/registrations?vista=lista`}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
             view === "lista"
-              ? "bg-neutral-900 border-neutral-600 text-neutral-100"
-              : "bg-transparent border-neutral-700 text-neutral-500 hover:text-neutral-300"
+              ? "bg-neutral-700 text-neutral-100 shadow-sm"
+              : "text-neutral-500 hover:text-neutral-300"
           }`}
         >
           <svg
@@ -268,106 +234,10 @@ export default async function EventRegistrationsPage({
           eventId={eventId}
         />
       ) : (
-        <div className="bg-neutral-900 border border-neutral-700 rounded-xl overflow-hidden">
-          {registrations.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-neutral-500 text-sm">
-                No hay inscripciones para este evento.
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-neutral-700 bg-neutral-900/80">
-                    <th className="text-left px-4 py-3 text-xs font-medium text-neutral-400 uppercase tracking-wider">
-                      Alumno
-                    </th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-neutral-400 uppercase tracking-wider">
-                      Instructor
-                    </th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-neutral-400 uppercase tracking-wider hidden sm:table-cell">
-                      Academia
-                    </th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-neutral-400 uppercase tracking-wider">
-                      Estado
-                    </th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-neutral-400 uppercase tracking-wider hidden sm:table-cell">
-                      Fecha
-                    </th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-neutral-400 uppercase tracking-wider">
-                      Acciones
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-800">
-                  {registrations.map((reg) => {
-                    const academy = academyByPractitioner.get(
-                      reg.practitionerId,
-                    );
-                    return (
-                      <tr
-                        key={reg.id}
-                        className="hover:bg-neutral-800/40 transition-colors"
-                      >
-                        <td className="px-4 py-3">
-                          <p className="text-neutral-100 font-medium">
-                            {reg.practitionerName || "—"}
-                          </p>
-                        </td>
-                        <td className="px-4 py-3">
-                          <p className="text-neutral-300">
-                            {reg.instructorName || "—"}
-                          </p>
-                        </td>
-                        <td className="px-4 py-3 hidden sm:table-cell">
-                          {academy ? (
-                            <div>
-                              <p className="text-neutral-300 text-xs">
-                                {academy.name}
-                              </p>
-                              <p className="text-neutral-500 text-xs">
-                                {academy.city}
-                              </p>
-                            </div>
-                          ) : (
-                            <span className="text-neutral-600 text-xs">—</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[reg.status] ?? STATUS_STYLES.cancelada}`}
-                          >
-                            {STATUS_LABELS[reg.status] ?? reg.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-neutral-400 text-xs tabular-nums hidden sm:table-cell">
-                          {formatDateShort(reg.registeredAt)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {reg.status === "pendiente_pago" && (
-                              <ConfirmPaymentButton
-                                registrationId={reg.id}
-                                eventId={eventId}
-                              />
-                            )}
-                            {reg.status !== "cancelada" && (
-                              <CancelRegistrationButton
-                                registrationId={reg.id}
-                                eventId={eventId}
-                              />
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+        <RegistrationsList
+          registrations={enrichedRegistrations}
+          eventId={eventId}
+        />
       )}
     </main>
   );
