@@ -9,6 +9,9 @@ export const RegisterPractitionerInputSchema = z.object({
   birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   gender: z.enum(["male", "female", "other"]),
   grade: z.enum(["white", "yellow", "green", "blue", "red", "black"]),
+  role: z
+    .enum(["alumno", "instructor", "profesor", "maestro"])
+    .default("alumno"),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   weightKg: z.number().positive().optional(),
   heightCm: z.number().int().min(50).max(250).optional(),
@@ -47,6 +50,7 @@ export async function registerPractitioner(
     birthDate: validated.birthDate,
     gender: validated.gender,
     grade: validated.grade,
+    role: validated.role,
     startDate: validated.startDate,
     weightKg: validated.weightKg ?? null,
     heightCm: validated.heightCm ?? null,

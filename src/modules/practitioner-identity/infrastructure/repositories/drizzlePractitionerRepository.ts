@@ -293,6 +293,7 @@ export class DrizzlePractitionerRepository implements PractitionerRepository {
       certificate_path: practitioner.certificatePath ?? null,
       martial_art: practitioner.martialArt ?? null,
       martial_grade: practitioner.martialGrade ?? null,
+      ...(practitioner.role ? { role: practitioner.role } : {}),
     };
   }
 }

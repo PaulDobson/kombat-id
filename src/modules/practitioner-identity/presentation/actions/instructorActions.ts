@@ -25,6 +25,7 @@ import type { ActionResult } from "@/lib/types";
 const RegisterStudentInputSchema = RegisterPractitionerInputSchema.omit({
   instructorId: true,
   authUserId: true,
+  role: true,
 }).extend({
   // Optional: if provided, the system will look up the auth account by email
   // and link it to the practitioner profile automatically.
@@ -215,6 +216,7 @@ export async function registerStudentAction(
     const result = await registerPractitioner(
       {
         ...parsed.data,
+        role: "alumno",
         // Store email as contactEmail so auto-linking works if account is created later
         contactEmail: studentEmail ?? undefined,
         instructorId: practitioner.id as string,
