@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { observeCertificationRequestAction } from "@/modules/practitioner-identity/presentation/actions/instructorActions";
+import { observeCertificationRequestAction } from "@/modules/practitioner-identity/presentation/actions/adminCertificationActions";
 
 interface Props {
   requestId: string;

@@ -10,14 +10,19 @@ const initialState = {
   fullName: "",
   birthDate: "",
   gender: "" as "male" | "female" | "other" | "",
-  grade: "" as "white" | "yellow" | "green" | "blue" | "red" | "black" | "",
+  grade: "white" as "white" | "yellow" | "green" | "blue" | "red" | "black",
   startDate: today,
   weightKg: "",
-  addressCity: "",
+  heightCm: "",
   studentEmail: "",
+  martialArt: "",
+  martialGrade: "",
 };
 
-export function RegisterStudentForm() {
+export function RegisterStudentForm({
+  academyId,
+  onSuccess,
+}: { academyId?: string; onSuccess?: () => void } = {}) {
   const [fields, setFields] = useState(initialState);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{
@@ -54,8 +59,11 @@ export function RegisterStudentForm() {
           | "black",
         startDate: fields.startDate,
         weightKg: fields.weightKg ? parseFloat(fields.weightKg) : undefined,
-        addressCity: fields.addressCity || undefined,
+        heightCm: fields.heightCm ? parseInt(fields.heightCm, 10) : undefined,
         studentEmail: fields.studentEmail || undefined,
+        martialArt: fields.martialArt || undefined,
+        martialGrade: fields.martialGrade || undefined,
+        academyId: academyId || undefined,
       });
 
       if (res.success) {
@@ -64,6 +72,7 @@ export function RegisterStudentForm() {
           linked: Boolean(fields.studentEmail),
         });
         setFields({ ...initialState, startDate: today });
+        onSuccess?.();
       } else {
         setError(res.error);
       }
@@ -222,29 +231,20 @@ export function RegisterStudentForm() {
         </select>
       </div>
 
-      {/* Grado inicial */}
+      {/* Grado inicial — siempre Blanco */}
       <div>
         <label htmlFor="grade" className={labelClass}>
-          Grado inicial <span className="text-rose-400">*</span>
+          Grado inicial
         </label>
-        <select
+        <input
           id="grade"
           name="grade"
-          required
-          value={fields.grade}
-          onChange={handleChange}
-          className={inputClass}
-        >
-          <option value="" disabled>
-            Seleccionar...
-          </option>
-          <option value="white">Blanco</option>
-          <option value="yellow">Amarillo</option>
-          <option value="green">Verde</option>
-          <option value="blue">Azul</option>
-          <option value="red">Rojo</option>
-          <option value="black">Negro</option>
-        </select>
+          type="text"
+          value="Blanco"
+          readOnly
+          className={`${inputClass} cursor-not-allowed opacity-50`}
+        />
+        <input type="hidden" name="grade" value="white" />
       </div>
 
       {/* Fecha de inicio */}
@@ -263,38 +263,93 @@ export function RegisterStudentForm() {
         />
       </div>
 
-      {/* Peso (opcional) */}
-      <div>
-        <label htmlFor="weightKg" className={labelClass}>
-          Peso (kg)
-        </label>
-        <input
-          id="weightKg"
-          name="weightKg"
-          type="number"
-          step="0.1"
-          min="0"
-          placeholder="65.5"
-          value={fields.weightKg}
-          onChange={handleChange}
-          className={inputClass}
-        />
+      {/* Peso y Altura (opcionales) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="weightKg" className={labelClass}>
+            Peso (kg)
+          </label>
+          <input
+            id="weightKg"
+            name="weightKg"
+            type="number"
+            step="0.1"
+            min="0"
+            placeholder="65.5"
+            value={fields.weightKg}
+            onChange={handleChange}
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label htmlFor="heightCm" className={labelClass}>
+            Altura (cm)
+          </label>
+          <input
+            id="heightCm"
+            name="heightCm"
+            type="number"
+            step="1"
+            min="50"
+            max="250"
+            placeholder="170"
+            value={fields.heightCm}
+            onChange={handleChange}
+            className={inputClass}
+          />
+        </div>
       </div>
 
-      {/* Ciudad (opcional) */}
-      <div>
-        <label htmlFor="addressCity" className={labelClass}>
-          Ciudad
-        </label>
-        <input
-          id="addressCity"
-          name="addressCity"
-          type="text"
-          placeholder="Santiago"
-          value={fields.addressCity}
-          onChange={handleChange}
-          className={inputClass}
-        />
+      {/* Arte marcial previa (opcional) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="martialArt" className={labelClass}>
+            Arte marcial previa
+            <span className="text-neutral-600 font-normal ml-1">
+              (opcional)
+            </span>
+          </label>
+          <select
+            id="martialArt"
+            name="martialArt"
+            value={fields.martialArt}
+            onChange={handleChange}
+            className={inputClass}
+          >
+            <option value="">Seleccionar...</option>
+            <option value="Taekwondo WT">Tae kwon do WT</option>
+            <option value="Taekwondo ITF">Tae kwon do ITF</option>
+            <option value="BJJ">BJJ</option>
+            <option value="Karate">Karate</option>
+            <option value="Boxeo">Boxeo</option>
+            <option value="Kung Fu">Kung Fu</option>
+            <option value="Lucha">Lucha</option>
+            <option value="Otras">Otras artes marciales</option>
+          </select>
+        </div>
+        <div>
+          <label htmlFor="martialGrade" className={labelClass}>
+            Grado marcial
+            <span className="text-neutral-600 font-normal ml-1">
+              (opcional)
+            </span>
+          </label>
+          <select
+            id="martialGrade"
+            name="martialGrade"
+            value={fields.martialGrade}
+            onChange={handleChange}
+            className={inputClass}
+          >
+            <option value="">Seleccionar...</option>
+            <option value="white">Blanco</option>
+            <option value="yellow">Amarillo</option>
+            <option value="green">Verde</option>
+            <option value="blue">Azul</option>
+            <option value="red">Rojo</option>
+            <option value="black">Negro</option>
+          </select>
+        </div>
       </div>
 
       {error && (

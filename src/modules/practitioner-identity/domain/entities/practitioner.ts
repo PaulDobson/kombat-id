@@ -39,7 +39,8 @@ export interface Practitioner {
   // Instructor/master reference
   instructorId: string | null; // UUID of the responsible instructor/master
   certificatePath: string | null; // Storage path for membership certificate PDF
-  martialArt: string | null; // Arte marcial principal del grado (kombat_taekwondo, hapkido, etc.)
+  martialArt: string | null; // Arte marcial previa (kombat_taekwondo, hapkido, etc.)
+  martialGrade: string | null; // Grado marcial previo en el arte marcial indicado
 }
 
 /**

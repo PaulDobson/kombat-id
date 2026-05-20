@@ -26,7 +26,12 @@ const REGIONS = [
 const inputClass =
   "w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-sm text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow disabled:opacity-50";
 
-export function CreateAcademyForm() {
+interface Props {
+  onSuccess?: () => void;
+  onCancel?: () => void;
+}
+
+export function CreateAcademyForm({ onSuccess, onCancel }: Props = {}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +52,11 @@ export function CreateAcademyForm() {
       });
 
       if (result.success) {
-        router.push("/instructor");
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          router.push("/instructor");
+        }
       } else {
         setError(result.error);
       }
@@ -186,7 +195,7 @@ export function CreateAcademyForm() {
         <button
           type="button"
           disabled={isPending}
-          onClick={() => router.back()}
+          onClick={() => (onCancel ? onCancel() : router.back())}
           className="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border border-neutral-700 px-5 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
         >
           Cancelar

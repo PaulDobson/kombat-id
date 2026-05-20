@@ -5,6 +5,7 @@ import Link from "next/link";
 import { signOutAction } from "@/app/auth/actions";
 import { NavLink } from "./NavLink";
 import { NavDropdown } from "./NavDropdown";
+import { UserMenu } from "./UserMenu";
 
 const GRADE_LABELS: Record<string, string> = {
   white: "Blanco",
@@ -56,9 +57,24 @@ export async function DashboardNav() {
     );
   }
 
+  const initials = practitioner
+    ? practitioner.fullName
+        .split(" ")
+        .slice(0, 2)
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+    : null;
+
   return (
-    <header className="border-b border-neutral-800 bg-neutral-950 sticky top-0 z-30">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
+    <header
+      className={`border-b backdrop-blur-sm sticky top-0 z-30 ${
+        isAdmin
+          ? "border-indigo-900/60 bg-indigo-950/95"
+          : "border-neutral-800/60 bg-neutral-950/95"
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         <Link href="/dashboard" className="flex items-center gap-2.5 shrink-0">
           <div className="w-7 h-7 rounded-lg overflow-hidden shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -80,23 +96,37 @@ export async function DashboardNav() {
           {isAdmin ? (
             <>
               <NavLink href="/admin/dashboard">Panel</NavLink>
-              <NavLink href="/admin/practitioners">Practicantes</NavLink>
-              <NavLink href="/admin/practitioners/pending-activation">
-                Activaciones
-              </NavLink>
-              <NavLink href="/admin/academies">Academias</NavLink>
-              <NavLink href="/admin/events">Eventos</NavLink>
-              <NavLink href="/admin/certification-requests">
-                Solicitudes
-              </NavLink>
               <NavDropdown
-                label="Exámanes"
+                label="Academia"
+                items={[
+                  {
+                    href: "/admin/practitioners",
+                    label: "Practicantes",
+                  },
+                  {
+                    href: "/admin/practitioners/pending-activation",
+                    label: "Activaciones",
+                  },
+                  { href: "/admin/academies", label: "Academias" },
+                  { separator: true },
+                  {
+                    href: "/admin/certification-requests",
+                    label: "Solicitudes de certificación",
+                  },
+                  {
+                    href: "/admin/instructor-requests",
+                    label: "Solicitudes de instructores",
+                  },
+                ]}
+              />
+              <NavDropdown
+                label="Exámenes"
                 items={[
                   { href: "/admin/exam-templates", label: "Pautas" },
                   { href: "/admin/grade-exams", label: "Aprobaciones" },
                 ]}
               />
-              <NavLink href="/admin/instructor-requests">Instructores</NavLink>
+              <NavLink href="/admin/events">Eventos</NavLink>
               <NavDropdown
                 label="Árbitros"
                 items={[
@@ -110,7 +140,9 @@ export async function DashboardNav() {
             </>
           ) : isInstructor ? (
             <>
-              <NavLink href="/instructor">Mis alumnos</NavLink>
+              <NavLink href="/instructor" exact>
+                Panel Principal
+              </NavLink>
               <NavLink href="/instructor/events">Eventos</NavLink>
               <NavLink href="/instructor/grade-exams">Exámenes</NavLink>
               <NavDropdown
@@ -123,13 +155,11 @@ export async function DashboardNav() {
                   },
                 ]}
               />
-              <NavLink href="/instructor/profile">Mi Perfil</NavLink>
               <NavLink href="/certifications">Certificaciones</NavLink>
             </>
           ) : (
             <>
               <NavLink href="/dashboard">Inicio</NavLink>
-              <NavLink href="/profile">Mi Perfil</NavLink>
               <NavLink href="/martial-history">Historial</NavLink>
               <NavLink href="/ranking">Ranking</NavLink>
               <NavLink href="/certifications">Certificaciones</NavLink>
@@ -137,25 +167,58 @@ export async function DashboardNav() {
           )}
         </nav>
 
-        <div className="flex items-center gap-3 shrink-0">
-          {practitioner && (
-            <div className="hidden md:flex flex-col items-end">
-              <span className="text-xs font-medium text-neutral-200 leading-none">
-                {practitioner.fullName.split(" ")[0]}
-              </span>
-              <span className="text-xs text-neutral-500 leading-none mt-0.5">
-                {gradeLabel}
-              </span>
-            </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {isAdmin ? (
+            <>
+              <div className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl bg-indigo-900/30 border border-indigo-700/40">
+                <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center shrink-0">
+                  <span className="text-xs font-bold text-white">
+                    {user.email?.[0]?.toUpperCase() ?? "A"}
+                  </span>
+                </div>
+                <div className="hidden sm:block">
+                  <p className="text-[10px] font-semibold text-indigo-300 leading-none">
+                    Administrador
+                  </p>
+                  <p className="text-[10px] text-indigo-500 leading-none mt-0.5 truncate max-w-35">
+                    {user.email}
+                  </p>
+                </div>
+              </div>
+              <form action={signOutAction}>
+                <button
+                  type="submit"
+                  className="text-xs text-indigo-400/70 hover:text-neutral-200 transition-colors duration-150 px-2 py-1.5 rounded-md hover:bg-indigo-900/40 border border-transparent hover:border-indigo-800/50"
+                >
+                  Salir
+                </button>
+              </form>
+            </>
+          ) : (
+            <>
+              {practitioner && (
+                <UserMenu
+                  profileHref={
+                    isInstructor ? "/instructor/profile" : "/profile"
+                  }
+                  name={practitioner.fullName.split(" ")[0]!}
+                  gradeLabel={gradeLabel}
+                  initials={initials}
+                  signOutAction={signOutAction}
+                />
+              )}
+              {!practitioner && (
+                <form action={signOutAction}>
+                  <button
+                    type="submit"
+                    className="text-xs text-neutral-500 hover:text-neutral-200 transition-colors duration-150 px-2 py-1.5 rounded-md hover:bg-neutral-800/60 border border-transparent hover:border-neutral-700/50"
+                  >
+                    Salir
+                  </button>
+                </form>
+              )}
+            </>
           )}
-          <form action={signOutAction}>
-            <button
-              type="submit"
-              className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors px-2 py-1"
-            >
-              Salir
-            </button>
-          </form>
         </div>
       </div>
     </header>

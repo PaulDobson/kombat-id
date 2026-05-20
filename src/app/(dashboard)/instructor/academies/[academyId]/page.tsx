@@ -6,15 +6,16 @@ import type { ChileanRegion } from "@/modules/practitioner-identity/domain/entit
 import type { Grade } from "@/modules/practitioner-identity/domain/entities/practitioner";
 import { isInstructorRole } from "@/lib/roles";
 import Link from "next/link";
-import { AssignPractitionerPanel } from "./AssignPractitionerPanel";
 import { RemoveMemberButton } from "./RemoveMemberButton";
 import { EditAcademyForm } from "./EditAcademyForm";
+import { RegisterStudentSection } from "./RegisterStudentSection";
+import { EditStudentModal } from "./EditStudentModal";
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 7;
 
 const REGION_LABELS: Record<ChileanRegion, string> = {
   arica_y_parinacota: "Arica y Parinacota",
@@ -97,7 +98,7 @@ export default async function InstructorAcademyDetailPage({
   const { data: memberRows, count: memberCount } = await adminSupabase
     .from("academy_memberships")
     .select(
-      "practitioner_id, practitioners(id, full_name, rut, grade, dan, address_city, is_active)",
+      "practitioner_id, practitioners(id, full_name, rut, grade, dan, address_city, address_street, address_region, weight_kg, height_cm, contact_phone, contact_email, is_active)",
       { count: "exact" },
     )
     .eq("academy_id", academyId)
@@ -117,6 +118,12 @@ export default async function InstructorAcademyDetailPage({
       grade: string;
       dan: number | null;
       address_city: string | null;
+      address_street: string | null;
+      address_region: string | null;
+      weight_kg: number | null;
+      height_cm: number | null;
+      contact_phone: string | null;
+      contact_email: string | null;
       is_active: boolean;
     } | null;
   };
@@ -124,45 +131,6 @@ export default async function InstructorAcademyDetailPage({
   const members = (memberRows ?? [])
     .map((r) => (r as MemberRow).practitioners)
     .filter(Boolean) as NonNullable<MemberRow["practitioners"]>[];
-
-  // ── Available practitioners (not in any active membership) ────────────────
-  const { data: allActiveMemberships } = await adminSupabase
-    .from("academy_memberships")
-    .select("practitioner_id")
-    .eq("is_active", true);
-
-  const alreadyAssigned = [
-    ...new Set(
-      (allActiveMemberships ?? []).map((m) => m.practitioner_id as string),
-    ),
-  ];
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let availableQuery: any = adminSupabase
-    .from("practitioners")
-    .select("id, full_name, rut, grade")
-    .eq("is_active", true)
-    .eq("role", "alumno")
-    .order("full_name")
-    .limit(500);
-
-  if (alreadyAssigned.length > 0) {
-    availableQuery = availableQuery.not(
-      "id",
-      "in",
-      `(${alreadyAssigned.join(",")})`,
-    );
-  }
-
-  const { data: availableRows } = await availableQuery;
-  const available = (availableRows ?? []).map(
-    (p: { id: string; full_name: string; rut: string; grade: string }) => ({
-      id: p.id,
-      fullName: p.full_name,
-      rut: p.rut,
-      grade: p.grade,
-    }),
-  );
 
   const pageUrl = (p: number) => `/instructor/academies/${academyId}?page=${p}`;
 
@@ -259,9 +227,14 @@ export default async function InstructorAcademyDetailPage({
           <h2 className="text-sm font-semibold text-neutral-50">
             Practicantes
           </h2>
-          <span className="text-xs text-neutral-400">
-            {totalMemberCount.toLocaleString("es-CL")} registros
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-neutral-400">
+              {totalMemberCount.toLocaleString("es-CL")} registros
+            </span>
+            {academy.isActive && (
+              <RegisterStudentSection academyId={academyId} />
+            )}
+          </div>
         </div>
 
         {members.length === 0 ? (
@@ -317,12 +290,27 @@ export default async function InstructorAcademyDetailPage({
                         )}
                       </td>
                       <td className="px-5 py-3 text-right">
-                        {academy.isActive && (
-                          <RemoveMemberButton
-                            academyId={academyId}
-                            practitionerId={p.id}
+                        <div className="flex items-center justify-end gap-1">
+                          <EditStudentModal
+                            student={{
+                              id: p.id,
+                              fullName: p.full_name,
+                              weightKg: p.weight_kg,
+                              heightCm: p.height_cm,
+                              contactPhone: p.contact_phone,
+                              contactEmail: p.contact_email,
+                              addressStreet: p.address_street,
+                              addressCity: p.address_city,
+                              addressRegion: p.address_region,
+                            }}
                           />
-                        )}
+                          {academy.isActive && (
+                            <RemoveMemberButton
+                              academyId={academyId}
+                              practitionerId={p.id}
+                            />
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -380,22 +368,6 @@ export default async function InstructorAcademyDetailPage({
           </>
         )}
       </div>
-
-      {/* Assign panel */}
-      {academy.isActive && (
-        <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6 space-y-3">
-          <h2 className="text-sm font-semibold text-neutral-50">
-            Agregar practicante
-          </h2>
-          <p className="text-xs text-neutral-500">
-            Solo se muestran practicantes sin academia activa asignada.
-          </p>
-          <AssignPractitionerPanel
-            academyId={academyId}
-            available={available}
-          />
-        </div>
-      )}
     </main>
   );
 }

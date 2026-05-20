@@ -156,17 +156,25 @@ export function ChileMap({ regionData }: Props) {
     x: number;
     y: number;
   } | null>(null);
+  const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
 
   const dataMap = new Map(regionData.map((d) => [d.region, d.count]));
   const maxCount = Math.max(...regionData.map((d) => d.count), 1);
 
-  function getRegionFill(regionId: string) {
+  function getRegionFill(regionId: string, hovered = false) {
     const count = dataMap.get(regionId) ?? 0;
-    if (count === 0) return "#262626"; // neutral-800
+    if (count === 0) return hovered ? "#262626" : "#171717";
     const intensity = count / maxCount;
-    if (intensity > 0.66) return "#1d4ed8"; // blue-700
-    if (intensity > 0.33) return "#2563eb"; // blue-600
-    return "#3b82f6"; // blue-500
+    if (hovered) {
+      if (intensity > 0.75) return "#4338ca"; // indigo-700 brighter
+      if (intensity > 0.5) return "#4f46e5"; // indigo-600 brighter
+      if (intensity > 0.25) return "#6366f1"; // indigo-500 brighter
+      return "#818cf8"; // indigo-400 brighter
+    }
+    if (intensity > 0.75) return "#3730a3"; // indigo-800
+    if (intensity > 0.5) return "#4338ca"; // indigo-700
+    if (intensity > 0.25) return "#4f46e5"; // indigo-600
+    return "#6366f1"; // indigo-500
   }
 
   function getRegionOpacity(regionId: string) {
@@ -178,9 +186,12 @@ export function ChileMap({ regionData }: Props) {
     <div className="relative flex flex-col items-center">
       <svg
         viewBox="0 0 200 810"
-        className="w-full max-w-[160px]"
-        style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.4))" }}
-        onMouseLeave={() => setTooltip(null)}
+        className="w-full max-w-40"
+        style={{ filter: "drop-shadow(0 4px 16px rgba(0,0,0,0.7))" }}
+        onMouseLeave={() => {
+          setTooltip(null);
+          setHoveredRegion(null);
+        }}
       >
         {REGIONS.map((region) => {
           const count = dataMap.get(region.id) ?? 0;
@@ -191,17 +202,15 @@ export function ChileMap({ regionData }: Props) {
               {/* Region shape */}
               <path
                 d={region.path}
-                fill={getRegionFill(region.id)}
+                fill={getRegionFill(region.id, hoveredRegion === region.id)}
                 fillOpacity={getRegionOpacity(region.id)}
-                stroke="#404040"
-                strokeWidth="0.8"
-                className="transition-all duration-200 cursor-pointer"
+                stroke={hoveredRegion === region.id ? "#6366f1" : "#2a2a2a"}
+                strokeWidth={hoveredRegion === region.id ? "1.5" : "0.6"}
+                className="transition-all duration-150 cursor-pointer"
                 onMouseEnter={(e) => {
+                  setHoveredRegion(region.id);
                   const svg = (e.target as SVGElement).closest("svg")!;
                   const rect = svg.getBoundingClientRect();
-                  const pt = svg.createSVGPoint();
-                  pt.x = e.clientX;
-                  pt.y = e.clientY;
                   setTooltip({
                     region: region.id,
                     count,
@@ -209,27 +218,44 @@ export function ChileMap({ regionData }: Props) {
                     y: e.clientY - rect.top,
                   });
                 }}
-                onMouseLeave={() => setTooltip(null)}
+                onMouseLeave={() => {
+                  setTooltip(null);
+                  setHoveredRegion(null);
+                }}
               />
 
-              {/* Pin for regions with data */}
+              {/* Pin para regiones con inscritos */}
               {hasData && (
                 <g
                   transform={`translate(${region.cx}, ${region.cy})`}
                   className="pointer-events-none"
                 >
-                  {/* Pin shadow */}
-                  <circle cx="0" cy="2" r="7" fill="black" fillOpacity="0.3" />
-                  {/* Pin circle */}
+                  {/* Glow difuso */}
                   <circle
                     cx="0"
                     cy="0"
-                    r="7"
-                    fill="#2563eb"
-                    stroke="#93c5fd"
+                    r="11"
+                    fill="#4f46e5"
+                    fillOpacity="0.22"
+                  />
+                  {/* Sombra */}
+                  <circle
+                    cx="0"
+                    cy="1.5"
+                    r="7.5"
+                    fill="black"
+                    fillOpacity="0.5"
+                  />
+                  {/* Pin */}
+                  <circle
+                    cx="0"
+                    cy="0"
+                    r="7.5"
+                    fill="#4f46e5"
+                    stroke="#a5b4fc"
                     strokeWidth="1.5"
                   />
-                  {/* Count label */}
+                  {/* Número */}
                   <text
                     x="0"
                     y="0"
@@ -268,14 +294,14 @@ export function ChileMap({ regionData }: Props) {
         </div>
       )}
 
-      {/* Legend */}
-      <div className="mt-3 flex items-center gap-2 text-xs text-neutral-500">
-        <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-full bg-blue-500 inline-block" />
+      {/* Leyenda */}
+      <div className="mt-3 flex items-center gap-3 text-xs text-neutral-500">
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-primary-500 inline-block" />
           Con inscritos
         </span>
-        <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-full bg-neutral-700 inline-block opacity-40" />
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-neutral-800 inline-block border border-neutral-600" />
           Sin inscritos
         </span>
       </div>

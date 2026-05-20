@@ -1,7 +1,6 @@
-import { requireUser } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
-import { redirect } from "next/navigation";
 import Link from "next/link";
+import { requireInstructor } from "@/lib/auth-guards";
 import { DrizzleGradeExamRepository } from "@/modules/grade-exam/infrastructure/repositories/drizzleGradeExamRepository";
 import { formatDateShort } from "@/lib/format-date";
 
@@ -10,8 +9,6 @@ import { formatDateShort } from "@/lib/format-date";
 // ---------------------------------------------------------------------------
 
 const PAGE_SIZE = 10;
-
-const INSTRUCTOR_ROLES = ["instructor", "profesor", "maestro"];
 
 const GRADE_LABELS: Record<string, string> = {
   white: "Blanco",
@@ -94,22 +91,11 @@ async function fetchPractitionerNames(
 // ---------------------------------------------------------------------------
 
 export default async function InstructorGradeExamsPage() {
-  const user = await requireUser();
-
-  // Auth guard: must be an instructor
-  const { data: practitioner } = await adminSupabase
-    .from("practitioners")
-    .select("id, full_name, role")
-    .eq("auth_user_id", user.id)
-    .maybeSingle();
-
-  if (!practitioner || !INSTRUCTOR_ROLES.includes(practitioner.role ?? "")) {
-    redirect("/dashboard");
-  }
+  const session = await requireInstructor();
 
   // Fetch exams for this instructor
   const repo = new DrizzleGradeExamRepository();
-  const allExams = await repo.findByInstructor(practitioner.id);
+  const allExams = await repo.findByInstructor(session.practitionerId);
 
   // Simple pagination: first 20, note if more
   const exams = allExams.slice(0, PAGE_SIZE);
@@ -119,7 +105,7 @@ export default async function InstructorGradeExamsPage() {
   const practitionerIds = [...new Set(exams.map((e) => e.practitionerId))];
   const nameMap = await fetchPractitionerNames(
     practitionerIds,
-    practitioner.id,
+    session.practitionerId,
   );
 
   return (

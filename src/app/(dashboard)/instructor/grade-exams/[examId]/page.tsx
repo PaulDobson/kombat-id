@@ -1,16 +1,10 @@
-import { requireUser } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
-import { redirect, notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import { requireInstructor } from "@/lib/auth-guards";
 import { DrizzleGradeExamRepository } from "@/modules/grade-exam/infrastructure/repositories/drizzleGradeExamRepository";
 import { DrizzleExamTemplateRepository } from "@/modules/grade-exam/infrastructure/repositories/drizzleExamTemplateRepository";
 import { ExamScoreForm } from "./ExamScoreForm";
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const INSTRUCTOR_ROLES = ["instructor", "profesor", "maestro"];
 
 // ---------------------------------------------------------------------------
 // Page (Server Component)
@@ -21,20 +15,8 @@ export default async function InstructorGradeExamDetailPage({
 }: {
   params: Promise<{ examId: string }>;
 }) {
-  const user = await requireUser();
+  const session = await requireInstructor();
   const { examId } = await params;
-
-  // Auth guard: must be an instructor
-  const { data: instructor } = await adminSupabase
-    .from("practitioners")
-    .select("id, full_name, role")
-    .eq("auth_user_id", user.id)
-    .eq("is_active", true)
-    .maybeSingle();
-
-  if (!instructor || !INSTRUCTOR_ROLES.includes(instructor.role ?? "")) {
-    redirect("/dashboard");
-  }
 
   // Fetch exam
   const examRepo = new DrizzleGradeExamRepository();
@@ -42,7 +24,7 @@ export default async function InstructorGradeExamDetailPage({
   if (!exam) notFound();
 
   // Verify instructor owns the exam (Req 10.1)
-  if (exam.instructorId !== instructor.id) {
+  if (exam.instructorId !== session.practitionerId) {
     redirect("/instructor/grade-exams");
   }
 

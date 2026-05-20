@@ -8,14 +8,7 @@ import { DrizzleEventRegistrationRepository } from "../../infrastructure/reposit
 import { enrollStudents } from "../../application/use-cases/enrollStudents";
 import { EventAtCapacityError } from "../../domain/errors";
 import { INSTRUCTOR_ROLES } from "@/lib/roles";
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-type ActionResult<T = void> =
-  | { success: true; data: T }
-  | { success: false; error: string; code: string };
+import type { ActionResult } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
 // Schema

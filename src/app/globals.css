@@ -158,3 +158,17 @@
     outline-offset: 2px;
   }
 }
+
+/* ============================================================
+   ANIMACIONES PERSONALIZADAS
+   ============================================================ */
+
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-6px); }
+}

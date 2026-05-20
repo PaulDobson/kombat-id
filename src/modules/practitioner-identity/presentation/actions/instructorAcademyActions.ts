@@ -8,10 +8,7 @@ import type { Academy, ChileanRegion } from "../../domain/entities/academy";
 import { DrizzleAcademyRepository } from "../../infrastructure/repositories/drizzleAcademyRepository";
 import { DrizzlePractitionerRepository } from "../../infrastructure/repositories/drizzlePractitionerRepository";
 import { isInstructorRole } from "@/lib/roles";
-
-type ActionResult<T = void> =
-  | { success: true; data: T }
-  | { success: false; error: string; code: string };
+import type { ActionResult } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
 // Auth helper — verifies session and instructor role

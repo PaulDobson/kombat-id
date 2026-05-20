@@ -52,7 +52,29 @@ const EVENT_TYPE_STYLES: Record<EventType, string> = {
   exam: "bg-emerald-900/50 text-emerald-400 border border-emerald-800",
 };
 
-const HOW_IT_WORKS = [
+const EVENT_TYPE_ACCENT_BG: Record<EventType, string> = {
+  competition: "bg-primary-500",
+  seminar: "bg-amber-500",
+  exam: "bg-emerald-500",
+};
+
+function daysUntil(dateStr: string): number {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(dateStr + "T00:00:00");
+  return Math.round(
+    (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+  );
+}
+
+function formatDaysUntil(days: number): string {
+  if (days === 0) return "Hoy";
+  if (days === 1) return "Mañana";
+  if (days < 0) return "Pasado";
+  return `en ${days} días`;
+}
+
+const _HOW_IT_WORKS = [
   {
     step: "01",
     title: "Crea tu perfil",
@@ -70,7 +92,7 @@ const HOW_IT_WORKS = [
   },
 ];
 
-const FEATURES = [
+const _FEATURES = [
   {
     icon: "🪪",
     title: "Identidad digital",
@@ -325,49 +347,266 @@ export default async function LandingPage({
       </div>
 
       {/* ── CÓMO FUNCIONA ─────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-6 py-20 sm:py-28">
-        <div className="text-center mb-16 space-y-3">
-          <span className="inline-flex items-center gap-2 bg-neutral-800 border border-neutral-700 text-neutral-400 text-xs font-medium px-3 py-1.5 rounded-full">
-            Proceso simple
-          </span>
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
-            ¿Cómo funciona?
-          </h2>
-          <p className="text-neutral-400 text-sm max-w-md mx-auto">
-            Tres pasos para tener tu identidad marcial digital y verificable.
-          </p>
-        </div>
+      <section className="relative overflow-hidden py-24 sm:py-32">
+        {/* Fondo radial sutil */}
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-225 h-150 rounded-full bg-primary-600/5 blur-3xl pointer-events-none"
+          aria-hidden="true"
+        />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
-          {/* Connector line */}
-          <div
-            className="hidden md:block absolute top-10 left-1/3 right-1/3 h-px bg-linear-to-r from-transparent via-primary-700/50 to-transparent"
-            aria-hidden="true"
-          />
-
-          {HOW_IT_WORKS.map((step, i) => (
-            <div
-              key={step.step}
-              className="relative bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-2xl p-7 space-y-4 transition-colors group"
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-4xl font-black text-neutral-800 group-hover:text-primary-900/60 transition-colors tabular-nums">
-                  {step.step}
-                </span>
-                {i < HOW_IT_WORKS.length - 1 && (
-                  <div className="hidden md:flex absolute -right-3 top-10 w-6 h-6 bg-neutral-950 border border-neutral-700 rounded-full items-center justify-center z-10">
-                    <span className="text-neutral-500 text-xs">→</span>
-                  </div>
-                )}
-              </div>
-              <h3 className="text-base font-semibold text-neutral-100">
-                {step.title}
-              </h3>
-              <p className="text-sm text-neutral-500 leading-relaxed">
-                {step.desc}
-              </p>
+        <div className="relative max-w-5xl mx-auto px-6">
+          {/* Encabezado */}
+          <div className="text-center mb-20 space-y-5">
+            <div className="inline-flex items-center gap-2 bg-primary-900/30 border border-primary-700/40 text-primary-400 text-xs font-semibold px-4 py-2 rounded-full tracking-widest uppercase">
+              <span
+                className="w-1.5 h-1.5 rounded-full bg-primary-400 animate-pulse"
+                aria-hidden="true"
+              />
+              Proceso simple
             </div>
-          ))}
+            <h2 className="text-4xl sm:text-5xl font-black tracking-tight">
+              ¿Cómo funciona?
+            </h2>
+            <p className="text-neutral-400 text-base max-w-md mx-auto leading-relaxed">
+              Tres pasos para tener tu identidad marcial digital y verificable.
+            </p>
+          </div>
+
+          {/* Grid de pasos */}
+          <div className="relative grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-6">
+            {/* Conector horizontal con shimmer (solo desktop) */}
+            <div
+              className="hidden md:block absolute top-13 left-[calc(16.67%+3.5rem)] right-[calc(16.67%+3.5rem)] h-px overflow-hidden"
+              aria-hidden="true"
+            >
+              <div className="h-full bg-linear-to-r from-primary-700/20 via-primary-500/50 to-primary-700/20" />
+              <div className="absolute inset-0 w-1/3 bg-linear-to-r from-transparent via-white/50 to-transparent animate-[shimmer_2.5s_ease-in-out_infinite]" />
+            </div>
+
+            {/* ── Paso 01 — Crea tu perfil ── */}
+            <div className="flex flex-col items-center text-center gap-6">
+              <div className="relative">
+                <div
+                  className="absolute -inset-4 bg-primary-600/10 rounded-full blur-2xl"
+                  aria-hidden="true"
+                />
+                <div className="relative w-28 h-28 rounded-full bg-neutral-900 border-2 border-primary-600/50 flex items-center justify-center shadow-xl shadow-primary-950/60 ring-4 ring-primary-600/10">
+                  <svg
+                    className="w-9 h-9 text-primary-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+                    />
+                  </svg>
+                  <span className="absolute top-2.5 right-3 text-[10px] font-black text-primary-500/40 tabular-nums leading-none">
+                    01
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2.5">
+                <h3 className="text-lg font-bold text-neutral-100">
+                  Crea tu perfil
+                </h3>
+                <p className="text-sm text-neutral-500 leading-relaxed max-w-60 mx-auto">
+                  Regístrate con tu correo. Un instructor vincula tu cuenta a tu
+                  perfil oficial de practicante.
+                </p>
+              </div>
+
+              {/* Mini mockup — tarjeta de perfil */}
+              <div className="w-full bg-neutral-900/80 border border-neutral-800 hover:border-primary-800/40 rounded-2xl p-4 space-y-3 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-primary-800/50 border border-primary-700/40 flex items-center justify-center text-primary-300 text-xs font-bold shrink-0">
+                    KT
+                  </div>
+                  <div className="space-y-1.5 flex-1 min-w-0">
+                    <div className="h-2.5 bg-neutral-700 rounded-full w-3/4" />
+                    <div className="h-2 bg-neutral-800 rounded-full w-2/5" />
+                  </div>
+                </div>
+                <div className="flex gap-1.5 flex-wrap">
+                  <span className="inline-flex px-2 py-0.5 rounded-full bg-primary-900/60 border border-primary-800/50 text-primary-400 text-[10px] font-medium">
+                    Cinturón Negro
+                  </span>
+                  <span className="inline-flex px-2 py-0.5 rounded-full bg-emerald-900/40 border border-emerald-800/40 text-emerald-400 text-[10px] font-medium">
+                    Activo
+                  </span>
+                </div>
+                <div className="h-1 bg-neutral-800 rounded-full overflow-hidden">
+                  <div className="h-full w-3/4 bg-linear-to-r from-primary-600 to-primary-400 rounded-full" />
+                </div>
+              </div>
+            </div>
+
+            {/* ── Paso 02 — Acumula tu historial ── */}
+            <div className="flex flex-col items-center text-center gap-6">
+              <div className="relative">
+                <div
+                  className="absolute -inset-4 bg-amber-600/10 rounded-full blur-2xl"
+                  aria-hidden="true"
+                />
+                <div className="relative w-28 h-28 rounded-full bg-neutral-900 border-2 border-amber-600/40 flex items-center justify-center shadow-xl shadow-amber-950/30 ring-4 ring-amber-600/10">
+                  <svg
+                    className="w-9 h-9 text-amber-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                    />
+                  </svg>
+                  <span className="absolute top-2.5 right-3 text-[10px] font-black text-amber-500/40 tabular-nums leading-none">
+                    02
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2.5">
+                <h3 className="text-lg font-bold text-neutral-100">
+                  Acumula tu historial
+                </h3>
+                <p className="text-sm text-neutral-500 leading-relaxed max-w-60 mx-auto">
+                  Cada competencia, seminario y examen queda registrado. Tu
+                  trayectoria crece con cada evento.
+                </p>
+              </div>
+
+              {/* Mini mockup — timeline de eventos */}
+              <div className="w-full bg-neutral-900/80 border border-neutral-800 hover:border-amber-800/30 rounded-2xl p-4 space-y-2.5 transition-colors">
+                {(
+                  [
+                    {
+                      label: "Campeonato Regional",
+                      dot: "bg-primary-400",
+                      badge: "Competencia",
+                      cls: "bg-primary-900/60 border-primary-800/50 text-primary-400",
+                    },
+                    {
+                      label: "Seminario Olímpico",
+                      dot: "bg-amber-400",
+                      badge: "Seminario",
+                      cls: "bg-amber-900/40 border-amber-800/40 text-amber-400",
+                    },
+                    {
+                      label: "Examen de Grado",
+                      dot: "bg-emerald-400",
+                      badge: "Examen",
+                      cls: "bg-emerald-900/40 border-emerald-800/40 text-emerald-400",
+                    },
+                  ] as const
+                ).map((ev) => (
+                  <div key={ev.label} className="flex items-center gap-2.5">
+                    <div
+                      className={`w-1.5 h-1.5 rounded-full ${ev.dot} shrink-0`}
+                    />
+                    <p className="flex-1 text-[11px] text-neutral-300 truncate text-left">
+                      {ev.label}
+                    </p>
+                    <span
+                      className={`inline-flex px-1.5 py-0.5 rounded-full border text-[9px] font-medium shrink-0 ${ev.cls}`}
+                    >
+                      {ev.badge}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Paso 03 — Verifica y comparte ── */}
+            <div className="flex flex-col items-center text-center gap-6">
+              <div className="relative">
+                <div
+                  className="absolute -inset-4 bg-emerald-600/10 rounded-full blur-2xl"
+                  aria-hidden="true"
+                />
+                <div className="relative w-28 h-28 rounded-full bg-neutral-900 border-2 border-emerald-600/40 flex items-center justify-center shadow-xl shadow-emerald-950/30 ring-4 ring-emerald-600/10">
+                  <svg
+                    className="w-9 h-9 text-emerald-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 3.75 9.375v-4.5ZM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5ZM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 13.5 9.375v-4.5Z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M6.75 6.75h.75v.75h-.75v-.75ZM6.75 16.5h.75v.75h-.75v-.75ZM16.5 6.75h.75v.75h-.75v-.75ZM13.5 13.5h.75v.75h-.75v-.75ZM13.5 19.5h.75v.75h-.75v-.75ZM19.5 13.5h.75v.75h-.75v-.75ZM19.5 19.5h.75v.75h-.75v-.75ZM16.5 16.5h.75v.75h-.75v-.75Z"
+                    />
+                  </svg>
+                  <span className="absolute top-2.5 right-3 text-[10px] font-black text-emerald-500/40 tabular-nums leading-none">
+                    03
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2.5">
+                <h3 className="text-lg font-bold text-neutral-100">
+                  Verifica y comparte
+                </h3>
+                <p className="text-sm text-neutral-500 leading-relaxed max-w-60 mx-auto">
+                  Descarga tus certificaciones y comparte tu QR. Cualquiera
+                  puede verificar tu identidad al instante.
+                </p>
+              </div>
+
+              {/* Mini mockup — verificación QR */}
+              <div className="w-full bg-neutral-900/80 border border-neutral-800 hover:border-emerald-800/30 rounded-2xl p-4 space-y-3 transition-colors">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] text-neutral-600 font-mono truncate">
+                    kombat.cl/verify/qr/…
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-medium shrink-0">
+                    <span
+                      className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"
+                      aria-hidden="true"
+                    />
+                    Vigente
+                  </span>
+                </div>
+                {/* QR decorativo */}
+                <div className="mx-auto w-14 h-14 grid grid-cols-5 grid-rows-5 gap-0.5">
+                  {[
+                    1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1,
+                    1, 1, 1, 1, 1,
+                  ].map((fill, i) => (
+                    <div
+                      key={i}
+                      className={`rounded-[2px] ${
+                        fill ? "bg-emerald-400/70" : "bg-neutral-800"
+                      }`}
+                    />
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-2.5 py-1.5">
+                  <span className="text-emerald-400 text-xs" aria-hidden="true">
+                    ✓
+                  </span>
+                  <p className="text-[10px] text-emerald-400/80 font-medium">
+                    Certificación vigente y válida
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -375,12 +614,14 @@ export default async function LandingPage({
       <section className="border-y border-neutral-800 bg-neutral-900/20">
         <div className="max-w-7xl mx-auto px-6 py-20 sm:py-24">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            {/* Columna izquierda: copy */}
             <div className="space-y-6">
               <span className="inline-flex items-center gap-2 bg-primary-900/40 border border-primary-800/60 text-primary-400 text-xs font-medium px-3 py-1.5 rounded-full">
                 Funcionalidades
               </span>
               <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
-                Todo lo que necesitas en un solo lugar
+                Todo lo que necesitas{" "}
+                <span className="text-primary-400">en un solo lugar</span>
               </h2>
               <p className="text-neutral-400 text-sm leading-relaxed max-w-md">
                 Una plataforma completa diseñada para practicantes, instructores
@@ -394,23 +635,173 @@ export default async function LandingPage({
               </Link>
             </div>
 
+            {/* Columna derecha: grid de características */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {FEATURES.map((f) => (
-                <div
-                  key={f.title}
-                  className="group bg-neutral-900 hover:bg-neutral-800/80 border border-neutral-800 hover:border-primary-900/50 rounded-xl p-5 space-y-2.5 transition-all hover:-translate-y-0.5"
-                >
-                  <span className="text-2xl" aria-hidden="true">
-                    {f.icon}
-                  </span>
-                  <p className="text-sm font-semibold text-neutral-100">
-                    {f.title}
+              {/* Identidad digital */}
+              <div className="group flex items-start gap-3 bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-xl p-4 transition-colors">
+                <div className="w-9 h-9 rounded-lg bg-primary-600/10 border border-primary-500/15 flex items-center justify-center shrink-0 mt-0.5">
+                  <svg
+                    className="w-4 h-4 text-primary-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-neutral-100 mb-1">
+                    Identidad digital
                   </p>
                   <p className="text-xs text-neutral-500 leading-relaxed">
-                    {f.desc}
+                    Perfil oficial con RUT, grado y QR de verificación
+                    instantánea.
                   </p>
                 </div>
-              ))}
+              </div>
+
+              {/* Historial marcial */}
+              <div className="group flex items-start gap-3 bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-xl p-4 transition-colors">
+                <div className="w-9 h-9 rounded-lg bg-amber-600/10 border border-amber-500/15 flex items-center justify-center shrink-0 mt-0.5">
+                  <svg
+                    className="w-4 h-4 text-amber-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-neutral-100 mb-1">
+                    Historial marcial
+                  </p>
+                  <p className="text-xs text-neutral-500 leading-relaxed">
+                    Registro permanente e inmutable de toda tu trayectoria
+                    competitiva.
+                  </p>
+                </div>
+              </div>
+
+              {/* Ranking nacional */}
+              <div className="group flex items-start gap-3 bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-xl p-4 transition-colors">
+                <div className="w-9 h-9 rounded-lg bg-rose-600/10 border border-rose-500/15 flex items-center justify-center shrink-0 mt-0.5">
+                  <svg
+                    className="w-4 h-4 text-rose-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-neutral-100 mb-1">
+                    Ranking nacional
+                  </p>
+                  <p className="text-xs text-neutral-500 leading-relaxed">
+                    Posición en tiempo real por grado, edad y categoría de peso.
+                  </p>
+                </div>
+              </div>
+
+              {/* Certificaciones */}
+              <div className="group flex items-start gap-3 bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-xl p-4 transition-colors">
+                <div className="w-9 h-9 rounded-lg bg-violet-600/10 border border-violet-500/15 flex items-center justify-center shrink-0 mt-0.5">
+                  <svg
+                    className="w-4 h-4 text-violet-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.745 3.745 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.745 3.745 0 013.296-1.043A3.745 3.745 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.745 3.745 0 013.296 1.043 3.745 3.745 0 011.043 3.296A3.745 3.745 0 0121 12z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-neutral-100 mb-1">
+                    Certificaciones
+                  </p>
+                  <p className="text-xs text-neutral-500 leading-relaxed">
+                    Certificados digitales verificables con URL pública y estado
+                    en tiempo real.
+                  </p>
+                </div>
+              </div>
+
+              {/* Red de academias */}
+              <div className="group flex items-start gap-3 bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-xl p-4 transition-colors">
+                <div className="w-9 h-9 rounded-lg bg-sky-600/10 border border-sky-500/15 flex items-center justify-center shrink-0 mt-0.5">
+                  <svg
+                    className="w-4 h-4 text-sky-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-neutral-100 mb-1">
+                    Red de academias
+                  </p>
+                  <p className="text-xs text-neutral-500 leading-relaxed">
+                    Encuentra academias oficiales en las 16 regiones de Chile.
+                  </p>
+                </div>
+              </div>
+
+              {/* Verificación online */}
+              <div className="group flex items-start gap-3 bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-xl p-4 transition-colors">
+                <div className="w-9 h-9 rounded-lg bg-emerald-600/10 border border-emerald-500/15 flex items-center justify-center shrink-0 mt-0.5">
+                  <svg
+                    className="w-4 h-4 text-emerald-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-neutral-100 mb-1">
+                    Verificación online
+                  </p>
+                  <p className="text-xs text-neutral-500 leading-relaxed">
+                    Comprueba cualquier certificación o identidad en segundos,
+                    sin cuenta.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -529,59 +920,146 @@ export default async function LandingPage({
 
       {/* ── PRÓXIMOS EVENTOS ──────────────────────────────────────────────── */}
       {upcoming.length > 0 && (
-        <section className="border-t border-neutral-800 bg-neutral-900/20">
-          <div className="max-w-7xl mx-auto px-6 py-20 sm:py-24">
-            <div className="flex items-end justify-between mb-10 gap-4">
-              <div className="space-y-2">
-                <span className="inline-flex items-center gap-2 bg-neutral-800 border border-neutral-700 text-neutral-400 text-xs font-medium px-3 py-1.5 rounded-full">
-                  Agenda
+        <section className="relative border-t border-neutral-800 overflow-hidden">
+          <div className="relative max-w-7xl mx-auto px-6 py-20 sm:py-24">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-12">
+              <div className="space-y-3">
+                <span className="inline-flex items-center gap-2 bg-primary-900/40 border border-primary-800/60 text-primary-400 text-xs font-semibold px-3 py-1.5 rounded-full uppercase tracking-widest">
+                  <span
+                    className="w-1.5 h-1.5 rounded-full bg-primary-400 animate-pulse"
+                    aria-hidden="true"
+                  />
+                  Agenda oficial
                 </span>
-                <h2 className="text-3xl font-bold tracking-tight">
+                <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
                   Próximas actividades
                 </h2>
-                <p className="text-sm text-neutral-400">
-                  Competencias, seminarios y exámenes de la organización
+                <p className="text-sm text-neutral-400 max-w-lg">
+                  Competencias, seminarios y exámenes oficiales. Inscríbete y sé
+                  parte de la comunidad Kombat Taekwondo Chile.
                 </p>
               </div>
               <Link
                 href="/events"
-                className="text-xs text-primary-400 hover:text-primary-300 transition-colors shrink-0"
+                className="inline-flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 hover:border-neutral-600 text-neutral-200 px-5 py-2.5 rounded-xl text-sm font-medium transition-all shrink-0"
               >
-                Ver todos →
+                Ver todos los eventos
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
+                  />
+                </svg>
               </Link>
             </div>
 
+            {/* Tarjetas de eventos */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {upcoming.map((event) => (
-                <Link
-                  key={event.id}
-                  href={`/events/${event.id}`}
-                  className="group bg-neutral-900 hover:bg-neutral-800/80 border border-neutral-800 hover:border-neutral-700 rounded-2xl p-5 space-y-3 transition-all hover:-translate-y-0.5 cursor-pointer"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <span
-                      className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${EVENT_TYPE_STYLES[event.event_type]}`}
-                    >
-                      {EVENT_TYPE_LABELS[event.event_type]}
-                    </span>
-                    <time
-                      dateTime={event.event_date}
-                      className="text-xs text-neutral-500 shrink-0"
-                    >
-                      {formatDateShort(event.event_date)}
-                    </time>
-                  </div>
-                  <p className="text-sm font-semibold text-neutral-100 leading-snug">
-                    {event.name}
-                  </p>
-                  {event.location && (
-                    <p className="text-xs text-neutral-500 flex items-center gap-1">
-                      <span aria-hidden="true">📍</span>
-                      {event.location}
-                    </p>
-                  )}
-                </Link>
-              ))}
+              {upcoming.map((event) => {
+                const days = daysUntil(event.event_date);
+                const daysLabel = formatDaysUntil(days);
+                const urgencyClass =
+                  days <= 3
+                    ? "bg-rose-500/15 text-rose-400 border border-rose-500/25"
+                    : days <= 14
+                      ? "bg-amber-500/15 text-amber-400 border border-amber-500/25"
+                      : "bg-neutral-800 text-neutral-400 border border-neutral-700";
+
+                return (
+                  <Link
+                    key={event.id}
+                    href={`/events/${event.id}`}
+                    className="group relative flex flex-col bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-neutral-950/50"
+                  >
+                    {/* Barra de acento por tipo */}
+                    <div
+                      className={`h-0.5 w-full shrink-0 ${EVENT_TYPE_ACCENT_BG[event.event_type]}`}
+                    />
+
+                    <div className="flex flex-col gap-3 p-5 flex-1">
+                      {/* Tipo + fecha */}
+                      <div className="flex items-start justify-between gap-2">
+                        <span
+                          className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${EVENT_TYPE_STYLES[event.event_type]}`}
+                        >
+                          {EVENT_TYPE_LABELS[event.event_type]}
+                        </span>
+                        <time
+                          dateTime={event.event_date}
+                          className="text-xs text-neutral-500 shrink-0 mt-0.5"
+                        >
+                          {formatDateShort(event.event_date)}
+                        </time>
+                      </div>
+
+                      {/* Nombre del evento */}
+                      <p className="text-base font-bold text-neutral-100 leading-snug group-hover:text-white transition-colors">
+                        {event.name}
+                      </p>
+
+                      {/* Ubicación */}
+                      {event.location && (
+                        <p className="text-xs text-neutral-500 flex items-center gap-1.5">
+                          <svg
+                            className="w-3.5 h-3.5 shrink-0 text-neutral-600"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={1.5}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"
+                            />
+                          </svg>
+                          {event.location}
+                        </p>
+                      )}
+
+                      <div className="flex-1 min-h-2" />
+
+                      {/* Footer: countdown + CTA */}
+                      <div className="flex items-center justify-between pt-3 border-t border-neutral-800/80">
+                        <span
+                          className={`text-xs font-medium px-2 py-0.5 rounded-full ${urgencyClass}`}
+                        >
+                          {daysLabel}
+                        </span>
+                        <span className="text-xs text-neutral-500 group-hover:text-primary-400 transition-colors flex items-center gap-1">
+                          Ver evento
+                          <svg
+                            className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
+                            />
+                          </svg>
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -590,33 +1068,54 @@ export default async function LandingPage({
       {/* ── ÁRBITROS OFICIALES ───────────────────────────────────────────── */}
       <section className="border-t border-neutral-800 bg-neutral-900/20">
         <div className="max-w-7xl mx-auto px-6 py-20 sm:py-24">
-          <div className="flex items-end justify-between mb-10 gap-4 flex-wrap">
-            <div className="space-y-2">
-              <span className="inline-flex items-center gap-2 bg-neutral-800 border border-neutral-700 text-neutral-400 text-xs font-medium px-3 py-1.5 rounded-full">
-                Directorio
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">
+            <div className="space-y-3">
+              <span className="inline-flex items-center gap-2 bg-emerald-900/30 border border-emerald-800/50 text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-full uppercase tracking-widest">
+                <span
+                  className="w-1.5 h-1.5 rounded-full bg-emerald-400"
+                  aria-hidden="true"
+                />
+                Directorio oficial
               </span>
-              <h2 className="text-3xl font-bold tracking-tight">
-                Árbitros Oficiales
-              </h2>
-              <p className="text-sm text-neutral-400">
-                Árbitros certificados de Kombat Taekwondo Chile
+              <div className="flex items-baseline gap-3 flex-wrap">
+                <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
+                  Árbitros Oficiales
+                </h2>
+                <span className="text-sm font-medium text-neutral-400 bg-neutral-800 border border-neutral-700 px-2.5 py-0.5 rounded-full">
+                  {approvedReferees.length}{" "}
+                  {approvedReferees.length === 1 ? "árbitro" : "árbitros"}
+                </span>
+              </div>
+              <p className="text-sm text-neutral-400 max-w-lg">
+                Árbitros certificados y activos de Kombat Taekwondo Chile,
+                verificados por la organización.
               </p>
             </div>
-            <div className="flex items-center gap-3 shrink-0">
-              <span className="text-sm text-neutral-500">
-                {approvedReferees.length}{" "}
-                {approvedReferees.length === 1 ? "árbitro" : "árbitros"}
-              </span>
-              <Link
-                href="/referees"
-                className="text-xs text-primary-400 hover:text-primary-300 transition-colors"
+            <Link
+              href="/referees"
+              className="inline-flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 hover:border-neutral-600 text-neutral-200 px-5 py-2.5 rounded-xl text-sm font-medium transition-all shrink-0"
+            >
+              Ver directorio completo
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.5}
               >
-                Ver todos →
-              </Link>
-            </div>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
+                />
+              </svg>
+            </Link>
           </div>
+
+          {/* Buscador */}
           <form method="GET" className="mb-8">
-            <div className="relative max-w-sm">
+            <div className="relative max-w-md">
               <Search
                 aria-hidden="true"
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500"
@@ -626,11 +1125,12 @@ export default async function LandingPage({
                 type="search"
                 name="search"
                 defaultValue={searchQuery ?? ""}
-                placeholder="Buscar por nombre..."
-                className="w-full rounded-xl border border-neutral-700 bg-neutral-800/60 pl-9 pr-4 py-2.5 text-sm text-neutral-200 placeholder:text-neutral-500 focus:border-primary-600 focus:outline-none focus:ring-1 focus:ring-primary-600"
+                placeholder="Buscar árbitro por nombre..."
+                className="w-full rounded-xl border border-neutral-700 bg-neutral-800/60 pl-9 pr-4 py-2.5 text-sm text-neutral-200 placeholder:text-neutral-500 focus:border-primary-600 focus:outline-none focus:ring-1 focus:ring-primary-600 transition-colors"
               />
             </div>
           </form>
+
           <RefereeGrid
             referees={approvedReferees}
             {...(searchQuery !== undefined && { searchQuery })}

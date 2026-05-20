@@ -1,14 +1,13 @@
-import { requireUser } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
+import { requireInstructor } from "@/lib/auth-guards";
 import { DrizzlePractitionerRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzlePractitionerRepository";
 import { DrizzleCertificationRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzleCertificationRepository";
 import { DrizzleMartialHistoryRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzleMartialHistoryRepository";
 import { DrizzleGradeExamRepository } from "@/modules/grade-exam/infrastructure/repositories/drizzleGradeExamRepository";
+import { verifyInstructorStudentAccess } from "@/modules/practitioner-identity/application/use-cases/verifyInstructorStudentAccess";
 import { formatDateLong } from "@/lib/format-date";
-
-const INSTRUCTOR_ROLES = ["instructor", "profesor", "maestro"];
 
 const EXAM_STATUS_LABELS: Record<string, string> = {
   draft: "Borrador",
@@ -104,20 +103,8 @@ export default async function InstructorStudentDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const user = await requireUser();
+  const session = await requireInstructor();
   const { id } = await params;
-
-  // Verify the viewer is an instructor
-  const { data: instructor } = await adminSupabase
-    .from("practitioners")
-    .select("id, role")
-    .eq("auth_user_id", user.id)
-    .eq("is_active", true)
-    .maybeSingle();
-
-  if (!instructor || !INSTRUCTOR_ROLES.includes(instructor.role ?? "")) {
-    redirect("/dashboard");
-  }
 
   const practitionerRepo = new DrizzlePractitionerRepository();
   const certRepo = new DrizzleCertificationRepository();
@@ -135,34 +122,14 @@ export default async function InstructorStudentDetailPage({
 
   if (!practitioner) notFound();
 
-  // Verify this student belongs to the instructor's academy
-  const isDirectStudent = practitioner.instructorId === instructor.id;
+  // Verify this student belongs to the instructor (direct or via academy)
+  const hasAccess = await verifyInstructorStudentAccess({
+    instructorId: session.practitionerId,
+    studentId: id,
+    studentInstructorId: practitioner.instructorId,
+  });
 
-  let isAcademyStudent = false;
-  if (!isDirectStudent) {
-    // Check if the student is in any academy where this instructor is responsible
-    const { data: studentMemberships } = await adminSupabase
-      .from("academy_memberships")
-      .select("academy_id")
-      .eq("practitioner_id", id)
-      .eq("is_active", true);
-
-    const studentAcademyIds = (studentMemberships ?? []).map(
-      (m: { academy_id: string }) => m.academy_id,
-    );
-
-    if (studentAcademyIds.length > 0) {
-      const { data: instructorAcademies } = await adminSupabase
-        .from("academies")
-        .select("id")
-        .contains("responsible_instructor_ids", [instructor.id])
-        .in("id", studentAcademyIds);
-
-      isAcademyStudent = (instructorAcademies ?? []).length > 0;
-    }
-  }
-
-  if (!isDirectStudent && !isAcademyStudent) {
+  if (!hasAccess) {
     redirect("/instructor");
   }
 

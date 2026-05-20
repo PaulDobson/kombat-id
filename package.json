@@ -46,6 +46,7 @@
     "react-dom": "^19.0.0",
     "recharts": "^3.7.0",
     "resend": "^6.12.3",
+    "sweetalert2": "^11.26.24",
     "tailwind-merge": "^2.2.0",
     "zod": "^4.3.6"
   },

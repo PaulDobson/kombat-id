@@ -33,6 +33,7 @@ export function RegisterForm({
     const fd = new FormData(e.currentTarget);
 
     const weightRaw = fd.get("weightKg");
+    const heightRaw = fd.get("heightCm");
     const instructorRaw = fd.get("instructorId");
 
     const input = {
@@ -43,10 +44,13 @@ export function RegisterForm({
       grade: fd.get("grade") as string,
       startDate: fd.get("startDate") as string,
       weightKg: weightRaw ? Number(weightRaw) : undefined,
+      heightCm: heightRaw ? Number(heightRaw) : undefined,
       addressStreet: (fd.get("addressStreet") as string) || null,
       addressCity: (fd.get("addressCity") as string) || null,
       addressRegion: (fd.get("addressRegion") as string) || null,
       instructorId: (instructorRaw as string) || null,
+      martialArt: (fd.get("martialArt") as string) || null,
+      martialGrade: (fd.get("martialGrade") as string) || null,
     };
 
     startTransition(async () => {
@@ -127,17 +131,16 @@ export function RegisterForm({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label htmlFor="grade" className={labelClass}>
-              Grado actual <span className="text-rose-500">*</span>
+              Grado inicial
             </label>
-            <select id="grade" name="grade" required className={selectClass}>
-              <option value="">Seleccionar...</option>
-              <option value="white">Blanco</option>
-              <option value="yellow">Amarillo</option>
-              <option value="green">Verde</option>
-              <option value="blue">Azul</option>
-              <option value="red">Rojo</option>
-              <option value="black">Negro</option>
-            </select>
+            <input
+              id="grade"
+              type="text"
+              value="Blanco"
+              readOnly
+              className={`${inputClass} cursor-not-allowed opacity-50`}
+            />
+            <input type="hidden" name="grade" value="white" />
           </div>
           <div>
             <label htmlFor="startDate" className={labelClass}>
@@ -170,6 +173,71 @@ export function RegisterForm({
             placeholder="Ej: 68.5"
             className={inputClass}
           />
+        </div>
+        <div>
+          <label htmlFor="heightCm" className={labelClass}>
+            Altura (cm)
+            <span className="text-neutral-500 font-normal ml-1">
+              — opcional
+            </span>
+          </label>
+          <input
+            id="heightCm"
+            name="heightCm"
+            type="number"
+            step="1"
+            min="50"
+            max="250"
+            placeholder="Ej: 170"
+            className={inputClass}
+          />
+        </div>
+      </fieldset>
+
+      {/* ── Historial marcial previo ── */}
+      <fieldset className="space-y-4">
+        <legend className="text-xs font-semibold text-neutral-400 uppercase tracking-wider pb-2 border-b border-neutral-700 w-full">
+          Historial marcial previo
+          <span className="text-neutral-600 font-normal normal-case tracking-normal ml-2">
+            — opcional
+          </span>
+        </legend>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="martialArt" className={labelClass}>
+              Arte marcial previa
+            </label>
+            <select id="martialArt" name="martialArt" className={selectClass}>
+              <option value="">Seleccionar...</option>
+              <option value="Taekwondo WT">Tae kwon do WT</option>
+              <option value="Taekwondo ITF">Tae kwon do ITF</option>
+              <option value="BJJ">BJJ</option>
+              <option value="Karate">Karate</option>
+              <option value="Boxeo">Boxeo</option>
+              <option value="Kung Fu">Kung Fu</option>
+              <option value="Lucha">Lucha</option>
+              <option value="Otras">Otras artes marciales</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="martialGrade" className={labelClass}>
+              Grado marcial
+            </label>
+            <select
+              id="martialGrade"
+              name="martialGrade"
+              className={selectClass}
+            >
+              <option value="">Seleccionar...</option>
+              <option value="white">Blanco</option>
+              <option value="yellow">Amarillo</option>
+              <option value="green">Verde</option>
+              <option value="blue">Azul</option>
+              <option value="red">Rojo</option>
+              <option value="black">Negro</option>
+            </select>
+          </div>
         </div>
       </fieldset>
 
