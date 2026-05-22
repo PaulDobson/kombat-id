@@ -1,11 +1,16 @@
-import Link from "next/link";
-import { ResetPasswordForm } from "./ResetPasswordForm";
+import { requireUser } from "@/lib/supabase/server";
+import { UpdatePasswordForm } from "./UpdatePasswordForm";
 
 export const metadata = {
-  title: "Recuperar contraseña — Kombat Taekwondo",
+  title: "Nueva contraseña — Kombat Taekwondo",
 };
 
-export default function ResetPasswordPage() {
+export default async function UpdatePasswordPage() {
+  // The user arrives here after clicking the reset link in their email.
+  // Supabase exchanges the token in /auth/callback and sets a session,
+  // so requireUser() will succeed at this point.
+  await requireUser();
+
   return (
     <div className="min-h-screen bg-neutral-950 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
@@ -14,7 +19,6 @@ export default function ResetPasswordPage() {
           <div className="h-1 w-full bg-linear-to-r from-primary-600 via-indigo-500 to-primary-600" />
 
           <div className="px-8 py-8 space-y-6">
-            {/* Header */}
             <div className="space-y-2">
               <div className="w-11 h-11 rounded-xl bg-primary-900/50 border border-primary-700/40 flex items-center justify-center mb-4">
                 <svg
@@ -28,30 +32,19 @@ export default function ResetPasswordPage() {
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"
+                    d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"
                   />
                 </svg>
               </div>
               <h1 className="text-xl font-bold text-neutral-100 tracking-tight">
-                Recuperar contraseña
+                Establece tu nueva contraseña
               </h1>
               <p className="text-sm text-neutral-400 leading-relaxed">
-                Ingresa tu correo y te enviaremos un enlace para restablecer tu
-                contraseña. Funciona tanto si olvidaste tu contraseña como si
-                nunca recibiste la temporal.
+                Elige una contraseña segura de al menos 8 caracteres.
               </p>
             </div>
 
-            <ResetPasswordForm />
-
-            <div className="text-center">
-              <Link
-                href="/login"
-                className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors"
-              >
-                ← Volver al inicio de sesión
-              </Link>
-            </div>
+            <UpdatePasswordForm />
           </div>
         </div>
 

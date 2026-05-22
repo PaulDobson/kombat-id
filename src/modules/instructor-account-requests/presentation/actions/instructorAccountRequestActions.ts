@@ -88,11 +88,40 @@ const instructorAuthService: InstructorAuthService = {
       () => chars[Math.floor(Math.random() * chars.length)],
     ).join("");
 
+    // Check if a Supabase Auth user already exists for this email.
+    // listUsers doesn't support filtering by email directly, so we use
+    // getUserByEmail via the admin API (available in supabase-js v2).
+    const { data: existingData } = await adminSupabase.auth.admin.listUsers({
+      perPage: 1000,
+    });
+
+    const existingUser = existingData?.users?.find(
+      (u) => u.email?.toLowerCase() === email.toLowerCase(),
+    );
+
+    if (existingUser) {
+      // User already exists — update their password and ensure instructor role
+      const { error: updateError } =
+        await adminSupabase.auth.admin.updateUserById(existingUser.id, {
+          password: temporaryPassword,
+          app_metadata: { role: "instructor" },
+          user_metadata: { must_change_password: true },
+        });
+      if (updateError) {
+        throw new Error(
+          updateError.message ?? "Unknown error updating auth user",
+        );
+      }
+      return { authUserId: existingUser.id, temporaryPassword };
+    }
+
+    // User does not exist — create them
     const { data, error } = await adminSupabase.auth.admin.createUser({
       email,
       password: temporaryPassword,
       email_confirm: true,
       app_metadata: { role: "instructor" },
+      user_metadata: { must_change_password: true },
     });
 
     if (error || !data?.user) {

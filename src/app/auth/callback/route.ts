@@ -4,26 +4,65 @@ import { adminSupabase } from "@/lib/supabase/admin";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const { searchParams, origin } = new URL(request.url);
+
   const code = searchParams.get("code");
+  const tokenHash = searchParams.get("token_hash");
+  const type = searchParams.get("type") as
+    | "invite"
+    | "recovery"
+    | "email"
+    | "signup"
+    | null;
   const next = searchParams.get("next") ?? "/dashboard";
 
+  const supabase = await createClient();
+
+  // ── PKCE flow (signUp, resetPassword, OAuth) ──────────────────────────────
+  // Supabase redirects with ?code=... when PKCE is enabled (default for SSR).
   if (code) {
-    const supabase = await createClient();
     const { data: sessionData, error } =
       await supabase.auth.exchangeCodeForSession(code);
 
     if (!error && sessionData.user) {
-      // Auto-link: if a practitioner was pre-registered with this email
-      // but has no auth_user_id yet, link it now.
       await linkPractitionerToUser(
         sessionData.user.id,
         sessionData.user.email ?? "",
       );
-
       return NextResponse.redirect(new URL(next, origin));
     }
+
+    return NextResponse.redirect(new URL("/login?error=auth", origin));
   }
 
+  // ── Token hash flow (invite, magic link) ─────────────────────────────────
+  // inviteUserByEmail does NOT support PKCE. Supabase verifies the token
+  // server-side and redirects here with ?token_hash=...&type=invite.
+  // We must call verifyOtp to exchange the hash for a session.
+  if (tokenHash && type) {
+    const { data: verifyData, error } = await supabase.auth.verifyOtp({
+      token_hash: tokenHash,
+      type,
+    });
+
+    if (!error && verifyData.user) {
+      await linkPractitionerToUser(
+        verifyData.user.id,
+        verifyData.user.email ?? "",
+      );
+
+      // Invited students must set their own password on first login.
+      // The must_change_password flag is set in user_metadata during invite.
+      const mustChange =
+        verifyData.user.user_metadata?.must_change_password === true;
+
+      const redirectPath = mustChange ? "/change-password" : next;
+      return NextResponse.redirect(new URL(redirectPath, origin));
+    }
+
+    return NextResponse.redirect(new URL("/login?error=auth", origin));
+  }
+
+  // No recognizable auth params — send to login
   return NextResponse.redirect(new URL("/login", origin));
 }
 

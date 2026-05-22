@@ -98,6 +98,7 @@ const refereeAuthService: RefereeAuthService = {
       password: tempPassword,
       email_confirm: true,
       app_metadata: { role: "referee" },
+      user_metadata: { must_change_password: true },
     });
 
     if (error || !data?.user) {

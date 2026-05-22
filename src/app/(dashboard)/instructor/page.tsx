@@ -43,6 +43,23 @@ export default async function InstructorPage({
     );
   }
 
+  // Also include students directly assigned to this instructor via instructor_id
+  // (covers students registered without an academy, or before academy assignment)
+  const { data: directStudents } = await adminSupabase
+    .from("practitioners")
+    .select("id")
+    .eq("instructor_id", session.practitionerId)
+    .not("role", "in", '("instructor","profesor","maestro")');
+
+  const directStudentIds = (directStudents ?? []).map(
+    (s: { id: string }) => s.id,
+  );
+
+  // Merge both sets, deduplicated
+  const allStudentIds = [
+    ...new Set([...academyMemberIds, ...directStudentIds]),
+  ];
+
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       <div>
@@ -54,20 +71,19 @@ export default async function InstructorPage({
         </p>
       </div>
 
+      <AcademySection academies={academies} />
       <StudentSection
         practitionerId={session.practitionerId}
         searchQuery={searchQuery}
         page={page}
-        academyMemberIds={academyMemberIds}
+        academyMemberIds={allStudentIds}
       />
-
-      <AcademySection academies={academies} />
 
       <CertificationRequestSection
         practitionerId={session.practitionerId}
         reqPage={reqPage}
         currentPage={sp.page}
-        academyMemberIds={academyMemberIds}
+        academyMemberIds={allStudentIds}
       />
     </main>
   );

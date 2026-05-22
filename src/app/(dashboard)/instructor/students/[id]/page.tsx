@@ -181,6 +181,14 @@ export default async function InstructorStudentDetailPage({
                 <span className="bg-emerald-900/50 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded-full text-xs">
                   Activo
                 </span>
+              ) : practitioner.authUserId === null ? (
+                <span className="inline-flex items-center gap-1 bg-amber-900/40 text-amber-400 border border-amber-700/60 px-2 py-0.5 rounded-full text-xs">
+                  <span
+                    className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0"
+                    aria-hidden="true"
+                  />
+                  Pendiente activación
+                </span>
               ) : (
                 <span className="bg-neutral-800 text-neutral-400 border border-neutral-700 px-2 py-0.5 rounded-full text-xs">
                   Inactivo
