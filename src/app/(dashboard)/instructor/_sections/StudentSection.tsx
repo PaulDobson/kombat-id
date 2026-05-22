@@ -1,7 +1,6 @@
 import { adminSupabase } from "@/lib/supabase/admin";
 import Link from "next/link";
 import { GRADE_LABELS, GRADE_STYLES } from "@/lib/presentation-constants";
-import { RegisterStudentModal } from "./RegisterStudentModal";
 import type { Grade } from "@/modules/practitioner-identity/domain/entities/practitioner";
 
 const PAGE_SIZE = 10;
@@ -38,9 +37,12 @@ export async function StudentSection({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let studentsQuery: any = adminSupabase
     .from("practitioners")
-    .select("id, full_name, rut, grade, dan, is_active, start_date", {
-      count: "exact",
-    })
+    .select(
+      "id, full_name, rut, grade, dan, is_active, auth_user_id, start_date",
+      {
+        count: "exact",
+      },
+    )
     .not("role", "in", '("instructor","profesor","maestro")')
     .order("full_name");
 
@@ -69,10 +71,27 @@ export async function StudentSection({
     grade: Grade;
     dan: number | null;
     is_active: boolean;
+    auth_user_id: string | null;
     start_date: string | null;
   }>;
   const totalCount = count ?? 0;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  // Enrich current page with academy names — one query for the whole page
+  const pageIds = students.map((s) => s.id);
+  const academyByStudent = new Map<string, string>();
+  if (pageIds.length > 0) {
+    const { data: memberships } = await adminSupabase
+      .from("academy_memberships")
+      .select("practitioner_id, academies(name)")
+      .in("practitioner_id", pageIds)
+      .eq("is_active", true);
+
+    for (const m of memberships ?? []) {
+      const name = (m.academies as { name: string } | null)?.name;
+      if (name) academyByStudent.set(m.practitioner_id as string, name);
+    }
+  }
 
   return (
     <section className="space-y-4">
@@ -86,7 +105,7 @@ export async function StudentSection({
             {searchQuery && ` para "${searchQuery}"`}
           </p>
         </div>
-        <RegisterStudentModal />
+        {/* <RegisterStudentModal /> */}
       </div>
 
       {/* Search bar */}
@@ -155,6 +174,9 @@ export async function StudentSection({
                   <th className="text-left px-4 py-3 text-xs font-medium text-neutral-400 uppercase tracking-wider hidden lg:table-cell">
                     Inscripción
                   </th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-neutral-400 uppercase tracking-wider hidden md:table-cell">
+                    Academia
+                  </th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-neutral-400 uppercase tracking-wider">
                     Estado
                   </th>
@@ -186,10 +208,23 @@ export async function StudentSection({
                         <span className="text-neutral-600">—</span>
                       )}
                     </td>
+                    <td className="px-4 py-3 text-neutral-400 text-xs hidden md:table-cell max-w-[160px] truncate">
+                      {academyByStudent.get(s.id) ?? (
+                        <span className="text-neutral-600">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       {s.is_active ? (
                         <span className="bg-emerald-900/50 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded-full text-xs">
                           Activo
+                        </span>
+                      ) : s.auth_user_id === null ? (
+                        <span className="inline-flex items-center gap-1 bg-amber-900/40 text-amber-400 border border-amber-700/60 px-2 py-0.5 rounded-full text-xs">
+                          <span
+                            className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0"
+                            aria-hidden="true"
+                          />
+                          Pendiente activación
                         </span>
                       ) : (
                         <span className="bg-neutral-800 text-neutral-400 border border-neutral-700 px-2 py-0.5 rounded-full text-xs">

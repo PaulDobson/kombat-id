@@ -9,9 +9,11 @@ const PUBLIC_ROUTES = [
   "/academies",
   "/events",
   "/design",
-  "/referee-registration", // public referee registration form
-  "/instructor-registration", // public instructor registration form
-  "/referees", // public referee directory
+  "/referee-registration",
+  "/instructor-registration",
+  "/referees",
+  "/reset-password",
+  "/update-password",
   "/",
 ];
 
@@ -45,6 +47,14 @@ export async function middleware(request: NextRequest) {
   // Redirect unauthenticated users away from protected routes
   if (!user) {
     return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  // First-login guard: force password change before accessing anything else
+  if (
+    user.user_metadata?.must_change_password === true &&
+    pathname !== "/change-password"
+  ) {
+    return NextResponse.redirect(new URL("/change-password", request.url));
   }
 
   // Redirect referee users away from the practitioner dashboard
