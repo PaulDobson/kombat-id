@@ -7,6 +7,16 @@ import {
   CERT_REQUEST_STATUS_STYLES,
 } from "@/lib/presentation-constants";
 import { RequestCertificationForm } from "../RequestCertificationForm";
+import {
+  Award,
+  ClipboardList,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
 const REQ_PAGE_SIZE = 10;
 
@@ -89,34 +99,49 @@ export async function CertificationRequestSection({
     <>
       {/* Section C: Solicitar certificación */}
       <section className="space-y-4">
-        <div>
-          <h2 className="text-lg font-semibold text-neutral-100">
-            Solicitar certificación
-          </h2>
-          <p className="text-xs text-neutral-500 mt-0.5">
-            Envía una solicitud al administrador para emitir una certificación a
-            uno de tus alumnos.
-          </p>
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-purple-400/10 flex items-center justify-center">
+            <Award className="w-4 h-4 text-purple-400" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-neutral-100">
+              Solicitar certificación
+            </h2>
+            <p className="text-xs text-neutral-500">
+              Envía una solicitud al administrador para emitir una certificación
+              a uno de tus alumnos.
+            </p>
+          </div>
         </div>
-        <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6 max-w-lg">
+        <div className="bg-neutral-900 border border-neutral-700 rounded-2xl p-6 max-w-lg">
           <RequestCertificationForm students={activeStudentsForForm} />
         </div>
       </section>
 
       {/* Section D: Mis solicitudes */}
       <section className="space-y-4">
-        <div>
-          <h2 className="text-lg font-semibold text-neutral-100">
-            Mis solicitudes
-          </h2>
-          <p className="text-xs text-neutral-500 mt-0.5">
-            {reqTotalCount.toLocaleString("es-CL")} solicitudes enviadas
-          </p>
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-neutral-700/60 flex items-center justify-center">
+            <ClipboardList className="w-4 h-4 text-neutral-400" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-neutral-100">
+              Mis solicitudes
+            </h2>
+            <p className="text-xs text-neutral-500">
+              {reqTotalCount.toLocaleString("es-CL")} solicitud
+              {reqTotalCount !== 1 ? "es" : ""} enviada
+              {reqTotalCount !== 1 ? "s" : ""}
+            </p>
+          </div>
         </div>
 
-        <div className="bg-neutral-900 border border-neutral-700 rounded-xl overflow-hidden">
+        <div className="bg-neutral-900 border border-neutral-700 rounded-2xl overflow-hidden">
           {certRequests.length === 0 ? (
-            <div className="text-center py-16">
+            <div className="flex flex-col items-center justify-center py-16 gap-3">
+              <div className="w-12 h-12 rounded-xl bg-neutral-800 flex items-center justify-center">
+                <ClipboardList className="w-6 h-6 text-neutral-600" />
+              </div>
               <p className="text-neutral-500 text-sm">
                 Aún no has enviado solicitudes de certificación.
               </p>
@@ -170,11 +195,25 @@ export async function CertificationRequestSection({
                           {formatDateShort(r.created_at)}
                         </td>
                         <td className="px-4 py-3">
-                          <span
-                            className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${badgeCls}`}
-                          >
-                            {label}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            {r.status === "pending" && (
+                              <Clock className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                            )}
+                            {r.status === "approved" && (
+                              <CheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            )}
+                            {r.status === "rejected" && (
+                              <XCircle className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                            )}
+                            {r.status === "observed" && (
+                              <AlertCircle className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                            )}
+                            <span
+                              className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${badgeCls}`}
+                            >
+                              {label}
+                            </span>
+                          </div>
                           {reason && (
                             <p className="mt-1 text-xs text-neutral-400 max-w-xs">
                               {reason}
@@ -203,9 +242,9 @@ export async function CertificationRequestSection({
                     { page: currentPage },
                     { reqPage: String(reqPage - 1) },
                   )}
-                  className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded-lg text-xs text-neutral-200 transition-colors"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded-lg text-xs text-neutral-200 transition-colors"
                 >
-                  ← Anterior
+                  <ChevronLeft className="w-3.5 h-3.5" /> Anterior
                 </Link>
               )}
               {Array.from({ length: Math.min(5, reqTotalPages) }, (_, i) => {
@@ -233,9 +272,9 @@ export async function CertificationRequestSection({
                     { page: currentPage },
                     { reqPage: String(reqPage + 1) },
                   )}
-                  className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded-lg text-xs text-neutral-200 transition-colors"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded-lg text-xs text-neutral-200 transition-colors"
                 >
-                  Siguiente →
+                  Siguiente <ChevronRight className="w-3.5 h-3.5" />
                 </Link>
               )}
             </div>

@@ -1,10 +1,28 @@
 import { requireUser } from "@/lib/supabase/server";
-import { adminSupabase } from "@/lib/supabase/admin";
 import { DrizzlePractitionerRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzlePractitionerRepository";
 import { DrizzleMartialHistoryRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzleMartialHistoryRepository";
 import { DrizzleRankingRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzleRankingRepository";
 import { DrizzleCertificationRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzleCertificationRepository";
+import { getUpcomingEvents } from "@/modules/event-registration/infrastructure/repositories/upcomingEventsQuery";
 import Link from "next/link";
+import type { LucideIcon } from "lucide-react";
+import {
+  Trophy,
+  Award,
+  Calendar,
+  Activity,
+  ChevronRight,
+  Swords,
+  BookOpen,
+  GraduationCap,
+  Zap,
+  Medal,
+  QrCode,
+  MapPin,
+  CheckCircle,
+  User,
+} from "lucide-react";
+import { formatDateShort as formatDate } from "@/lib/format-date";
 
 const GRADE_LABELS: Record<string, string> = {
   white: "Blanco",
@@ -15,22 +33,111 @@ const GRADE_LABELS: Record<string, string> = {
   black: "Negro",
 };
 
-const GRADE_COLORS: Record<string, string> = {
-  white: "bg-neutral-200",
-  yellow: "bg-yellow-400",
-  green: "bg-emerald-500",
-  blue: "bg-blue-500",
-  red: "bg-red-500",
-  black: "bg-neutral-900 border border-neutral-600",
+const GRADE_META: Record<
+  string,
+  { tailwindBg: string; tailwindText: string; hex: string }
+> = {
+  white: {
+    tailwindBg: "bg-neutral-300",
+    tailwindText: "text-neutral-900",
+    hex: "#d4d4d4",
+  },
+  yellow: {
+    tailwindBg: "bg-yellow-400",
+    tailwindText: "text-yellow-900",
+    hex: "#facc15",
+  },
+  green: {
+    tailwindBg: "bg-emerald-500",
+    tailwindText: "text-white",
+    hex: "#10b981",
+  },
+  blue: {
+    tailwindBg: "bg-blue-500",
+    tailwindText: "text-white",
+    hex: "#3b82f6",
+  },
+  red: {
+    tailwindBg: "bg-red-500",
+    tailwindText: "text-white",
+    hex: "#ef4444",
+  },
+  black: {
+    tailwindBg: "bg-neutral-800 ring-2 ring-neutral-600",
+    tailwindText: "text-neutral-300",
+    hex: "#737373",
+  },
 };
 
-const EVENT_TYPE_LABELS: Record<string, string> = {
-  competition: "Competencia",
-  seminar: "Seminario",
-  exam: "Examen",
+const ROLE_LABELS: Record<string, string> = {
+  alumno: "Alumno",
+  instructor: "Instructor",
+  profesor: "Profesor",
+  maestro: "Maestro",
 };
 
-import { formatDateShort as formatDate } from "@/lib/format-date";
+const EVENT_DISPLAY: Record<
+  string,
+  { label: string; icon: LucideIcon; color: string; bg: string; border: string }
+> = {
+  competition: {
+    label: "Competencia",
+    icon: Swords,
+    color: "text-red-400",
+    bg: "bg-red-400/10",
+    border: "border-red-400/20",
+  },
+  seminar: {
+    label: "Seminario",
+    icon: BookOpen,
+    color: "text-blue-400",
+    bg: "bg-blue-400/10",
+    border: "border-blue-400/20",
+  },
+  exam: {
+    label: "Examen",
+    icon: GraduationCap,
+    color: "text-purple-400",
+    bg: "bg-purple-400/10",
+    border: "border-purple-400/20",
+  },
+};
+
+const CERT_META: Record<
+  string,
+  { label: string; color: string; bg: string; border: string }
+> = {
+  technical_grade: {
+    label: "Grado técnico",
+    color: "text-yellow-400",
+    bg: "bg-yellow-400/10",
+    border: "border-yellow-400/20",
+  },
+  instructor: {
+    label: "Instructor",
+    color: "text-blue-400",
+    bg: "bg-blue-400/10",
+    border: "border-blue-400/20",
+  },
+  referee: {
+    label: "Árbitro",
+    color: "text-purple-400",
+    bg: "bg-purple-400/10",
+    border: "border-purple-400/20",
+  },
+  coach: {
+    label: "Entrenador",
+    color: "text-emerald-400",
+    bg: "bg-emerald-400/10",
+    border: "border-emerald-400/20",
+  },
+  event_participation: {
+    label: "Participación",
+    color: "text-neutral-300",
+    bg: "bg-neutral-700/30",
+    border: "border-neutral-600/50",
+  },
+};
 
 export default async function DashboardPage() {
   const user = await requireUser();
@@ -43,20 +150,7 @@ export default async function DashboardPage() {
     return (
       <main className="max-w-lg mx-auto px-4 py-20 text-center space-y-6">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-neutral-800 border border-neutral-700 mb-2">
-          <svg
-            className="w-8 h-8 text-neutral-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={1.5}
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
-            />
-          </svg>
+          <User className="w-8 h-8 text-neutral-400" />
         </div>
 
         <div className="space-y-2">
@@ -97,274 +191,429 @@ export default async function DashboardPage() {
     );
   }
 
-  // Fetch all data in parallel
+  // Fetch all data in parallel — métodos optimizados con count + limit en una sola consulta
   const historyRepo = new DrizzleMartialHistoryRepository();
   const rankingRepo = new DrizzleRankingRepository();
   const certRepo = new DrizzleCertificationRepository();
 
-  const [historyEntries, ranking, certifications, upcomingEvents] =
-    await Promise.all([
-      historyRepo.findByPractitionerId(practitioner.id),
-      rankingRepo.findByPractitioner(practitioner.id),
-      certRepo.findByPractitioner(practitioner.id),
-      adminSupabase
-        .from("martial_events")
-        .select("id, name, event_type, event_date, location")
-        .gte("event_date", new Date().toISOString().slice(0, 10))
-        .order("event_date", { ascending: true })
-        .limit(3)
-        .then(({ data }) => data ?? []),
-    ]);
+  const [
+    { entries: recentHistory, total: historyTotal },
+    ranking,
+    { certs: recentCerts, totalActive: certsTotal },
+    upcomingEvents,
+  ] = await Promise.all([
+    historyRepo.findRecentWithTotal(practitioner.id, 3),
+    rankingRepo.findByPractitioner(practitioner.id),
+    certRepo.findActiveSummary(practitioner.id, 3),
+    getUpcomingEvents(3),
+  ]);
 
-  const activeCerts = certifications.filter((c) => !c.isRevoked);
-  const recentHistory = historyEntries.slice(0, 3);
   const gradeLabel = `${GRADE_LABELS[practitioner.grade] ?? practitioner.grade}${practitioner.dan ? ` ${practitioner.dan}° Dan` : ""}`;
+  const gradeMeta = GRADE_META[practitioner.grade] ?? GRADE_META["white"]!;
+  const kombatId = `KT-${practitioner.id.replace(/-/g, "").slice(0, 8).toUpperCase()}`;
+  const yearsTraining = Math.floor(
+    (Date.now() - new Date(practitioner.startDate).getTime()) /
+      (365.25 * 24 * 60 * 60 * 1000),
+  );
 
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* ── HERO CARD ─────────────────────────────────────────────── */}
-      <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5">
-        {/* Belt color indicator */}
+      <div
+        className="relative overflow-hidden bg-neutral-900 border border-neutral-700 border-l-4 rounded-2xl p-6"
+        style={{ borderLeftColor: gradeMeta.hex }}
+      >
+        {/* Glow sutil basado en color de cinturón */}
         <div
-          className={`w-14 h-14 rounded-full shrink-0 flex items-center justify-center ${GRADE_COLORS[practitioner.grade]}`}
-        >
-          <span className="text-xs font-bold text-neutral-900 uppercase tracking-wider">
-            {practitioner.grade === "black"
-              ? "DAN"
-              : practitioner.grade.slice(0, 3).toUpperCase()}
-          </span>
-        </div>
+          className="absolute inset-0 pointer-events-none opacity-[0.06]"
+          style={{
+            background: `radial-gradient(ellipse at 0% 0%, ${gradeMeta.hex}, transparent 60%)`,
+          }}
+        />
 
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-xl font-semibold text-neutral-50 tracking-tight">
-              {practitioner.fullName}
-            </h1>
-            {practitioner.isActive ? (
-              <span className="bg-success-900/50 text-success-400 border border-success-800 px-2 py-0.5 rounded-full text-xs">
-                Activo
-              </span>
-            ) : (
-              <span className="bg-neutral-800 text-neutral-400 border border-neutral-700 px-2 py-0.5 rounded-full text-xs">
-                Inactivo
-              </span>
-            )}
+        <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-5">
+          {/* Badge de cinturón */}
+          <div
+            className={`w-16 h-16 rounded-full shrink-0 ${gradeMeta.tailwindBg} flex items-center justify-center shadow-lg`}
+          >
+            <span
+              className={`text-xs font-bold ${gradeMeta.tailwindText} uppercase tracking-wider`}
+            >
+              {practitioner.grade === "black"
+                ? practitioner.dan
+                  ? `${practitioner.dan}D`
+                  : "DAN"
+                : practitioner.grade.slice(0, 3).toUpperCase()}
+            </span>
           </div>
-          <p className="text-sm text-neutral-400 mt-0.5">
-            {gradeLabel} · Desde {formatDate(practitioner.startDate)}
-          </p>
-          {practitioner.role && (
-            <p className="text-xs text-neutral-500 mt-0.5 capitalize">
-              {practitioner.role}
-            </p>
-          )}
-        </div>
 
-        <Link
-          href="/profile"
-          className="bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors shrink-0"
-        >
-          Ver perfil
-        </Link>
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-1">
+              <h1 className="text-xl font-bold text-neutral-50 tracking-tight">
+                {practitioner.fullName}
+              </h1>
+              {practitioner.isActive ? (
+                <span className="inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 px-2.5 py-0.5 rounded-full text-xs font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  Activo
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 bg-neutral-800 text-neutral-400 border border-neutral-700 px-2.5 py-0.5 rounded-full text-xs font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-neutral-500" />
+                  Inactivo
+                </span>
+              )}
+            </div>
+
+            <p className="text-sm font-semibold text-neutral-200">
+              {gradeLabel}
+            </p>
+
+            <div className="flex flex-wrap items-center gap-4 mt-2">
+              {practitioner.role && (
+                <span className="inline-flex items-center gap-1.5 text-xs text-neutral-400">
+                  <User className="w-3.5 h-3.5" />
+                  {ROLE_LABELS[practitioner.role] ?? practitioner.role}
+                </span>
+              )}
+              <span className="inline-flex items-center gap-1.5 text-xs text-neutral-400">
+                <Activity className="w-3.5 h-3.5" />
+                {yearsTraining > 0
+                  ? `${yearsTraining} año${yearsTraining !== 1 ? "s" : ""} de práctica`
+                  : "Menos de 1 año"}
+              </span>
+              <span className="text-xs text-neutral-600 font-mono">
+                {kombatId}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex gap-2 shrink-0">
+            <Link
+              href="/profile"
+              className="inline-flex items-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 hover:border-neutral-600 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              <User className="w-4 h-4" />
+              Perfil
+            </Link>
+            <Link
+              href="/profile#qr"
+              className="inline-flex items-center gap-1.5 bg-primary-500/10 hover:bg-primary-500/20 text-primary-400 border border-primary-500/25 hover:border-primary-500/40 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              <QrCode className="w-4 h-4" />
+              Mi QR
+            </Link>
+          </div>
+        </div>
       </div>
 
       {/* ── STATS ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard
           label="Eventos"
-          value={historyEntries.length}
+          value={historyTotal}
           href="/martial-history"
+          icon={Activity}
           color="text-primary-400"
+          iconBg="bg-primary-400/10"
         />
         <StatCard
           label="Certificaciones"
-          value={activeCerts.length}
+          value={certsTotal}
           href="/certifications"
-          color="text-success-400"
+          icon={Award}
+          color="text-emerald-400"
+          iconBg="bg-emerald-400/10"
         />
         <StatCard
-          label="Posición ranking"
+          label="Posición"
           value={ranking ? `#${ranking.position}` : "—"}
           href="/ranking"
-          color="text-warning-400"
+          icon={Medal}
+          color="text-yellow-400"
+          iconBg="bg-yellow-400/10"
         />
         <StatCard
           label="Puntos"
           value={ranking?.totalPoints ?? 0}
           href="/ranking"
-          color="text-info-400"
+          icon={Zap}
+          color="text-purple-400"
+          iconBg="bg-purple-400/10"
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* ── HISTORIAL RECIENTE ──────────────────────────────────── */}
-        <section className="bg-neutral-900 border border-neutral-700 rounded-xl p-5 space-y-4">
+        <section className="bg-neutral-900 border border-neutral-700 rounded-2xl p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-neutral-50">
-              Historial reciente
-            </h2>
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-primary-400/10 flex items-center justify-center">
+                <Activity className="w-4 h-4 text-primary-400" />
+              </div>
+              <h2 className="text-sm font-semibold text-neutral-50">
+                Historial reciente
+              </h2>
+            </div>
             <Link
               href="/martial-history"
-              className="text-xs text-primary-400 hover:text-primary-300 transition-colors"
+              className="inline-flex items-center gap-0.5 text-xs text-primary-400 hover:text-primary-300 transition-colors"
             >
-              Ver todo →
+              Ver todo <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
           {recentHistory.length === 0 ? (
-            <p className="text-neutral-500 text-sm text-center py-6">
-              Sin entradas en el historial.
-            </p>
+            <div className="flex flex-col items-center justify-center py-8 gap-2.5">
+              <Activity className="w-8 h-8 text-neutral-700" />
+              <p className="text-neutral-500 text-sm">
+                Sin entradas en el historial
+              </p>
+            </div>
           ) : (
-            <ul className="space-y-3">
-              {recentHistory.map((entry) => (
-                <li key={entry.id} className="flex items-start gap-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary-500 mt-1.5 shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-sm text-neutral-200">
-                      {EVENT_TYPE_LABELS[entry.eventType] ?? entry.eventType}
-                      {entry.result && (
-                        <span className="text-neutral-400">
-                          {" "}
-                          · {entry.result}
-                        </span>
-                      )}
-                    </p>
-                    <p className="text-xs text-neutral-500">
-                      {formatDate(entry.eventDate)}
-                    </p>
-                  </div>
-                  {entry.isCorrected && (
-                    <span className="text-xs text-warning-400 shrink-0">
-                      Corregido
-                    </span>
-                  )}
-                </li>
-              ))}
+            <ul className="space-y-2.5">
+              {recentHistory.map((entry) => {
+                const disp = EVENT_DISPLAY[entry.eventType] ?? {
+                  label: entry.eventType,
+                  icon: Activity,
+                  color: "text-neutral-400",
+                  bg: "bg-neutral-700/30",
+                  border: "border-neutral-600/50",
+                };
+                const Icon = disp.icon;
+                return (
+                  <li
+                    key={entry.id}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-neutral-800/50 border border-neutral-700/40"
+                  >
+                    <div
+                      className={`w-8 h-8 rounded-lg ${disp.bg} flex items-center justify-center shrink-0`}
+                    >
+                      <Icon className={`w-4 h-4 ${disp.color}`} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-neutral-200 font-medium">
+                        {disp.label}
+                      </p>
+                      <p className="text-xs text-neutral-500">
+                        {formatDate(entry.eventDate)}
+                        {entry.result && ` · ${entry.result}`}
+                      </p>
+                    </div>
+                    {entry.isCorrected && (
+                      <span className="text-xs text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 px-2 py-0.5 rounded-full shrink-0">
+                        Corregido
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>
 
         {/* ── PRÓXIMOS EVENTOS ────────────────────────────────────── */}
-        <section className="bg-neutral-900 border border-neutral-700 rounded-xl p-5 space-y-4">
-          <div className="flex items-center justify-between">
+        <section className="bg-neutral-900 border border-neutral-700 rounded-2xl p-5 space-y-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-yellow-400/10 flex items-center justify-center">
+              <Calendar className="w-4 h-4 text-yellow-400" />
+            </div>
             <h2 className="text-sm font-semibold text-neutral-50">
               Próximos eventos
             </h2>
           </div>
 
           {upcomingEvents.length === 0 ? (
-            <p className="text-neutral-500 text-sm text-center py-6">
-              No hay eventos próximos.
-            </p>
+            <div className="flex flex-col items-center justify-center py-8 gap-2.5">
+              <Calendar className="w-8 h-8 text-neutral-700" />
+              <p className="text-neutral-500 text-sm">
+                No hay eventos próximos
+              </p>
+            </div>
           ) : (
-            <ul className="space-y-3">
-              {upcomingEvents.map((event) => (
-                <li key={event.id} className="flex items-start gap-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-warning-400 mt-1.5 shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-sm text-neutral-200">{event.name}</p>
-                    <p className="text-xs text-neutral-500">
-                      {formatDate(event.event_date)}
-                      {event.location && ` · ${event.location}`}
-                    </p>
-                  </div>
-                  <span className="text-xs text-neutral-500 shrink-0 capitalize">
-                    {EVENT_TYPE_LABELS[event.event_type] ?? event.event_type}
-                  </span>
-                </li>
-              ))}
+            <ul className="space-y-2.5">
+              {upcomingEvents.map((event) => {
+                const dateObj = new Date(event.event_date + "T00:00:00");
+                const day = dateObj.getDate().toString().padStart(2, "0");
+                const month = dateObj.toLocaleDateString("es-CL", {
+                  month: "short",
+                });
+                const disp = EVENT_DISPLAY[event.event_type];
+                return (
+                  <li
+                    key={event.id}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-neutral-800/50 border border-neutral-700/40"
+                  >
+                    <div className="flex flex-col items-center justify-center w-10 h-10 rounded-xl bg-yellow-400/10 border border-yellow-400/20 shrink-0">
+                      <span className="text-sm font-bold text-yellow-400 leading-none">
+                        {day}
+                      </span>
+                      <span className="text-[10px] text-yellow-500/70 uppercase leading-none mt-0.5">
+                        {month}
+                      </span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-neutral-200 font-medium truncate">
+                        {event.name}
+                      </p>
+                      {event.location && (
+                        <p className="text-xs text-neutral-500 flex items-center gap-1 mt-0.5">
+                          <MapPin className="w-3 h-3 shrink-0" />
+                          {event.location}
+                        </p>
+                      )}
+                    </div>
+                    {disp && (
+                      <span
+                        className={`text-xs ${disp.color} ${disp.bg} ${disp.border} border px-2 py-0.5 rounded-full shrink-0`}
+                      >
+                        {disp.label}
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>
 
         {/* ── CERTIFICACIONES ─────────────────────────────────────── */}
-        <section className="bg-neutral-900 border border-neutral-700 rounded-xl p-5 space-y-4">
+        <section className="bg-neutral-900 border border-neutral-700 rounded-2xl p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-neutral-50">
-              Certificaciones
-            </h2>
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-emerald-400/10 flex items-center justify-center">
+                <Award className="w-4 h-4 text-emerald-400" />
+              </div>
+              <h2 className="text-sm font-semibold text-neutral-50">
+                Certificaciones
+              </h2>
+            </div>
             <Link
               href="/certifications"
-              className="text-xs text-primary-400 hover:text-primary-300 transition-colors"
+              className="inline-flex items-center gap-0.5 text-xs text-primary-400 hover:text-primary-300 transition-colors"
             >
-              Ver todas →
+              Ver todas <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          {activeCerts.length === 0 ? (
-            <p className="text-neutral-500 text-sm text-center py-6">
-              Sin certificaciones activas.
-            </p>
+          {recentCerts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 gap-2.5">
+              <Award className="w-8 h-8 text-neutral-700" />
+              <p className="text-neutral-500 text-sm">
+                Sin certificaciones activas
+              </p>
+            </div>
           ) : (
-            <ul className="space-y-3">
-              {activeCerts.slice(0, 3).map((cert) => (
-                <li key={cert.id} className="flex items-center gap-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-success-400 shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm text-neutral-200 capitalize">
-                      {cert.certType.replace(/_/g, " ")}
-                    </p>
-                    <p className="text-xs text-neutral-500">
-                      {formatDate(cert.issuedAt)}
-                    </p>
-                  </div>
-                </li>
-              ))}
+            <ul className="space-y-2.5">
+              {recentCerts.map((cert) => {
+                const meta = CERT_META[cert.certType] ?? {
+                  label: cert.certType.replace(/_/g, " "),
+                  color: "text-neutral-300",
+                  bg: "bg-neutral-700/30",
+                  border: "border-neutral-600/50",
+                };
+                return (
+                  <li
+                    key={cert.id}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-neutral-800/50 border border-neutral-700/40"
+                  >
+                    <div
+                      className={`w-8 h-8 rounded-lg ${meta.bg} flex items-center justify-center shrink-0`}
+                    >
+                      <CheckCircle className={`w-4 h-4 ${meta.color}`} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-sm font-medium ${meta.color}`}>
+                        {meta.label}
+                      </p>
+                      <p className="text-xs text-neutral-500">
+                        {formatDate(cert.issuedAt)}
+                      </p>
+                    </div>
+                    <span
+                      className={`text-xs ${meta.color} ${meta.bg} ${meta.border} border px-2 py-0.5 rounded-full shrink-0`}
+                    >
+                      Activa
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>
 
         {/* ── RANKING ─────────────────────────────────────────────── */}
-        <section className="bg-neutral-900 border border-neutral-700 rounded-xl p-5 space-y-4">
+        <section className="bg-neutral-900 border border-neutral-700 rounded-2xl p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-neutral-50">
-              Mi ranking
-            </h2>
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-yellow-400/10 flex items-center justify-center">
+                <Trophy className="w-4 h-4 text-yellow-400" />
+              </div>
+              <h2 className="text-sm font-semibold text-neutral-50">
+                Mi ranking
+              </h2>
+            </div>
             <Link
               href="/ranking"
-              className="text-xs text-primary-400 hover:text-primary-300 transition-colors"
+              className="inline-flex items-center gap-0.5 text-xs text-primary-400 hover:text-primary-300 transition-colors"
             >
-              Ver detalle →
+              Ver detalle <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
           {!ranking ? (
-            <p className="text-neutral-500 text-sm text-center py-6">
-              Sin datos de ranking.
-            </p>
+            <div className="flex flex-col items-center justify-center py-8 gap-2.5">
+              <Trophy className="w-8 h-8 text-neutral-700" />
+              <p className="text-neutral-500 text-sm">Sin datos de ranking</p>
+            </div>
           ) : (
             <div className="space-y-4">
-              <div className="flex items-end gap-2">
-                <span className="text-4xl font-bold text-warning-400 tracking-tight">
+              <div className="flex items-center gap-4">
+                <span className="text-5xl font-black text-yellow-400 tracking-tighter leading-none">
                   #{ranking.position}
                 </span>
-                <span className="text-sm text-neutral-400 mb-1">
-                  de {ranking.categoryCount} practicantes
-                </span>
-              </div>
-              <div className="w-full bg-neutral-800 rounded-full h-2 overflow-hidden">
-                <div
-                  className="h-full bg-warning-400 rounded-full transition-all"
-                  style={{
-                    width: `${Math.max(5, 100 - ((ranking.position - 1) / ranking.categoryCount) * 100)}%`,
-                  }}
-                />
-              </div>
-              <dl className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <dt className="text-xs text-neutral-500">Puntos</dt>
-                  <dd className="text-neutral-200 font-medium">
-                    {ranking.totalPoints}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-neutral-500">Categoría</dt>
-                  <dd className="text-neutral-200 font-medium capitalize">
+                  <p className="text-xs text-neutral-400">
+                    de {ranking.categoryCount} practicantes
+                  </p>
+                  <p className="text-xs text-neutral-500 capitalize mt-0.5">
                     {ranking.ageRange}
-                  </dd>
+                  </p>
                 </div>
-              </dl>
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs text-neutral-500">
+                  <span>Posición en categoría</span>
+                  <span className="text-neutral-400 font-medium">
+                    {Math.round(
+                      (1 - (ranking.position - 1) / ranking.categoryCount) *
+                        100,
+                    )}
+                    %
+                  </span>
+                </div>
+                <div className="w-full bg-neutral-800 rounded-full h-2 overflow-hidden">
+                  <div
+                    className="h-full bg-linear-to-r from-yellow-500 to-yellow-400 rounded-full"
+                    style={{
+                      width: `${Math.max(5, 100 - ((ranking.position - 1) / ranking.categoryCount) * 100)}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-yellow-400/5 border border-yellow-400/15">
+                <Zap className="w-4 h-4 text-yellow-400 shrink-0" />
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-xl font-bold text-yellow-400">
+                    {ranking.totalPoints}
+                  </span>
+                  <span className="text-xs text-neutral-500">
+                    puntos acumulados
+                  </span>
+                </div>
+              </div>
             </div>
           )}
         </section>
@@ -377,24 +626,30 @@ function StatCard({
   label,
   value,
   href,
+  icon: Icon,
   color,
+  iconBg,
 }: {
   label: string;
   value: string | number;
   href: string;
+  icon: LucideIcon;
   color: string;
+  iconBg: string;
 }) {
   return (
     <Link
       href={href}
-      className="bg-neutral-900 border border-neutral-700 hover:border-neutral-600 rounded-xl p-5 transition-colors group"
+      className="relative bg-neutral-900 border border-neutral-700 hover:border-neutral-600 rounded-2xl p-5 transition-colors group overflow-hidden"
     >
-      <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
-        {label}
-      </p>
-      <p className={`text-3xl font-bold mt-2 tracking-tight ${color}`}>
-        {value}
-      </p>
+      <div
+        className={`w-9 h-9 rounded-xl ${iconBg} flex items-center justify-center mb-3`}
+      >
+        <Icon className={`w-5 h-5 ${color}`} />
+      </div>
+      <p className={`text-2xl font-bold tracking-tight ${color}`}>{value}</p>
+      <p className="text-xs text-neutral-400 mt-0.5 font-medium">{label}</p>
+      <ChevronRight className="absolute top-4 right-4 w-4 h-4 text-neutral-700 group-hover:text-neutral-500 transition-colors" />
     </Link>
   );
 }

@@ -392,9 +392,8 @@ export function MembershipCertificate({
               </View>
               <Text style={styles.academyText}>{locationText}</Text>
               <Text style={styles.description}>
-                Por haber demostrado disciplina, constancia y los valores del
-                Taekwondo dentro de nuestra institución. Este documento acredita
-                su membresía activa y vigente en Kombat Taekwondo Chile.
+                Este documento acredita su membresía activa y vigente en Kombat
+                Taekwondo Chile.
               </Text>
             </View>
 

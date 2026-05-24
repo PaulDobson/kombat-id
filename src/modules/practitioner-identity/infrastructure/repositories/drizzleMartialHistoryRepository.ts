@@ -69,6 +69,36 @@ export class DrizzleMartialHistoryRepository implements MartialHistoryRepository
     );
   }
 
+  /**
+   * Obtiene los `limit` registros más recientes de un practicante y el total de su
+   * historial en una sola consulta (usando `count: "exact"` + `.range()`).
+   * Evita cargar toda la tabla para mostrar un resumen en el dashboard.
+   */
+  async findRecentWithTotal(
+    publicId: string,
+    limit: number,
+  ): Promise<{ entries: MartialHistoryEntry[]; total: number }> {
+    const { data, error, count } = await adminSupabase
+      .from("martial_history")
+      .select("*", { count: "exact" })
+      .eq("practitioner_id", publicId)
+      .order("event_date", { ascending: false })
+      .range(0, limit - 1);
+
+    if (error) {
+      throw new DomainError(
+        `Failed to find recent martial history for practitioner: ${error.message}`,
+      );
+    }
+
+    return {
+      entries: ((data as MartialHistoryRow[]) ?? []).map((row) =>
+        this.fromRow(row),
+      ),
+      total: count ?? 0,
+    };
+  }
+
   // -------------------------------------------------------------------------
   // Mutations
   // -------------------------------------------------------------------------

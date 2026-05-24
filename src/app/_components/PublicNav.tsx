@@ -39,6 +39,12 @@ export function PublicNav() {
             Academias
           </Link>
           <Link
+            href="/events"
+            className="text-sm text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800/70 px-3 py-1.5 rounded-lg transition-all duration-150"
+          >
+            Actividades
+          </Link>
+          <Link
             href="/verify"
             className="text-sm text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800/70 px-3 py-1.5 rounded-lg transition-all duration-150"
           >
@@ -48,13 +54,7 @@ export function PublicNav() {
             href="/referees"
             className="text-sm text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800/70 px-3 py-1.5 rounded-lg transition-all duration-150"
           >
-            Árbitros
-          </Link>
-          <Link
-            href="/referee-registration"
-            className="text-sm text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800/70 px-3 py-1.5 rounded-lg transition-all duration-150"
-          >
-            Registro
+            Árbitros Oficiales
           </Link>
         </div>
 
@@ -66,12 +66,42 @@ export function PublicNav() {
           >
             Iniciar sesión
           </Link>
-          <Link
-            href="/register"
-            className="bg-primary-600 hover:bg-primary-500 text-white px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-150 ring-1 ring-primary-500/30 shadow-sm shadow-primary-950/50 hover:shadow-primary-600/20 hover:ring-primary-400/40"
-          >
-            Registrarse
-          </Link>
+          {/* Dropdown: Registrarse */}
+          <div className="relative group hidden md:block">
+            <button
+              type="button"
+              className="bg-primary-600 hover:bg-primary-500 text-white px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-150 ring-1 ring-primary-500/30 shadow-sm shadow-primary-950/50 hover:shadow-primary-600/20 hover:ring-primary-400/40 flex items-center gap-1.5"
+            >
+              Registrarse
+              <svg
+                className="w-3 h-3 transition-transform duration-150 group-hover:rotate-180"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
+            <div className="absolute top-full right-0 mt-1 w-60 bg-neutral-900 border border-neutral-800 rounded-xl shadow-xl shadow-black/40 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50 py-1">
+              <Link
+                href="/referee-registration"
+                className="block px-4 py-2.5 text-sm text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800/70 transition-colors duration-150"
+              >
+                Registrarte como árbitro
+              </Link>
+              <Link
+                href="/instructor-registration"
+                className="block px-4 py-2.5 text-sm text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800/70 transition-colors duration-150"
+              >
+                Registrarte como instructor
+              </Link>
+            </div>
+          </div>
           <MobileMenu />
         </div>
       </nav>

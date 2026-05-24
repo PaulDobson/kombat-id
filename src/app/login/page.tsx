@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { LoginForm } from "./LoginForm";
 
 export default async function LoginPage() {
@@ -59,10 +60,11 @@ export default async function LoginPage() {
             ¿Olvidaste tu contraseña?
           </Link>
           <Link
-            href="/register"
-            className="text-primary-400 hover:text-primary-300 transition-colors"
+            href="/"
+            className="flex items-center gap-1 hover:text-neutral-300 transition-colors"
           >
-            Crear cuenta
+            <ArrowLeft className="w-3 h-3" />
+            Ir al inicio
           </Link>
         </div>
       </div>

@@ -5,6 +5,7 @@ const AUTH_ROUTES = ["/login", "/register", "/reset-password"];
 const PUBLIC_ROUTES = [
   ...AUTH_ROUTES,
   "/auth/callback",
+  "/auth/confirm",
   "/verify",
   "/academies",
   "/events",

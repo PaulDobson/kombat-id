@@ -59,14 +59,6 @@ export function ActivateButton({ publicId }: Props) {
           </svg>
           Descargar certificado
         </a>
-
-        {/* Manual refresh after downloading */}
-        <button
-          onClick={() => window.location.reload()}
-          className="text-xs text-neutral-500 hover:text-neutral-300 underline underline-offset-2 transition-colors"
-        >
-          Actualizar lista →
-        </button>
       </div>
     );
   }

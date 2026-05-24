@@ -2,20 +2,16 @@ import { requireUser } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { DrizzleAcademyRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzleAcademyRepository";
+import {
+  getUpcomingEvents,
+  type UpcomingEvent,
+} from "@/modules/event-registration/infrastructure/repositories/upcomingEventsQuery";
 import Link from "next/link";
 import { GradeChart } from "./GradeChart";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-
-interface MartialEvent {
-  id: string;
-  name: string;
-  event_type: string;
-  event_date: string;
-  location: string | null;
-}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -69,31 +65,22 @@ export default async function AdminDashboardPage() {
 
   const academyRepo = new DrizzleAcademyRepository();
 
-  const today = new Date().toISOString().slice(0, 10);
-
   const [
     academies,
-    { data: practitioners },
-    { data: upcomingEvents },
-    { count: totalPractitioners },
-    { count: activePractitioners },
+    { data: practitioners, count: totalCount },
+    upcomingEvents,
   ] = await Promise.all([
     academyRepo.findAllActive(),
-    adminSupabase.from("practitioners").select("id, grade, is_active"),
-    adminSupabase
-      .from("martial_events")
-      .select("id, name, event_type, event_date, location")
-      .gte("event_date", today)
-      .order("event_date", { ascending: true })
-      .limit(5),
     adminSupabase
       .from("practitioners")
-      .select("id", { count: "exact", head: true }),
-    adminSupabase
-      .from("practitioners")
-      .select("id", { count: "exact", head: true })
-      .eq("is_active", true),
+      .select("grade, is_active", { count: "exact" }),
+    getUpcomingEvents(5),
   ]);
+
+  const totalPractitioners = totalCount ?? 0;
+  const activePractitioners = (practitioners ?? []).filter(
+    (p) => p.is_active,
+  ).length;
 
   // Grade distribution
   const gradeCounts: Record<string, number> = {};
@@ -147,7 +134,7 @@ export default async function AdminDashboardPage() {
         />
         <KpiCard
           label="Próximos eventos"
-          value={(upcomingEvents ?? []).length}
+          value={upcomingEvents.length}
           color="text-blue-400"
         />
       </div>
@@ -181,13 +168,13 @@ export default async function AdminDashboardPage() {
             </Link>
           </div>
 
-          {(upcomingEvents ?? []).length === 0 ? (
+          {upcomingEvents.length === 0 ? (
             <p className="text-neutral-500 text-sm text-center py-8">
               No hay eventos próximos.
             </p>
           ) : (
             <ul className="space-y-3">
-              {(upcomingEvents as MartialEvent[]).map((event) => {
+              {upcomingEvents.map((event: UpcomingEvent) => {
                 const days = daysUntil(event.event_date);
                 return (
                   <li key={event.id} className="flex items-start gap-3">

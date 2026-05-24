@@ -164,7 +164,7 @@ export default async function PendingActivationPage({
         method="GET"
         className="bg-neutral-900 border border-neutral-700 rounded-xl p-4 flex flex-wrap gap-3 items-end"
       >
-        <div className="flex-1 min-w-[160px]">
+        <div className="flex-1 min-w-40">
           <label className="block text-xs font-medium text-neutral-400 mb-1">
             Nombre
           </label>
