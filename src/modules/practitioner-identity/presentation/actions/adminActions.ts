@@ -8,6 +8,7 @@ import type { MartialHistoryEntry } from "../../domain/entities/martialHistoryEn
 import { DrizzlePractitionerRepository } from "../../infrastructure/repositories/drizzlePractitionerRepository";
 import { DrizzleMartialHistoryRepository } from "../../infrastructure/repositories/drizzleMartialHistoryRepository";
 import { DrizzleCertificationRepository } from "../../infrastructure/repositories/drizzleCertificationRepository";
+import { generateAndStoreMembershipCertificate } from "../../infrastructure/services/membershipCertificateService";
 import { DrizzleAuditLogRepository } from "../../infrastructure/repositories/drizzleAuditLogRepository";
 import {
   addMartialHistoryEntry,
@@ -520,6 +521,17 @@ export async function activatePractitionerAction(
       deactivationReason: null,
       updatedAt: new Date().toISOString(),
     });
+
+    // Generar y guardar el certificado PDF automáticamente al activar
+    try {
+      await generateAndStoreMembershipCertificate(parsed.data.publicId);
+    } catch (certErr) {
+      console.error(
+        "[activatePractitionerAction] Error al generar certificado:",
+        certErr,
+      );
+      // No bloquear la activación si el certificado falla
+    }
 
     return { success: true, data: { qrToken: practitioner.qrToken } };
   } catch (err) {

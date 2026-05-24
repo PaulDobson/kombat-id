@@ -72,6 +72,36 @@ export class DrizzleCertificationRepository implements CertificationRepository {
     return ((data as CertificationRow[]) ?? []).map((row) => this.fromRow(row));
   }
 
+  /**
+   * Obtiene las `limit` certificaciones activas más recientes de un practicante y el total
+   * de certificaciones activas en una sola consulta.
+   * Evita cargar todas las certificaciones para mostrar un resumen en el dashboard.
+   */
+  async findActiveSummary(
+    publicId: string,
+    limit: number,
+  ): Promise<{ certs: Certification[]; totalActive: number }> {
+    const { data, error, count } = await adminSupabase
+      .from("certifications")
+      .select("*", { count: "exact" })
+      .eq("practitioner_id", publicId)
+      .eq("is_revoked", false)
+      .order("issued_at", { ascending: false })
+      .range(0, limit - 1);
+
+    if (error)
+      throw new DomainError(
+        `Failed to find active certifications for practitioner: ${error.message}`,
+      );
+
+    return {
+      certs: ((data as CertificationRow[]) ?? []).map((row) =>
+        this.fromRow(row),
+      ),
+      totalActive: count ?? 0,
+    };
+  }
+
   // -------------------------------------------------------------------------
   // Mutations
   // -------------------------------------------------------------------------

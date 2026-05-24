@@ -11,6 +11,17 @@ import {
 } from "@/modules/event-registration/domain/entities/eventRegistration";
 import { DrizzleEventRegistrationRepository } from "@/modules/event-registration/infrastructure/repositories/drizzleEventRegistrationRepository";
 import { EventDetailDialog } from "./EventDetailDialog";
+import {
+  ArrowLeft,
+  CalendarDays,
+  MapPin,
+  Users,
+  Banknote,
+  Swords,
+  BookOpen,
+  GraduationCap,
+  ChevronRight,
+} from "lucide-react";
 
 const EVENT_TYPE_LABELS: Record<EventType, string> = {
   competition: "Competencia",
@@ -19,9 +30,16 @@ const EVENT_TYPE_LABELS: Record<EventType, string> = {
 };
 
 const EVENT_TYPE_STYLES: Record<EventType, string> = {
-  competition: "bg-primary-900/50 text-primary-400 border border-primary-800",
-  seminar: "bg-warning-500/10 text-warning-400 border border-warning-500/30",
-  exam: "bg-success-900/50 text-success-400 border border-success-800",
+  competition:
+    "bg-primary-500/10 text-primary-400 border border-primary-500/25",
+  seminar: "bg-amber-500/10 text-amber-400 border border-amber-500/25",
+  exam: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/25",
+};
+
+const EVENT_TYPE_ICON: Record<EventType, React.ElementType> = {
+  competition: Swords,
+  seminar: BookOpen,
+  exam: GraduationCap,
 };
 
 export default async function InstructorEventsPage() {
@@ -57,7 +75,6 @@ export default async function InstructorEventsPage() {
     max_participants: number | null;
   }>;
 
-  // Fetch confirmed counts for all events to show capacity
   const repo = new DrizzleEventRegistrationRepository();
   const confirmedCounts = await Promise.all(
     events.map((e) => repo.countConfirmedByEvent(e.id)),
@@ -65,133 +82,143 @@ export default async function InstructorEventsPage() {
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      <div>
+      {/* Header */}
+      <div className="space-y-3">
         <Link
           href="/instructor"
-          className="text-sm text-neutral-400 hover:text-neutral-200 transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-neutral-200 transition-colors"
         >
-          ← Volver al panel
+          <ArrowLeft className="w-3.5 h-3.5" />
+          Volver al panel
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight text-neutral-50 mt-2">
-          Eventos disponibles
-        </h1>
-        <p className="text-sm text-neutral-400 mt-0.5">
-          Inscribe a tus alumnos en los próximos eventos
-        </p>
-      </div>
-
-      <div className="bg-neutral-900 border border-neutral-700 rounded-xl overflow-hidden">
-        {events.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-neutral-500 text-sm">
-              No hay eventos próximos disponibles.
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-primary-500/10 flex items-center justify-center shrink-0">
+            <CalendarDays className="w-5 h-5 text-primary-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-neutral-50">
+              Eventos disponibles
+            </h1>
+            <p className="text-sm text-neutral-400">
+              {events.length > 0
+                ? `${events.length} evento${events.length !== 1 ? "s" : ""} próximo${events.length !== 1 ? "s" : ""}`
+                : "Inscribe a tus alumnos en los próximos eventos"}
             </p>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-neutral-700 bg-neutral-900/80">
-                  <th className="text-left px-4 py-3 text-xs font-medium text-neutral-400 uppercase tracking-wider">
-                    Nombre
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-neutral-400 uppercase tracking-wider hidden sm:table-cell">
-                    Tipo
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-neutral-400 uppercase tracking-wider">
-                    Fecha
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-neutral-400 uppercase tracking-wider hidden md:table-cell">
-                    Precio
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-neutral-400 uppercase tracking-wider hidden lg:table-cell">
-                    Aforo disponible
-                  </th>
-                  <th className="px-4 py-3 w-36" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-800">
-                {events.map((event, idx) => {
-                  const confirmed = confirmedCounts[idx] ?? 0;
-                  const capacity = hasCapacity(
-                    event.max_participants,
-                    confirmed,
-                  );
-                  return (
-                    <tr
-                      key={event.id}
-                      className="hover:bg-neutral-800/40 transition-colors"
-                    >
-                      <td className="px-4 py-3">
-                        <p className="text-neutral-100 font-medium">
-                          {event.name}
-                        </p>
-                        {event.location && (
-                          <p className="text-xs text-neutral-500 mt-0.5">
-                            {event.location}
-                          </p>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 hidden sm:table-cell">
-                        <span
-                          className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${EVENT_TYPE_STYLES[event.event_type]}`}
-                        >
-                          {EVENT_TYPE_LABELS[event.event_type]}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-neutral-300 text-xs capitalize">
-                        {formatDateWithWeekday(event.event_date)}
-                      </td>
-                      <td className="px-4 py-3 text-neutral-300 text-xs hidden md:table-cell">
-                        {formatRegistrationFee(event.registration_fee)}
-                      </td>
-                      <td className="px-4 py-3 hidden lg:table-cell">
-                        {event.max_participants != null ? (
-                          <span
-                            className={`text-xs font-medium tabular-nums ${capacity ? "text-neutral-300" : "text-error-400"}`}
-                          >
-                            {capacity
-                              ? `${event.max_participants - confirmed} lugares disponibles`
-                              : "Sin cupos"}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-neutral-500">
-                            Sin límite
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <EventDetailDialog
-                            event={event}
-                            trigger={
-                              <button className="text-neutral-400 hover:text-neutral-200 text-xs underline underline-offset-2 transition-colors">
-                                Ver detalle
-                              </button>
-                            }
-                          />
-                          {capacity ? (
-                            <Link
-                              href={`/instructor/events/${event.id}/enroll`}
-                              className="bg-primary-600 hover:bg-primary-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                            >
-                              Inscribir alumnos
-                            </Link>
-                          ) : (
-                            <span className="text-xs text-neutral-600 italic">
-                              Aforo completo
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+        </div>
       </div>
+
+      {/* Content */}
+      {events.length === 0 ? (
+        <div className="bg-neutral-900 border border-neutral-700 rounded-2xl flex flex-col items-center justify-center py-20 gap-3">
+          <div className="w-12 h-12 rounded-xl bg-neutral-800 flex items-center justify-center">
+            <CalendarDays className="w-6 h-6 text-neutral-600" />
+          </div>
+          <p className="text-neutral-500 text-sm">
+            No hay eventos próximos disponibles.
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {events.map((event, idx) => {
+            const confirmed = confirmedCounts[idx] ?? 0;
+            const capacity = hasCapacity(event.max_participants, confirmed);
+            const TypeIcon = EVENT_TYPE_ICON[event.event_type];
+            const available =
+              event.max_participants != null
+                ? event.max_participants - confirmed
+                : null;
+
+            return (
+              <div
+                key={event.id}
+                className="bg-neutral-900 border border-neutral-700 hover:border-neutral-600 rounded-2xl p-5 flex flex-col gap-4 transition-colors"
+              >
+                {/* Card header */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="w-9 h-9 rounded-xl bg-neutral-800 flex items-center justify-center shrink-0">
+                    <TypeIcon className="w-4 h-4 text-neutral-400" />
+                  </div>
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${EVENT_TYPE_STYLES[event.event_type]}`}
+                  >
+                    {EVENT_TYPE_LABELS[event.event_type]}
+                  </span>
+                </div>
+
+                {/* Title + meta */}
+                <div className="flex-1 space-y-2">
+                  <p className="text-sm font-semibold text-neutral-100 leading-snug">
+                    {event.name}
+                  </p>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-xs text-neutral-400">
+                      <CalendarDays className="w-3.5 h-3.5 shrink-0 text-neutral-500" />
+                      <span className="capitalize">
+                        {formatDateWithWeekday(event.event_date)}
+                      </span>
+                    </div>
+                    {event.location && (
+                      <div className="flex items-center gap-1.5 text-xs text-neutral-400">
+                        <MapPin className="w-3.5 h-3.5 shrink-0 text-neutral-500" />
+                        {event.location}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5 text-xs text-neutral-400">
+                      <Banknote className="w-3.5 h-3.5 shrink-0 text-neutral-500" />
+                      {formatRegistrationFee(event.registration_fee)}
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <Users className="w-3.5 h-3.5 shrink-0 text-neutral-500" />
+                      {available != null ? (
+                        <span
+                          className={
+                            capacity
+                              ? "text-neutral-400"
+                              : "text-red-400 font-medium"
+                          }
+                        >
+                          {capacity
+                            ? `${available} lugar${available !== 1 ? "es" : ""} disponible${available !== 1 ? "s" : ""}`
+                            : "Sin cupos disponibles"}
+                        </span>
+                      ) : (
+                        <span className="text-neutral-500">
+                          Sin límite de aforo
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2 pt-1 border-t border-neutral-800">
+                  <EventDetailDialog
+                    event={event}
+                    trigger={
+                      <button className="flex-1 py-2 bg-neutral-800 hover:bg-neutral-700 rounded-lg text-xs text-neutral-300 font-medium transition-colors">
+                        Ver detalle
+                      </button>
+                    }
+                  />
+                  {capacity ? (
+                    <Link
+                      href={`/instructor/events/${event.id}/enroll`}
+                      className="flex-1 inline-flex items-center justify-center gap-1 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg text-xs font-medium transition-colors"
+                    >
+                      Inscribir <ChevronRight className="w-3.5 h-3.5" />
+                    </Link>
+                  ) : (
+                    <span className="flex-1 text-center text-xs text-neutral-600 italic py-2">
+                      Aforo completo
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </main>
   );
 }

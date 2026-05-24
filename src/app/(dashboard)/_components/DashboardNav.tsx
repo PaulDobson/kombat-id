@@ -6,14 +6,16 @@ import { signOutAction } from "@/app/auth/actions";
 import { NavLink } from "./NavLink";
 import { NavDropdown } from "./NavDropdown";
 import { UserMenu } from "./UserMenu";
+import {
+  DashboardMobileNav,
+  type MobileNavSection,
+} from "./DashboardMobileNav";
 
-const GRADE_LABELS: Record<string, string> = {
-  white: "Blanco",
-  yellow: "Amarillo",
-  green: "Verde",
-  blue: "Azul",
-  red: "Rojo",
-  black: "Negro",
+const ROLE_LABELS: Record<string, string> = {
+  alumno: "Alumno",
+  instructor: "Instructor",
+  profesor: "Profesor",
+  maestro: "Maestro",
 };
 
 export async function DashboardNav() {
@@ -30,8 +32,8 @@ export async function DashboardNav() {
 
   const isAdmin = !!adminData;
 
-  const gradeLabel = practitioner
-    ? `${GRADE_LABELS[practitioner.grade] ?? practitioner.grade}${practitioner.dan ? ` ${practitioner.dan}° Dan` : ""}`
+  const roleLabel = practitioner
+    ? (ROLE_LABELS[practitioner.role ?? ""] ?? practitioner.role ?? null)
     : null;
 
   const isInstructor =
@@ -66,6 +68,88 @@ export async function DashboardNav() {
         .toUpperCase()
     : null;
 
+  // ── Secciones de navegación para el menú móvil ────────────────────────
+  const mobileSections: MobileNavSection[] = isAdmin
+    ? [
+        {
+          items: [{ href: "/admin/dashboard", label: "Panel" }],
+        },
+        {
+          title: "Academia",
+          items: [
+            { href: "/admin/practitioners", label: "Practicantes" },
+            {
+              href: "/admin/practitioners/pending-activation",
+              label: "Activaciones",
+            },
+            { href: "/admin/academies", label: "Academias" },
+            {
+              href: "/admin/certification-requests",
+              label: "Solicitudes de certificación",
+            },
+            {
+              href: "/admin/instructor-requests",
+              label: "Solicitudes de instructores",
+            },
+          ],
+        },
+        {
+          title: "Exámenes",
+          items: [
+            { href: "/admin/exam-templates", label: "Pautas" },
+            { href: "/admin/grade-exams", label: "Aprobaciones" },
+          ],
+        },
+        {
+          items: [{ href: "/admin/events", label: "Eventos" }],
+        },
+        {
+          title: "Árbitros",
+          items: [
+            { href: "/admin/referees", label: "Lista de árbitros" },
+            {
+              href: "/admin/referee-registrations",
+              label: "Solicitudes de registro",
+            },
+            {
+              href: "/admin/referee-registrations/publications",
+              label: "Crear publicación",
+            },
+          ],
+        },
+      ]
+    : isInstructor
+      ? [
+          {
+            items: [
+              { href: "/instructor", label: "Panel Principal" },
+              { href: "/instructor/events", label: "Eventos" },
+              { href: "/instructor/grade-exams", label: "Exámenes" },
+              { href: "/certifications", label: "Certificaciones" },
+            ],
+          },
+          {
+            title: "Academia",
+            items: [
+              ...instructorAcademyItems,
+              {
+                href: "/instructor/academies/new",
+                label: "+ Crear academia",
+              },
+            ],
+          },
+        ]
+      : [
+          {
+            items: [
+              { href: "/dashboard", label: "Inicio" },
+              { href: "/martial-history", label: "Historial" },
+              { href: "/ranking", label: "Ranking" },
+              { href: "/certifications", label: "Certificaciones" },
+            ],
+          },
+        ];
+
   return (
     <header
       className={`border-b backdrop-blur-sm sticky top-0 z-30 ${
@@ -90,7 +174,7 @@ export async function DashboardNav() {
         </Link>
 
         <nav
-          className="flex items-center gap-1 overflow-visible"
+          className="hidden md:flex items-center gap-1 overflow-visible"
           aria-label="Navegación principal"
         >
           {isAdmin ? (
@@ -135,6 +219,10 @@ export async function DashboardNav() {
                     href: "/admin/referee-registrations",
                     label: "Solicitudes de registro",
                   },
+                  {
+                    href: "/admin/referee-registrations/publications",
+                    label: "Crear publicación",
+                  },
                 ]}
               />
             </>
@@ -170,7 +258,7 @@ export async function DashboardNav() {
         <div className="flex items-center gap-2 shrink-0">
           {isAdmin ? (
             <>
-              <div className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl bg-indigo-900/30 border border-indigo-700/40">
+              <div className="hidden md:flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl bg-indigo-900/30 border border-indigo-700/40">
                 <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center shrink-0">
                   <span className="text-xs font-bold text-white">
                     {user.email?.[0]?.toUpperCase() ?? "A"}
@@ -185,7 +273,7 @@ export async function DashboardNav() {
                   </p>
                 </div>
               </div>
-              <form action={signOutAction}>
+              <form action={signOutAction} className="hidden md:block">
                 <button
                   type="submit"
                   className="text-xs text-indigo-400/70 hover:text-neutral-200 transition-colors duration-150 px-2 py-1.5 rounded-md hover:bg-indigo-900/40 border border-transparent hover:border-indigo-800/50"
@@ -202,13 +290,13 @@ export async function DashboardNav() {
                     isInstructor ? "/instructor/profile" : "/profile"
                   }
                   name={practitioner.fullName.split(" ")[0]!}
-                  gradeLabel={gradeLabel}
+                  gradeLabel={roleLabel}
                   initials={initials}
                   signOutAction={signOutAction}
                 />
               )}
               {!practitioner && (
-                <form action={signOutAction}>
+                <form action={signOutAction} className="hidden md:block">
                   <button
                     type="submit"
                     className="text-xs text-neutral-500 hover:text-neutral-200 transition-colors duration-150 px-2 py-1.5 rounded-md hover:bg-neutral-800/60 border border-transparent hover:border-neutral-700/50"
@@ -219,6 +307,16 @@ export async function DashboardNav() {
               )}
             </>
           )}
+          <DashboardMobileNav
+            sections={mobileSections}
+            signOutAction={signOutAction}
+            isAdmin={isAdmin}
+            userEmail={user.email ?? null}
+            userName={practitioner?.fullName.split(" ")[0] ?? null}
+            userInitials={initials}
+            roleLabel={roleLabel}
+            profileHref={isInstructor ? "/instructor/profile" : "/profile"}
+          />
         </div>
       </div>
     </header>

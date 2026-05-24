@@ -5,9 +5,11 @@ import Link from "next/link";
 
 const NAV_LINKS = [
   { href: "/academies", label: "Academias" },
+  { href: "/events", label: "Actividades" },
   { href: "/verify", label: "Verificar" },
   { href: "/referees", label: "Árbitros" },
   { href: "/referee-registration", label: "Registro árbitro" },
+  { href: "/instructor-registration", label: "Registro instructor" },
 ];
 
 export function MobileMenu() {

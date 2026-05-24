@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Building2, MapPin, ChevronRight } from "lucide-react";
 import { REGION_LABELS } from "@/lib/presentation-constants";
 import type { ChileanRegion } from "@/modules/practitioner-identity/domain/entities/academy";
 import { CreateAcademyModal } from "./CreateAcademyModal";
@@ -19,50 +20,70 @@ export function AcademySection({ academies }: Props) {
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-neutral-100">
-          Mis academias
-        </h2>
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-blue-400/10 flex items-center justify-center">
+            <Building2 className="w-4 h-4 text-blue-400" />
+          </div>
+          <h2 className="text-base font-semibold text-neutral-100">
+            Mis academias
+          </h2>
+        </div>
         <CreateAcademyModal />
       </div>
 
       {academies.length === 0 ? (
-        <p className="text-neutral-500 text-sm py-4">
-          No estás vinculado a ninguna academia.
-        </p>
+        <div className="bg-neutral-900 border border-neutral-700 rounded-2xl flex flex-col items-center justify-center gap-3 py-12">
+          <div className="w-12 h-12 rounded-xl bg-neutral-800 flex items-center justify-center">
+            <Building2 className="w-6 h-6 text-neutral-600" />
+          </div>
+          <p className="text-neutral-500 text-sm">
+            No estás vinculado a ninguna academia.
+          </p>
+        </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {academies.map((a) => (
-            <div
+            <Link
               key={a.id}
-              className="bg-neutral-900 border border-neutral-700 rounded-xl p-5 flex flex-col gap-3"
+              href={`/instructor/academies/${a.id}`}
+              className="bg-neutral-900 border border-neutral-700 hover:border-blue-500/40 rounded-2xl p-5 flex flex-col gap-4 group transition-colors"
             >
               <div className="flex items-start justify-between gap-2">
-                <p className="text-sm font-semibold text-neutral-100 leading-snug">
-                  {a.name}
-                </p>
+                <div className="w-9 h-9 rounded-xl bg-blue-400/10 flex items-center justify-center shrink-0">
+                  <Building2 className="w-4 h-4 text-blue-400" />
+                </div>
                 {a.is_active ? (
-                  <span className="shrink-0 bg-emerald-900/50 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded-full text-xs">
+                  <span className="inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 px-2.5 py-0.5 rounded-full text-xs font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                     Activa
                   </span>
                 ) : (
-                  <span className="shrink-0 bg-neutral-800 text-neutral-400 border border-neutral-700 px-2 py-0.5 rounded-full text-xs">
+                  <span className="inline-flex items-center gap-1.5 bg-neutral-800 text-neutral-400 border border-neutral-700 px-2.5 py-0.5 rounded-full text-xs font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-neutral-500" />
                     Inactiva
                   </span>
                 )}
               </div>
-              <p className="text-xs text-neutral-400">
-                {a.city}
-                {a.region
-                  ? `, ${REGION_LABELS[a.region as ChileanRegion] ?? a.region}`
-                  : ""}
-              </p>
-              <Link
-                href={`/instructor/academies/${a.id}`}
-                className="self-start text-xs text-primary-400 hover:text-primary-300 transition-colors"
-              >
-                Administrar academia →
-              </Link>
-            </div>
+
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-neutral-100 leading-snug group-hover:text-white transition-colors">
+                  {a.name}
+                </p>
+                {(a.city || a.region) && (
+                  <p className="flex items-center gap-1 text-xs text-neutral-500 mt-1.5">
+                    <MapPin className="w-3 h-3 shrink-0" />
+                    {a.city}
+                    {a.region
+                      ? `, ${REGION_LABELS[a.region as ChileanRegion] ?? a.region}`
+                      : ""}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1 text-xs text-primary-400 group-hover:text-primary-300 transition-colors">
+                Administrar academia <ChevronRight className="w-3.5 h-3.5" />
+              </div>
+            </Link>
           ))}
         </div>
       )}
