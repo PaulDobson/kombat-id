@@ -4,6 +4,9 @@ import { DrizzleQrScanRepository } from "@/modules/practitioner-identity/infrast
 import { verifyByQrToken } from "@/modules/practitioner-identity/application/use-cases/verifyByQrToken";
 import { PractitionerNotFoundError } from "@/modules/practitioner-identity/domain/errors";
 
+// Forzar renderizado dinámico para datos en tiempo real
+export const dynamic = "force-dynamic";
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ token: string }> },
