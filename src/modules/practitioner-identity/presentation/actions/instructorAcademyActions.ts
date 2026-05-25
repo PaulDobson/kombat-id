@@ -272,6 +272,179 @@ export async function instructorRemovePractitionerAction(
 }
 
 // ---------------------------------------------------------------------------
+// Action — instructor deletes a practitioner they registered
+// Restricción: Solo puede eliminar alumnos que ellos mismos registraron (instructor_id)
+// ---------------------------------------------------------------------------
+
+export async function instructorDeletePractitionerAction(
+  rawInput: unknown,
+): Promise<ActionResult> {
+  const instructor = await requireInstructor();
+  if (!instructor) {
+    return { success: false, error: "No autorizado", code: "FORBIDDEN" };
+  }
+
+  const parsed = z
+    .object({
+      publicId: z.string().uuid(),
+    })
+    .safeParse(rawInput);
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Datos inválidos",
+      code: "VALIDATION_ERROR",
+    };
+  }
+
+  try {
+    const practitionerRepo = new DrizzlePractitionerRepository();
+    const practitioner = await practitionerRepo.findById(parsed.data.publicId);
+
+    if (!practitioner) {
+      return {
+        success: false,
+        error: "Alumno no encontrado",
+        code: "NOT_FOUND",
+      };
+    }
+
+    // VALIDACIÓN CRÍTICA: Solo puede eliminar alumnos que él mismo registró
+    if (practitioner.instructorId !== instructor.practitionerId) {
+      return {
+        success: false,
+        error: "Solo puedes eliminar alumnos que tú registraste",
+        code: "FORBIDDEN",
+      };
+    }
+
+    console.log(
+      "[instructorDeletePractitionerAction] Instructor",
+      instructor.practitionerId,
+      "soft deleting practitioner:",
+      parsed.data.publicId,
+    );
+
+    // SOFT DELETE: Marcar como eliminado lógicamente, solo auth.users se elimina físicamente
+    const practitionerId = parsed.data.publicId;
+
+    // 1. Desactivar todas las membresías de academias (soft delete)
+    const { data: deactivatedMemberships } = await adminSupabase
+      .from("academy_memberships")
+      .update({ is_active: false })
+      .eq("practitioner_id", practitionerId)
+      .eq("is_active", true)
+      .select("id");
+
+    console.log(
+      "[instructorDeletePractitionerAction] Deactivated memberships:",
+      deactivatedMemberships?.length ?? 0,
+    );
+
+    // 2. Revocar todas las certificaciones (soft delete)
+    const { data: revokedCerts } = await adminSupabase
+      .from("certifications")
+      .update({ is_revoked: true })
+      .eq("practitioner_id", practitionerId)
+      .eq("is_revoked", false)
+      .select("id");
+
+    console.log(
+      "[instructorDeletePractitionerAction] Revoked certifications:",
+      revokedCerts?.length ?? 0,
+    );
+
+    // 3. Desactivar grados de disciplinas (soft delete)
+    const { data: deactivatedDisciplines } = await adminSupabase
+      .from("discipline_grades")
+      .update({ is_active: false })
+      .eq("practitioner_id", practitionerId)
+      .eq("is_active", true)
+      .select("id");
+
+    console.log(
+      "[instructorDeletePractitionerAction] Deactivated discipline grades:",
+      deactivatedDisciplines?.length ?? 0,
+    );
+
+    // 4. Marcar el alumno como eliminado (soft delete)
+    const { data: deactivatedPractitioner, error: practitionerError } =
+      await adminSupabase
+        .from("practitioners")
+        .update({
+          is_active: false,
+          deactivated_at: new Date().toISOString(),
+          deactivation_reason: `Eliminado por instructor: ${instructor.practitionerId}`,
+        })
+        .eq("id", practitionerId)
+        .select("id");
+
+    console.log(
+      "[instructorDeletePractitionerAction] Deactivated practitioner:",
+      deactivatedPractitioner,
+    );
+
+    if (practitionerError) {
+      console.error(
+        "[instructorDeletePractitionerAction] Error deactivating practitioner:",
+        practitionerError,
+      );
+      return {
+        success: false,
+        error: `Error al desactivar alumno: ${practitionerError.message}`,
+        code: "INTERNAL_ERROR",
+      };
+    }
+
+    // 5. ÚNICO ELIMINACIÓN FÍSICA: Eliminar la cuenta de autenticación de auth.users
+    if (practitioner.authUserId) {
+      console.log(
+        "[instructorDeletePractitionerAction] Physically deleting auth user:",
+        practitioner.authUserId,
+      );
+
+      const { error: authError } = await adminSupabase.auth.admin.deleteUser(
+        practitioner.authUserId,
+      );
+
+      if (authError) {
+        console.error(
+          "[instructorDeletePractitionerAction] Error deleting auth user:",
+          authError,
+        );
+        // No retornamos error aquí porque el practicante ya fue desactivado
+      } else {
+        console.log(
+          "[instructorDeletePractitionerAction] Auth user physically deleted successfully",
+        );
+      }
+    }
+
+    // Revalidar rutas para limpiar caché
+    revalidatePath("/instructor");
+    revalidatePath("/instructor/students");
+    revalidatePath(`/instructor/students/${practitionerId}`);
+
+    console.log(
+      "[instructorDeletePractitionerAction] Soft deletion completed successfully",
+    );
+
+    return { success: true, data: undefined };
+  } catch (err) {
+    console.error(
+      "[instructorDeletePractitionerAction] Unexpected error:",
+      err,
+    );
+    return {
+      success: false,
+      error: "Error interno del servidor",
+      code: "INTERNAL_ERROR",
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Action — instructor updates their own profile data
 // ---------------------------------------------------------------------------
 

@@ -28,6 +28,10 @@ build/
 *.sublime-project
 *.sublime-workspace
 
+# Supabase local
+supabase/.branches/
+supabase/.temp/
+
 # Testing
 coverage/
 .nyc_output/

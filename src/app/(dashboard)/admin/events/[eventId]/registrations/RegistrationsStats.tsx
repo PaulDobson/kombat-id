@@ -78,7 +78,7 @@ export function RegistrationsStats({
           {/* Donut */}
           <div className="relative w-32 h-32 shrink-0">
             {hasDistributionData ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minHeight={128}>
                 <PieChart>
                   <Pie
                     data={pieData}
@@ -157,7 +157,7 @@ export function RegistrationsStats({
           <div className="flex items-center gap-6">
             {/* Gauge (arco parcial) */}
             <div className="relative w-32 h-32 shrink-0">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minHeight={128}>
                 <PieChart>
                   {/* Pista de fondo */}
                   <Pie

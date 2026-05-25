@@ -34,7 +34,7 @@ export function GradeChart({ data }: { data: GradeDataPoint[] }) {
 
   return (
     <div className="h-56">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" minHeight={224}>
         <BarChart
           data={sorted}
           margin={{ top: 4, right: 4, left: -20, bottom: 0 }}

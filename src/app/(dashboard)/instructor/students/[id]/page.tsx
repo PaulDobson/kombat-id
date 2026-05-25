@@ -8,6 +8,7 @@ import { DrizzleMartialHistoryRepository } from "@/modules/practitioner-identity
 import { DrizzleGradeExamRepository } from "@/modules/grade-exam/infrastructure/repositories/drizzleGradeExamRepository";
 import { verifyInstructorStudentAccess } from "@/modules/practitioner-identity/application/use-cases/verifyInstructorStudentAccess";
 import { formatDateLong } from "@/lib/format-date";
+import { DeleteStudentButton } from "./DeleteStudentButton";
 
 const EXAM_STATUS_LABELS: Record<string, string> = {
   draft: "Borrador",
@@ -202,13 +203,19 @@ export default async function InstructorStudentDetailPage({
           </div>
 
           {/* Actions */}
-          <div className="shrink-0">
+          <div className="shrink-0 flex items-center gap-2">
             <Link
               href={`/instructor/students/${id}/edit`}
               className="inline-flex items-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
             >
               Editar alumno
             </Link>
+            {practitioner.instructorId === session.practitionerId && (
+              <DeleteStudentButton
+                publicId={id}
+                studentName={practitioner.fullName}
+              />
+            )}
           </div>
         </div>
       </div>

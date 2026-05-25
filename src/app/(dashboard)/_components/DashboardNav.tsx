@@ -10,6 +10,7 @@ import {
   DashboardMobileNav,
   type MobileNavSection,
 } from "./DashboardMobileNav";
+import { NotificationBell } from "@/modules/notifications/presentation/components/NotificationBell";
 
 const ROLE_LABELS: Record<string, string> = {
   alumno: "Alumno",
@@ -256,6 +257,7 @@ export async function DashboardNav() {
         </nav>
 
         <div className="flex items-center gap-2 shrink-0">
+          <NotificationBell />
           {isAdmin ? (
             <>
               <div className="hidden md:flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl bg-indigo-900/30 border border-indigo-700/40">
