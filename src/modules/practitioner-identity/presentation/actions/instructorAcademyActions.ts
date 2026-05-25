@@ -319,6 +319,38 @@ export async function instructorDeletePractitionerAction(
       };
     }
 
+    // VALIDACIÓN ADICIONAL: Verificar que el alumno pertenece a una academia del instructor
+    const { data: activeMembership } = await adminSupabase
+      .from("academy_memberships")
+      .select("academy_id, academies!inner(responsible_instructor_ids)")
+      .eq("practitioner_id", parsed.data.publicId)
+      .eq("is_active", true)
+      .single();
+
+    if (!activeMembership) {
+      return {
+        success: false,
+        error: "El alumno no pertenece a ninguna academia activa",
+        code: "FORBIDDEN",
+      };
+    }
+
+    // Verificar que el instructor es responsable de la academia
+    const academyData = activeMembership.academies as {
+      responsible_instructor_ids: string[];
+    };
+    if (
+      !academyData.responsible_instructor_ids.includes(
+        instructor.practitionerId,
+      )
+    ) {
+      return {
+        success: false,
+        error: "El alumno no pertenece a una de tus academias",
+        code: "FORBIDDEN",
+      };
+    }
+
     console.log(
       "[instructorDeletePractitionerAction] Instructor",
       instructor.practitionerId,
@@ -417,6 +449,16 @@ export async function instructorDeletePractitionerAction(
       } else {
         console.log(
           "[instructorDeletePractitionerAction] Auth user physically deleted successfully",
+        );
+
+        // 6. Limpiar el campo auth_user_id en practitioners (ya no existe en auth.users)
+        await adminSupabase
+          .from("practitioners")
+          .update({ auth_user_id: null })
+          .eq("id", practitionerId);
+
+        console.log(
+          "[instructorDeletePractitionerAction] Cleaned up auth_user_id reference",
         );
       }
     }

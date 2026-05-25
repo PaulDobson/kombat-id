@@ -34,7 +34,7 @@ export function DeleteStudentButton({ publicId, studentName }: Props) {
             <strong>Nota 1:</strong> Los datos históricos (exámenes, eventos, pagos, historial marcial) se conservarán para auditoría.
           </p>
           <p class="mt-1 text-amber-400 text-xs">
-            <strong>Nota 2:</strong> Solo puedes desactivar alumnos que tú registraste.
+            <strong>Nota 2:</strong> Solo puedes desactivar alumnos que tú registraste y que pertenecen a tus academias.
           </p>
         </div>
         <p class="text-xs text-neutral-500">

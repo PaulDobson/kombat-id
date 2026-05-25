@@ -4,6 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
 import { generateAndStoreMembershipCertificate } from "@/modules/practitioner-identity/infrastructure/services/membershipCertificateService";
 
+// Forzar renderizado dinámico para evitar caché de URLs de Supabase Storage
+export const dynamic = "force-dynamic";
+
 // ---------------------------------------------------------------------------
 // Auth guard — admin only
 // ---------------------------------------------------------------------------
