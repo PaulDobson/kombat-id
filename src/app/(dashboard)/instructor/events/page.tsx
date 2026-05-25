@@ -123,7 +123,9 @@ export default async function InstructorEventsPage() {
           {events.map((event, idx) => {
             const confirmed = confirmedCounts[idx] ?? 0;
             const capacity = hasCapacity(event.max_participants, confirmed);
-            const TypeIcon = EVENT_TYPE_ICON[event.event_type];
+            const TypeIcon = EVENT_TYPE_ICON[
+              event.event_type
+            ] as React.ElementType;
             const available =
               event.max_participants != null
                 ? event.max_participants - confirmed

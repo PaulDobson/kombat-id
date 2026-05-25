@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
 import type { Practitioner } from "../../domain/entities/practitioner";
@@ -9,6 +10,7 @@ import { DrizzlePractitionerRepository } from "../../infrastructure/repositories
 import { DrizzleMartialHistoryRepository } from "../../infrastructure/repositories/drizzleMartialHistoryRepository";
 import { DrizzleCertificationRepository } from "../../infrastructure/repositories/drizzleCertificationRepository";
 import { generateAndStoreMembershipCertificate } from "../../infrastructure/services/membershipCertificateService";
+import { notifyInstructorStudentActivated } from "@/modules/notifications/presentation/actions/notificationHelpers";
 import { DrizzleAuditLogRepository } from "../../infrastructure/repositories/drizzleAuditLogRepository";
 import {
   addMartialHistoryEntry,
@@ -533,9 +535,215 @@ export async function activatePractitionerAction(
       // No bloquear la activación si el certificado falla
     }
 
+    // Notificar al instructor que registró al alumno
+    if (practitioner.instructorId) {
+      try {
+        // Obtener el auth_user_id del instructor
+        const { data: instructorData } = await adminSupabase
+          .from("practitioners")
+          .select("auth_user_id, full_name")
+          .eq("id", practitioner.instructorId)
+          .single();
+
+        // Obtener nombre del administrador que activó
+        const { data: adminData } = await adminSupabase
+          .from("practitioners")
+          .select("full_name")
+          .eq("auth_user_id", admin.userId)
+          .single();
+
+        if (instructorData?.auth_user_id) {
+          await notifyInstructorStudentActivated({
+            studentId: practitioner.id,
+            studentName: practitioner.fullName,
+            instructorId: instructorData.auth_user_id,
+            instructorName: instructorData.full_name ?? "Instructor",
+            activatedByName: adminData?.full_name ?? "Administrador",
+            activatedByUserId: admin.userId,
+          });
+        }
+      } catch (notifErr) {
+        console.error(
+          "[activatePractitionerAction] Failed to send notification:",
+          notifErr,
+        );
+      }
+    }
+
     return { success: true, data: { qrToken: practitioner.qrToken } };
   } catch (err) {
     console.error("[activatePractitionerAction] Unexpected error:", err);
+    return {
+      success: false,
+      error: "Error interno del servidor",
+      code: "INTERNAL_ERROR",
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// deletePractitionerAction
+// Elimina completamente un practicante del sistema incluyendo:
+// - Todas las membresías de academias (academy_memberships)
+// - El registro del practicante (practitioners)
+// - La cuenta de autenticación (auth.users) si existe
+// ---------------------------------------------------------------------------
+
+export async function deletePractitionerAction(
+  rawInput: unknown,
+): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  if (!admin) {
+    return { success: false, error: "No autorizado", code: "UNAUTHORIZED" };
+  }
+
+  const parsed = z
+    .object({
+      publicId: z.string().uuid(),
+    })
+    .safeParse(rawInput);
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Datos inválidos",
+      code: "VALIDATION_ERROR",
+    };
+  }
+
+  try {
+    const practitionerRepo = new DrizzlePractitionerRepository();
+    const practitioner = await practitionerRepo.findById(parsed.data.publicId);
+
+    if (!practitioner) {
+      return {
+        success: false,
+        error: "Practicante no encontrado",
+        code: "NOT_FOUND",
+      };
+    }
+
+    console.log(
+      "[deletePractitionerAction] Soft deleting practitioner:",
+      parsed.data.publicId,
+    );
+
+    // SOFT DELETE: Marcar como eliminado lógicamente, solo auth.users se elimina físicamente
+    const practitionerId = parsed.data.publicId;
+
+    // 1. Desactivar todas las membresías de academias (soft delete)
+    const { data: deactivatedMemberships } = await adminSupabase
+      .from("academy_memberships")
+      .update({ is_active: false })
+      .eq("practitioner_id", practitionerId)
+      .eq("is_active", true)
+      .select("id");
+
+    console.log(
+      "[deletePractitionerAction] Deactivated memberships:",
+      deactivatedMemberships?.length ?? 0,
+    );
+
+    // 2. Revocar todas las certificaciones (soft delete)
+    const { data: revokedCerts } = await adminSupabase
+      .from("certifications")
+      .update({ is_revoked: true })
+      .eq("practitioner_id", practitionerId)
+      .eq("is_revoked", false)
+      .select("id");
+
+    console.log(
+      "[deletePractitionerAction] Revoked certifications:",
+      revokedCerts?.length ?? 0,
+    );
+
+    // 3. Desactivar grados de disciplinas (soft delete)
+    const { data: deactivatedDisciplines } = await adminSupabase
+      .from("discipline_grades")
+      .update({ is_active: false })
+      .eq("practitioner_id", practitionerId)
+      .eq("is_active", true)
+      .select("id");
+
+    console.log(
+      "[deletePractitionerAction] Deactivated discipline grades:",
+      deactivatedDisciplines?.length ?? 0,
+    );
+
+    // 4. Actualizar practitioners que tienen este practitioner como instructor (SET NULL)
+    const { data: updatedStudents } = await adminSupabase
+      .from("practitioners")
+      .update({ instructor_id: null })
+      .eq("instructor_id", practitionerId)
+      .select("id");
+
+    console.log(
+      "[deletePractitionerAction] Updated students (removed instructor):",
+      updatedStudents?.length ?? 0,
+    );
+
+    // 5. Marcar el practicante como eliminado (soft delete)
+    const { data: deactivatedPractitioner, error: practitionerError } =
+      await adminSupabase
+        .from("practitioners")
+        .update({
+          is_active: false,
+          deactivated_at: new Date().toISOString(),
+          deactivation_reason: "Eliminado por administrador",
+        })
+        .eq("id", practitionerId)
+        .select("id");
+
+    console.log(
+      "[deletePractitionerAction] Deactivated practitioner:",
+      deactivatedPractitioner,
+    );
+
+    if (practitionerError) {
+      console.error(
+        "[deletePractitionerAction] Error deactivating practitioner:",
+        practitionerError,
+      );
+      return {
+        success: false,
+        error: `Error al desactivar practicante: ${practitionerError.message}`,
+        code: "INTERNAL_ERROR",
+      };
+    }
+
+    // 6. ÚNICO ELIMINACIÓN FÍSICA: Eliminar la cuenta de autenticación de auth.users
+    if (practitioner.authUserId) {
+      console.log(
+        "[deletePractitionerAction] Physically deleting auth user:",
+        practitioner.authUserId,
+      );
+
+      const { error: authError } = await adminSupabase.auth.admin.deleteUser(
+        practitioner.authUserId,
+      );
+
+      if (authError) {
+        console.error(
+          "[deletePractitionerAction] Error deleting auth user:",
+          authError,
+        );
+        // No retornamos error aquí porque el practicante ya fue desactivado
+      } else {
+        console.log(
+          "[deletePractitionerAction] Auth user physically deleted successfully",
+        );
+      }
+    }
+
+    // Revalidar rutas para limpiar caché
+    revalidatePath("/admin/practitioners");
+    revalidatePath(`/admin/practitioners/${practitionerId}`);
+
+    console.log("[deletePractitionerAction] Deletion completed successfully");
+
+    return { success: true, data: undefined };
+  } catch (err) {
+    console.error("[deletePractitionerAction] Unexpected error:", err);
     return {
       success: false,
       error: "Error interno del servidor",

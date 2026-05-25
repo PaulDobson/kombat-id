@@ -4,6 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
+import { notifyInstructorsEventPublished } from "@/modules/notifications/presentation/actions/notificationHelpers";
 import type { EventAttachment, EventType } from "@/types/database.types";
 
 type ActionResult<T = void> =
@@ -154,6 +155,36 @@ export async function createEventAction(
       error: "Error al crear el evento",
       code: "INTERNAL_ERROR",
     };
+  }
+
+  // Notificar a los instructores sobre el nuevo evento
+  try {
+    // Obtener nombre del administrador que publicó el evento
+    const { data: adminData } = await adminSupabase
+      .from("practitioners")
+      .select("full_name")
+      .eq("auth_user_id", admin.userId)
+      .single();
+
+    const eventTypeLabels: Record<string, string> = {
+      competition: "Competencia",
+      seminar: "Seminario",
+      exam: "Examen",
+    };
+
+    await notifyInstructorsEventPublished({
+      eventId: data.id,
+      eventName: parsed.data.name,
+      eventType:
+        eventTypeLabels[parsed.data.event_type] ?? parsed.data.event_type,
+      eventDate: parsed.data.event_date,
+      eventScope: "nacional",
+      publishedByName: adminData?.full_name ?? "Administrador",
+      publishedByUserId: admin.userId,
+    });
+  } catch (notifErr) {
+    // No bloquear la creación del evento si falla la notificación
+    console.error("[createEventAction] Failed to send notification:", notifErr);
   }
 
   revalidatePath("/admin/events");

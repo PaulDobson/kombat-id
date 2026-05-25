@@ -42,7 +42,7 @@ export function EventDetailDialog({ event, trigger }: Props) {
   useEffect(() => {
     if (open && event.cover_image_path && !signedUrl) {
       getEventFileUrl(event.cover_image_path).then((url) => {
-        if (url) setSignedUrl(url);
+        setSignedUrl(url || null);
       });
     }
   }, [open, event.cover_image_path, signedUrl]);
@@ -55,7 +55,7 @@ export function EventDetailDialog({ event, trigger }: Props) {
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-xl bg-neutral-900 border border-neutral-700 shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 overflow-hidden max-h-[90vh] flex flex-col">
           {/* Cover image — full width, natural proportions */}
-          {signedUrl ? (
+          {signedUrl && signedUrl.length > 0 ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={signedUrl}

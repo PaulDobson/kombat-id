@@ -20,6 +20,7 @@ import {
 import { verifyInstructorStudentAccess } from "../../application/use-cases/verifyInstructorStudentAccess";
 import { resolveStudentAuthAccount } from "../../application/use-cases/resolveStudentAuthAccount";
 import { requireInstructorPractitioner } from "./_requireInstructorPractitioner";
+import { notifyAdminsNewStudent } from "@/modules/notifications/presentation/actions/notificationHelpers";
 import type { ActionResult } from "@/lib/types";
 
 // ── Schemas ───────────────────────────────────────────────────────────────────
@@ -175,6 +176,32 @@ export async function registerStudentAction(
     revalidatePath("/instructor");
     if (targetAcademyId) {
       revalidatePath(`/instructor/academies/${targetAcademyId}`);
+    }
+
+    // 6. Notificar a los administradores del nuevo alumno pendiente
+    try {
+      // Obtener el auth_user_id y nombre del instructor para la notificación
+      const { data: instructorData } = await adminSupabase
+        .from("practitioners")
+        .select("auth_user_id, full_name")
+        .eq("id", auth.practitioner.id)
+        .single();
+
+      if (instructorData?.auth_user_id) {
+        await notifyAdminsNewStudent({
+          studentId: result.publicId,
+          studentName: parsed.data.fullName,
+          studentRut: parsed.data.rut,
+          instructorId: instructorData.auth_user_id,
+          instructorName: instructorData.full_name,
+        });
+      }
+    } catch (notifErr) {
+      // No bloquear el registro si falla la notificación
+      console.error(
+        "[registerStudentAction] Failed to send notification:",
+        notifErr,
+      );
     }
 
     return { success: true, data: { publicId: result.publicId } };

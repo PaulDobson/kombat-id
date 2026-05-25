@@ -14,7 +14,8 @@
     "assign:academies": "tsx scripts/assign-practitioners-to-academies.ts",
     "seed:masters": "tsx scripts/seed-masters.ts",
     "setup:storage": "tsx scripts/setup-event-storage.ts",
-    "setup:certificates-storage": "tsx scripts/setup-membership-certificates-storage.ts"
+    "setup:certificates-storage": "tsx scripts/setup-membership-certificates-storage.ts",
+    "types:generate": "pnpm supabase gen types typescript --project-id nopqnoefsoljvafhhcmk > src/types/database.types.ts"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",
@@ -38,6 +39,7 @@
     "@supabase/supabase-js": "^2.101.1",
     "@vercel/analytics": "^2.0.1",
     "clsx": "^2.1.1",
+    "date-fns": "^4.3.0",
     "lucide-react": "^1.14.0",
     "next": "15.3.8",
     "next-themes": "^0.2.1",

@@ -1,89 +1,3 @@
-/**
- * Database types for the Kombat Taekwondo Identity platform.
- *
- * These types reflect the schema defined in:
- *   src/lib/db/migrations/001_practitioner_identity.sql
- *
- * To regenerate from a live Supabase project, run:
- *   npx supabase gen types typescript --project-id <your-project-id> > src/types/database.types.ts
- */
-
-// ============================================================
-// Shared enums / literals
-// ============================================================
-
-export type Gender = "male" | "female" | "other";
-export type Grade = "white" | "yellow" | "green" | "blue" | "red" | "black";
-export type EventType = "competition" | "seminar" | "exam";
-export type EventScope = "national" | "international";
-export type RankingType = "national" | "international" | "combined";
-// Roles jerárquicos aplicables a practicantes (campo practitioners.role)
-export type PractitionerRole = "alumno" | "instructor" | "profesor" | "maestro";
-
-// Todos los roles del sistema (tabla roles)
-export type SystemRole =
-  | "administrador"
-  | "alumno"
-  | "instructor"
-  | "profesor"
-  | "maestro"
-  | "referee"
-  | (string & {});
-export type AgeCategory = "infantil" | "juvenil" | "adulto" | "senior";
-export type AgeRange = "under-12" | "12-17" | "18-30" | "30+";
-export type WeightCategory =
-  | "fin"
-  | "fly"
-  | "bantam"
-  | "feather"
-  | "light"
-  | "welter"
-  | "middle"
-  | "heavy";
-export type PeriodType = "monthly" | "annual";
-export type CertType =
-  | "technical_grade"
-  | "instructor"
-  | "referee"
-  | "coach"
-  | "event_participation";
-export type ChargeType =
-  | "examen_grado"
-  | "membresia_anual"
-  | "licencia_competencia";
-export type ChargeStatus = "pendiente" | "pagado" | "vencido" | "exento";
-export type Currency = "CLP" | "USD";
-export type Discipline =
-  | "kombat_taekwondo"
-  | "taekwondo_wtf"
-  | "hapkido"
-  | "kick_boxing"
-  | "defensa_personal";
-
-// ============================================================
-// Event storage types (migration 031)
-// ============================================================
-
-export interface EventAttachment {
-  name: string;
-  path: string;
-  size: number;
-  type: string;
-}
-
-// ============================================================
-// JSONB payload stored inside certifications.practitioner_snapshot
-// ============================================================
-
-export interface PractitionerSnapshot {
-  id: string;
-  fullName: string;
-  rut: string;
-  grade: Grade;
-  dan: number | null;
-  snapshotAt: string; // ISO timestamp
-}
-
 export type Json =
   | string
   | number
@@ -97,31 +11,6 @@ export type Database = {
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.4";
-  };
-  graphql_public: {
-    Tables: {
-      [_ in never]: never;
-    };
-    Views: {
-      [_ in never]: never;
-    };
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json;
-          operationName?: string;
-          query?: string;
-          variables?: Json;
-        };
-        Returns: Json;
-      };
-    };
-    Enums: {
-      [_ in never]: never;
-    };
-    CompositeTypes: {
-      [_ in never]: never;
-    };
   };
   public: {
     Tables: {
@@ -1026,6 +915,140 @@ export type Database = {
           },
         ];
       };
+      notification_recipients: {
+        Row: {
+          action_result: string | null;
+          actioned_at: string | null;
+          created_at: string;
+          is_actioned: boolean;
+          is_read: boolean;
+          notification_id: string;
+          read_at: string | null;
+          recipient_user_id: string;
+        };
+        Insert: {
+          action_result?: string | null;
+          actioned_at?: string | null;
+          created_at?: string;
+          is_actioned?: boolean;
+          is_read?: boolean;
+          notification_id: string;
+          read_at?: string | null;
+          recipient_user_id: string;
+        };
+        Update: {
+          action_result?: string | null;
+          actioned_at?: string | null;
+          created_at?: string;
+          is_actioned?: boolean;
+          is_read?: boolean;
+          notification_id?: string;
+          read_at?: string | null;
+          recipient_user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notification_recipients_notification_id_fkey";
+            columns: ["notification_id"];
+            isOneToOne: false;
+            referencedRelation: "notifications";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      notification_templates: {
+        Row: {
+          category: string;
+          created_at: string;
+          default_action_label: string | null;
+          default_priority: string;
+          expires_in_days: number | null;
+          message_template: string;
+          requires_action: boolean;
+          title_template: string;
+          type: string;
+          updated_at: string;
+        };
+        Insert: {
+          category: string;
+          created_at?: string;
+          default_action_label?: string | null;
+          default_priority?: string;
+          expires_in_days?: number | null;
+          message_template: string;
+          requires_action?: boolean;
+          title_template: string;
+          type: string;
+          updated_at?: string;
+        };
+        Update: {
+          category?: string;
+          created_at?: string;
+          default_action_label?: string | null;
+          default_priority?: string;
+          expires_in_days?: number | null;
+          message_template?: string;
+          requires_action?: boolean;
+          title_template?: string;
+          type?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      notifications: {
+        Row: {
+          action_label: string | null;
+          action_url: string | null;
+          actor_name: string | null;
+          actor_user_id: string | null;
+          category: string;
+          created_at: string;
+          expires_at: string | null;
+          id: string;
+          message: string;
+          metadata: Json;
+          priority: string;
+          related_entity_id: string | null;
+          related_entity_type: string | null;
+          title: string;
+          type: string;
+        };
+        Insert: {
+          action_label?: string | null;
+          action_url?: string | null;
+          actor_name?: string | null;
+          actor_user_id?: string | null;
+          category: string;
+          created_at?: string;
+          expires_at?: string | null;
+          id?: string;
+          message: string;
+          metadata?: Json;
+          priority?: string;
+          related_entity_id?: string | null;
+          related_entity_type?: string | null;
+          title: string;
+          type: string;
+        };
+        Update: {
+          action_label?: string | null;
+          action_url?: string | null;
+          actor_name?: string | null;
+          actor_user_id?: string | null;
+          category?: string;
+          created_at?: string;
+          expires_at?: string | null;
+          id?: string;
+          message?: string;
+          metadata?: Json;
+          priority?: string;
+          related_entity_id?: string | null;
+          related_entity_type?: string | null;
+          title?: string;
+          type?: string;
+        };
+        Relationships: [];
+      };
       practitioners: {
         Row: {
           address_city: string | null;
@@ -1471,6 +1494,7 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      cleanup_expired_notifications: { Args: never; Returns: number };
       is_admin: { Args: never; Returns: boolean };
     };
     Enums: {
@@ -1603,10 +1627,68 @@ export type CompositeTypes<
     : never;
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },
 } as const;
+
+// ============================================================
+// Custom type exports derived from database schema
+// ============================================================
+
+export type Gender =
+  Database["public"]["Tables"]["practitioners"]["Row"]["gender"];
+export type Grade =
+  Database["public"]["Tables"]["practitioners"]["Row"]["grade"];
+export type EventType =
+  Database["public"]["Tables"]["martial_events"]["Row"]["event_type"];
+export type EventScope =
+  Database["public"]["Tables"]["martial_history"]["Row"]["event_scope"] &
+    string;
+export type RankingType =
+  Database["public"]["Tables"]["ranking_snapshots"]["Row"]["ranking_type"];
+export type PractitionerRole =
+  Database["public"]["Tables"]["practitioners"]["Row"]["role"];
+export type SystemRole =
+  Database["public"]["Tables"]["user_roles"]["Row"]["role_name"];
+export type AgeCategory = "infantil" | "juvenil" | "adulto" | "senior";
+export type AgeRange = "under-12" | "12-17" | "18-30" | "30+";
+export type WeightCategory =
+  | "fin"
+  | "fly"
+  | "bantam"
+  | "feather"
+  | "light"
+  | "welter"
+  | "middle"
+  | "heavy";
+export type PeriodType = "monthly" | "annual";
+export type CertType =
+  Database["public"]["Tables"]["certifications"]["Row"]["cert_type"];
+export type ChargeType =
+  Database["public"]["Tables"]["charges"]["Row"]["charge_type"];
+export type ChargeStatus =
+  Database["public"]["Tables"]["charges"]["Row"]["status"];
+export type Currency = "CLP" | "USD";
+export type Discipline =
+  | "kombat_taekwondo"
+  | "taekwondo_wtf"
+  | "hapkido"
+  | "kick_boxing"
+  | "defensa_personal";
+
+export interface EventAttachment {
+  name: string;
+  path: string;
+  size: number;
+  type: string;
+}
+
+export interface PractitionerSnapshot {
+  id: string;
+  fullName: string;
+  rut: string;
+  grade: Grade;
+  dan: number | null;
+  snapshotAt: string;
+}

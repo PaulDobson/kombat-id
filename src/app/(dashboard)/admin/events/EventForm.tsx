@@ -2,7 +2,6 @@
 
 import { useTransition, useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import * as Label from "@radix-ui/react-label";
 import * as Dialog from "@radix-ui/react-dialog";
 import { z } from "zod";
@@ -12,12 +11,11 @@ import {
   type MartialEvent,
 } from "@/modules/practitioner-identity/presentation/actions/eventActions";
 import {
-  uploadEventCoverImage,
-  uploadEventAttachment,
-  deleteEventFile,
-  getEventFileUrl,
-  type AttachmentMeta,
-} from "@/lib/supabase/storage";
+  uploadEventCoverAction,
+  uploadEventAttachmentAction,
+  deleteEventFileAction,
+} from "@/modules/practitioner-identity/presentation/actions/eventFileActions";
+import { getEventFileUrl, type AttachmentMeta } from "@/lib/supabase/storage";
 
 const EVENT_TYPE_OPTIONS = [
   { value: "competition", label: "Competencia" },
@@ -144,7 +142,17 @@ export function EventForm({ event }: Props) {
     setExistingAttachments((prev) =>
       prev.filter((a) => a.path !== attachment.path),
     );
-    await deleteEventFile(attachment.path);
+    await deleteEventFileAction(attachment.path);
+  }
+
+  // Función auxiliar para convertir File a base64
+  async function fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -194,73 +202,204 @@ export function EventForm({ event }: Props) {
     }
 
     startTransition(async () => {
-      // 1. Upload cover image if a new one was selected
-      let coverImagePath: string | null = removeCover
-        ? null
-        : (event?.cover_image_path ?? null);
-
-      if (coverFile) {
-        // We need an event ID for the path. For new events, use a temp UUID
-        // that will be replaced once the event is created. For edits, use event.id.
-        const tempId = isEdit ? event.id : crypto.randomUUID();
-        const { path, error: uploadErr } = await uploadEventCoverImage(
-          tempId,
-          coverFile,
-        );
-        if (uploadErr) {
-          console.warn("[EventForm] Cover upload failed:", uploadErr);
-          // Non-blocking: continue without cover
-        } else {
-          coverImagePath = path;
-        }
-      }
-
-      // 2. Upload new attachments
-      const uploadedAttachments: AttachmentMeta[] = [];
-      const tempId = isEdit ? event.id : crypto.randomUUID();
-
-      for (const file of newAttachments) {
-        const result = await uploadEventAttachment(tempId, file);
-        if (result.error) {
-          console.warn("[EventForm] Attachment upload failed:", result.error);
-          // Non-blocking: skip failed uploads
-        } else {
-          uploadedAttachments.push({
-            name: result.name,
-            path: result.path,
-            size: result.size,
-            type: result.type,
-          });
-        }
-      }
-
-      const allAttachments = [...existingAttachments, ...uploadedAttachments];
-
-      // 3. Call server action
-      const payload = {
-        name: parsed.data.name,
-        event_type: parsed.data.event_type,
-        event_date: parsed.data.event_date,
-        location: parsed.data.location || undefined,
-        description: parsed.data.description || undefined,
-        registration_fee: parsed.data.isFree
+      if (isEdit) {
+        // MODO EDICIÓN: Subir archivos primero, luego actualizar
+        let coverImagePath: string | null = removeCover
           ? null
-          : (parsed.data.registration_fee ?? null),
-        min_participants: parsed.data.min_participants ?? null,
-        max_participants: parsed.data.max_participants ?? null,
-        cover_image_path: coverImagePath,
-        attachments: allAttachments,
-        ...(isEdit ? { id: event.id } : {}),
-      };
+          : (event.cover_image_path ?? null);
 
-      const result = isEdit
-        ? await updateEventAction(payload)
-        : await createEventAction(payload);
+        if (coverFile) {
+          const base64 = await fileToBase64(coverFile);
+          const uploadResult = await uploadEventCoverAction(event.id, {
+            name: coverFile.name,
+            type: coverFile.type,
+            size: coverFile.size,
+            base64,
+          });
 
-      if (result.success) {
-        router.push(isEdit ? `/admin/events/${event.id}` : "/admin/events");
+          if (!uploadResult.success) {
+            console.error(
+              "[EventForm] Cover upload failed:",
+              uploadResult.error,
+            );
+          } else {
+            coverImagePath = uploadResult.data.path;
+          }
+        }
+
+        // Upload new attachments
+        const uploadedAttachments: AttachmentMeta[] = [];
+        for (const file of newAttachments) {
+          const base64 = await fileToBase64(file);
+          const result = await uploadEventAttachmentAction(event.id, {
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            base64,
+          });
+
+          if (!result.success) {
+            console.warn("[EventForm] Attachment upload failed:", result.error);
+          } else {
+            uploadedAttachments.push({
+              name: result.data.name,
+              path: result.data.path,
+              size: result.data.size,
+              type: result.data.type,
+            });
+          }
+        }
+
+        const allAttachments = [...existingAttachments, ...uploadedAttachments];
+
+        const payload = {
+          id: event.id,
+          name: parsed.data.name,
+          event_type: parsed.data.event_type,
+          event_date: parsed.data.event_date,
+          location: parsed.data.location || undefined,
+          description: parsed.data.description || undefined,
+          registration_fee: parsed.data.isFree
+            ? null
+            : (parsed.data.registration_fee ?? null),
+          min_participants: parsed.data.min_participants ?? null,
+          max_participants: parsed.data.max_participants ?? null,
+          cover_image_path: coverImagePath,
+          attachments: allAttachments,
+        };
+
+        const result = await updateEventAction(payload);
+
+        if (result.success) {
+          router.push(`/admin/events/${event.id}`);
+        } else {
+          setError(result.error);
+        }
       } else {
-        setError(result.error);
+        // MODO CREACIÓN: Crear evento primero, luego subir archivos
+        const payload = {
+          name: parsed.data.name,
+          event_type: parsed.data.event_type,
+          event_date: parsed.data.event_date,
+          location: parsed.data.location || undefined,
+          description: parsed.data.description || undefined,
+          registration_fee: parsed.data.isFree
+            ? null
+            : (parsed.data.registration_fee ?? null),
+          min_participants: parsed.data.min_participants ?? null,
+          max_participants: parsed.data.max_participants ?? null,
+        };
+
+        // 1. Crear evento sin archivos
+        const result = await createEventAction(payload);
+
+        if (!result.success) {
+          setError(result.error);
+          return;
+        }
+
+        const newEventId = result.data.id;
+
+        // 2. Subir imagen de portada si existe
+        let coverImagePath: string | null = null;
+        console.log("[EventForm] coverFile exists:", !!coverFile);
+        if (coverFile) {
+          console.log(
+            "[EventForm] Uploading cover image for event:",
+            newEventId,
+          );
+          const base64 = await fileToBase64(coverFile);
+          const uploadResult = await uploadEventCoverAction(newEventId, {
+            name: coverFile.name,
+            type: coverFile.type,
+            size: coverFile.size,
+            base64,
+          });
+
+          if (!uploadResult.success) {
+            console.error(
+              "[EventForm] Cover upload failed:",
+              uploadResult.error,
+            );
+          } else {
+            coverImagePath = uploadResult.data.path;
+            console.log(
+              "[EventForm] Cover uploaded successfully:",
+              uploadResult.data.path,
+            );
+          }
+        }
+
+        // 3. Subir archivos adjuntos
+        const uploadedAttachments: AttachmentMeta[] = [];
+        for (const file of newAttachments) {
+          const base64 = await fileToBase64(file);
+          const attachResult = await uploadEventAttachmentAction(newEventId, {
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            base64,
+          });
+
+          if (!attachResult.success) {
+            console.warn(
+              "[EventForm] Attachment upload failed:",
+              attachResult.error,
+            );
+          } else {
+            uploadedAttachments.push({
+              name: attachResult.data.name,
+              path: attachResult.data.path,
+              size: attachResult.data.size,
+              type: attachResult.data.type,
+            });
+          }
+        }
+
+        // 4. Actualizar evento con las rutas de los archivos si hay alguno
+        console.log("[EventForm] coverImagePath:", coverImagePath);
+        console.log(
+          "[EventForm] uploadedAttachments count:",
+          uploadedAttachments.length,
+        );
+        if (coverImagePath || uploadedAttachments.length > 0) {
+          const updatePayload = {
+            id: newEventId,
+            name: parsed.data.name,
+            event_type: parsed.data.event_type,
+            event_date: parsed.data.event_date,
+            location: parsed.data.location || undefined,
+            description: parsed.data.description || undefined,
+            registration_fee: parsed.data.isFree
+              ? null
+              : (parsed.data.registration_fee ?? null),
+            min_participants: parsed.data.min_participants ?? null,
+            max_participants: parsed.data.max_participants ?? null,
+            cover_image_path: coverImagePath,
+            attachments: uploadedAttachments,
+          };
+
+          console.log(
+            "[EventForm] Updating event with payload:",
+            updatePayload,
+          );
+          const updateResult = await updateEventAction(updatePayload);
+          if (!updateResult.success) {
+            console.error(
+              "[EventForm] Failed to update event with files:",
+              updateResult.error,
+            );
+            // No bloqueamos, el evento ya fue creado
+          } else {
+            console.log("[EventForm] Event updated successfully with files");
+          }
+        } else {
+          console.log(
+            "[EventForm] No files to update (coverImagePath and attachments are empty)",
+          );
+        }
+
+        router.push("/admin/events");
       }
     });
   }
@@ -414,12 +553,11 @@ export function EventForm({ event }: Props) {
                   className="absolute inset-0 w-full h-full cursor-zoom-in focus:outline-none"
                   aria-label="Ver imagen en tamaño completo"
                 >
-                  <Image
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
                     src={displayCoverUrl}
                     alt="Preview portada"
-                    fill
-                    className="object-cover"
-                    unoptimized
+                    className="w-full h-full object-cover"
                   />
                 </button>
               </Dialog.Trigger>
@@ -439,13 +577,12 @@ export function EventForm({ event }: Props) {
                 <Dialog.Title className="sr-only">
                   Imagen de portada
                 </Dialog.Title>
-                <div className="relative max-w-5xl max-h-[90vh] w-full h-full">
-                  <Image
+                <div className="relative max-w-5xl max-h-[90vh] flex items-center justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
                     src={displayCoverUrl}
                     alt="Imagen de portada"
-                    fill
-                    className="object-contain"
-                    unoptimized
+                    className="max-w-full max-h-[90vh] object-contain"
                   />
                 </div>
                 <Dialog.Close className="absolute top-4 right-4 z-50 bg-neutral-900/80 hover:bg-neutral-700 text-neutral-300 hover:text-white w-9 h-9 rounded-full flex items-center justify-center text-lg transition-colors">
