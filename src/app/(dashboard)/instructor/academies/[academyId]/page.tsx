@@ -130,7 +130,6 @@ export default async function InstructorAcademyDetailPage({
       { count: "exact" },
     )
     .eq("academy_id", academyId)
-    .eq("is_active", true)
     .order("practitioner_id")
     .range(offset, offset + PAGE_SIZE - 1);
 
@@ -138,8 +137,7 @@ export default async function InstructorAcademyDetailPage({
   const { data: statsRows } = await adminSupabase
     .from("academy_memberships")
     .select("practitioners(grade, is_active)")
-    .eq("academy_id", academyId)
-    .eq("is_active", true);
+    .eq("academy_id", academyId);
 
   const gradeCounts: Partial<Record<Grade, number>> = {};
   let activeCount = 0;
@@ -538,4 +536,3 @@ export default async function InstructorAcademyDetailPage({
     </main>
   );
 }
-

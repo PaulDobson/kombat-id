@@ -62,7 +62,19 @@ export function DeletePractitionerButton({
     if (!result.isConfirmed) return;
 
     startTransition(async () => {
+      console.log("[DeletePractitionerButton] Iniciando eliminación:", {
+        publicId,
+        practitionerName,
+        timestamp: new Date().toISOString(),
+      });
+
       const deleteResult = await deletePractitionerAction({ publicId });
+
+      console.log(
+        "[DeletePractitionerButton] Resultado de eliminación:",
+        deleteResult,
+      );
+
       if (deleteResult.success) {
         await Swal.fire({
           title: "¡Eliminado!",
@@ -75,6 +87,11 @@ export function DeletePractitionerButton({
         router.push("/admin/practitioners");
         router.refresh();
       } else {
+        console.error(
+          "[DeletePractitionerButton] Error en eliminación:",
+          deleteResult,
+        );
+
         await Swal.fire({
           title: "Error",
           text: deleteResult.error,

@@ -440,36 +440,38 @@ export default async function DashboardPage() {
                 });
                 const disp = EVENT_DISPLAY[event.event_type];
                 return (
-                  <li
-                    key={event.id}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-neutral-800/50 border border-neutral-700/40"
-                  >
-                    <div className="flex flex-col items-center justify-center w-10 h-10 rounded-xl bg-yellow-400/10 border border-yellow-400/20 shrink-0">
-                      <span className="text-sm font-bold text-yellow-400 leading-none">
-                        {day}
-                      </span>
-                      <span className="text-[10px] text-yellow-500/70 uppercase leading-none mt-0.5">
-                        {month}
-                      </span>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm text-neutral-200 font-medium truncate">
-                        {event.name}
-                      </p>
-                      {event.location && (
-                        <p className="text-xs text-neutral-500 flex items-center gap-1 mt-0.5">
-                          <MapPin className="w-3 h-3 shrink-0" />
-                          {event.location}
+                  <li key={event.id}>
+                    <Link
+                      href={`/events/${event.id}`}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-neutral-800/50 border border-neutral-700/40 hover:bg-neutral-800 hover:border-neutral-600 transition-colors"
+                    >
+                      <div className="flex flex-col items-center justify-center w-10 h-10 rounded-xl bg-yellow-400/10 border border-yellow-400/20 shrink-0">
+                        <span className="text-sm font-bold text-yellow-400 leading-none">
+                          {day}
+                        </span>
+                        <span className="text-[10px] text-yellow-500/70 uppercase leading-none mt-0.5">
+                          {month}
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-neutral-200 font-medium truncate">
+                          {event.name}
                         </p>
+                        {event.location && (
+                          <p className="text-xs text-neutral-500 flex items-center gap-1 mt-0.5">
+                            <MapPin className="w-3 h-3 shrink-0" />
+                            {event.location}
+                          </p>
+                        )}
+                      </div>
+                      {disp && (
+                        <span
+                          className={`text-xs ${disp.color} ${disp.bg} ${disp.border} border px-2 py-0.5 rounded-full shrink-0`}
+                        >
+                          {disp.label}
+                        </span>
                       )}
-                    </div>
-                    {disp && (
-                      <span
-                        className={`text-xs ${disp.color} ${disp.bg} ${disp.border} border px-2 py-0.5 rounded-full shrink-0`}
-                      >
-                        {disp.label}
-                      </span>
-                    )}
+                    </Link>
                   </li>
                 );
               })}

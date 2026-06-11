@@ -137,8 +137,7 @@ export async function enrollStudentsAction(
     .from("academy_memberships")
     .select("practitioner_id")
     .in("academy_id", instructorAcademyIds)
-    .in("practitioner_id", practitionerIds)
-    .eq("is_active", true);
+    .in("practitioner_id", practitionerIds);
 
   const authorizedIds = new Set(
     (memberships ?? []).map(

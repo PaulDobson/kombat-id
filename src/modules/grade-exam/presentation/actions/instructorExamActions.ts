@@ -161,7 +161,6 @@ export async function startExamAction(
             .from("academy_memberships")
             .select("academy_id")
             .eq("practitioner_id", practitionerId)
-            .eq("is_active", true)
             .maybeSingle();
 
           if (membership) {

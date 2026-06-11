@@ -123,6 +123,41 @@ export class DrizzleAcademyRepository implements AcademyRepository {
     return count ?? 0;
   }
 
+  /**
+   * Returns active practitioner counts for multiple academies in a single query,
+   * avoiding the N+1 pattern when displaying academy lists.
+   *
+   * @param academyIds - Array of academy UUIDs to count members for
+   * @returns Map from academy_id → active member count
+   */
+  async countActivePractitionersBatch(
+    academyIds: string[],
+  ): Promise<Map<string, number>> {
+    if (academyIds.length === 0) return new Map();
+
+    const { data, error } = await adminSupabase
+      .from("academy_memberships")
+      .select("academy_id")
+      .in("academy_id", academyIds)
+      .eq("is_active", true);
+
+    if (error)
+      throw new DomainError(
+        `Failed to batch count practitioners: ${error.message}`,
+      );
+
+    const counts = new Map<string, number>();
+    for (const row of data ?? []) {
+      const id = row.academy_id as string;
+      counts.set(id, (counts.get(id) ?? 0) + 1);
+    }
+    // Ensure every requested academy has an entry (even if 0)
+    for (const id of academyIds) {
+      if (!counts.has(id)) counts.set(id, 0);
+    }
+    return counts;
+  }
+
   private fromRow(row: AcademyRow): Academy {
     const parsed = AcademyRowSchema.safeParse(row);
     if (!parsed.success) {

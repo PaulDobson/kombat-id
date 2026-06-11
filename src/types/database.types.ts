@@ -43,11 +43,19 @@ export type Database = {
         Row: {
           address: string | null;
           city: string;
+          contact_email: string | null;
+          contact_instagram: string | null;
+          contact_phone: string | null;
+          contact_website: string | null;
+          contact_whatsapp: string | null;
+          cover_image_path: string | null;
           created_at: string;
           created_by: string;
           deactivated_at: string | null;
           deactivation_reason: string | null;
+          description: string | null;
           founded_date: string | null;
+          founder_story: string | null;
           id: string;
           is_active: boolean;
           name: string;
@@ -58,11 +66,19 @@ export type Database = {
         Insert: {
           address?: string | null;
           city: string;
+          contact_email?: string | null;
+          contact_instagram?: string | null;
+          contact_phone?: string | null;
+          contact_website?: string | null;
+          contact_whatsapp?: string | null;
+          cover_image_path?: string | null;
           created_at?: string;
           created_by: string;
           deactivated_at?: string | null;
           deactivation_reason?: string | null;
+          description?: string | null;
           founded_date?: string | null;
+          founder_story?: string | null;
           id?: string;
           is_active?: boolean;
           name: string;
@@ -73,11 +89,19 @@ export type Database = {
         Update: {
           address?: string | null;
           city?: string;
+          contact_email?: string | null;
+          contact_instagram?: string | null;
+          contact_phone?: string | null;
+          contact_website?: string | null;
+          contact_whatsapp?: string | null;
+          cover_image_path?: string | null;
           created_at?: string;
           created_by?: string;
           deactivated_at?: string | null;
           deactivation_reason?: string | null;
+          description?: string | null;
           founded_date?: string | null;
+          founder_story?: string | null;
           id?: string;
           is_active?: boolean;
           name?: string;
@@ -1520,7 +1544,17 @@ export type Database = {
     };
     Functions: {
       cleanup_expired_notifications: { Args: never; Returns: number };
+      delete_practitioner_by_instructor: {
+        Args: {
+          p_academy_id: string;
+          p_instructor_id: string;
+          p_practitioner_id: string;
+        };
+        Returns: Json;
+      };
       is_admin: { Args: never; Returns: boolean };
+      show_limit: { Args: never; Returns: number };
+      show_trgm: { Args: { "": string }; Returns: string[] };
     };
     Enums: {
       [_ in never]: never;

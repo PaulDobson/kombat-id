@@ -8,6 +8,7 @@ import Link from "next/link";
 import { DeactivateButton } from "./DeactivateButton";
 import { ActivateButton } from "./ActivateButton";
 import { DeletePractitionerButton } from "./DeletePractitionerButton";
+import { RegenerateCertificateButton } from "./RegenerateCertificateButton";
 import { ROLE_LABELS } from "@/lib/roles";
 
 async function requireAdminUser() {
@@ -131,7 +132,6 @@ export default async function AdminPractitionerDetailPage({
       .from("academy_memberships")
       .select("academies(id, name)")
       .eq("practitioner_id", publicId)
-      .eq("is_active", true)
       .maybeSingle(),
     practitioner.instructorId
       ? practitionerRepo.findById(practitioner.instructorId)
@@ -224,6 +224,12 @@ export default async function AdminPractitionerDetailPage({
             >
               Emitir certificación
             </Link>
+            {practitioner.isActive && (
+              <RegenerateCertificateButton
+                publicId={publicId}
+                practitionerName={practitioner.fullName}
+              />
+            )}
             {practitioner.isActive && (
               <DeactivateButton publicId={publicId} adminId={adminUser.id} />
             )}
@@ -470,6 +476,14 @@ export default async function AdminPractitionerDetailPage({
               <span>Emitir certificación</span>
               <span className="text-neutral-500">→</span>
             </Link>
+            {practitioner.isActive && (
+              <div className="pt-1">
+                <RegenerateCertificateButton
+                  publicId={publicId}
+                  practitionerName={practitioner.fullName}
+                />
+              </div>
+            )}
             {academy && (
               <Link
                 href={`/admin/academies/${academy.id}`}

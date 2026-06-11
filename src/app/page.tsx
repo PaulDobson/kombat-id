@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { unstable_cache } from "next/cache";
 import { Flag, School } from "lucide-react";
 import { adminSupabase } from "@/lib/supabase/admin";
 import { PublicNav } from "@/app/_components/PublicNav";
@@ -21,7 +22,7 @@ interface MartialEvent {
   location: string | null;
 }
 
-async function getUpcomingEvents(): Promise<MartialEvent[]> {
+async function _getUpcomingEventsLanding(): Promise<MartialEvent[]> {
   const today = new Date().toISOString().slice(0, 10);
   const { data } = await adminSupabase
     .from("martial_events")
@@ -32,7 +33,13 @@ async function getUpcomingEvents(): Promise<MartialEvent[]> {
   return (data as MartialEvent[]) ?? [];
 }
 
-async function getApprovedReferees(): Promise<RefereeListItem[]> {
+const getUpcomingEventsLanding = unstable_cache(
+  _getUpcomingEventsLanding,
+  ["upcoming-events-landing"],
+  { revalidate: 300, tags: ["martial-events"] },
+);
+
+async function _getApprovedReferees(): Promise<RefereeListItem[]> {
   const repo = new SupabaseRefereeRegistrationRepository();
   const { items } = await listRefereeRegistrations(
     { status: "approved", pageSize: 200 },
@@ -40,6 +47,12 @@ async function getApprovedReferees(): Promise<RefereeListItem[]> {
   );
   return items.map(toRefereeListItem);
 }
+
+const getApprovedReferees = unstable_cache(
+  _getApprovedReferees,
+  ["approved-referees"],
+  { revalidate: 600, tags: ["referee-registrations"] },
+);
 
 const EVENT_TYPE_LABELS: Record<EventType, string> = {
   competition: "Competencia",
@@ -81,7 +94,7 @@ export default async function LandingPage({
   searchParams: Promise<{ search?: string }>;
 }) {
   const [upcoming, approvedReferees] = await Promise.all([
-    getUpcomingEvents(),
+    getUpcomingEventsLanding(),
     getApprovedReferees(),
   ]);
   const { search } = await searchParams;

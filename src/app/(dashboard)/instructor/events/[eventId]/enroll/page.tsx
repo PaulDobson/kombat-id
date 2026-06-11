@@ -10,6 +10,7 @@ import {
 } from "@/modules/event-registration/domain/entities/eventRegistration";
 import { DrizzleEventRegistrationRepository } from "@/modules/event-registration/infrastructure/repositories/drizzleEventRegistrationRepository";
 import { EnrollTabs } from "./EnrollTabs";
+import { SelfEnrollSection } from "./SelfEnrollSection";
 import type { Registration } from "./EnrollTabs";
 
 const INSTRUCTOR_ROLES = ["instructor", "profesor", "maestro"];
@@ -96,8 +97,7 @@ export default async function EnrollPage({
     const { data: memberships } = await adminSupabase
       .from("academy_memberships")
       .select("practitioner_id")
-      .in("academy_id", instructorAcademyIds)
-      .eq("is_active", true);
+      .in("academy_id", instructorAcademyIds);
 
     const memberIds = (memberships ?? []).map(
       (m: { practitioner_id: string }) => m.practitioner_id,
@@ -123,6 +123,18 @@ export default async function EnrollPage({
   }>;
 
   const isCompetition = event.event_type === "competition";
+
+  // Check if the instructor is self-enrolled
+  const selfRegistration = await repo.findByPractitionerAndEvent(
+    practitioner.id as string,
+    eventId,
+  );
+  const selfRegistrationStatus =
+    (selfRegistration?.status as
+      | "confirmada"
+      | "pendiente_pago"
+      | "cancelada"
+      | null) ?? null;
 
   const capacityPercentage = event.max_participants
     ? Math.round((confirmedCount / event.max_participants) * 100)
@@ -389,44 +401,63 @@ export default async function EnrollPage({
         )}
       </div>
 
-      {/* Tabs */}
-      {!capacity &&
-      myRegistrations.filter((r) => r.status !== "cancelada").length === 0 ? (
-        <div className="relative overflow-hidden bg-gradient-to-br from-error-500/10 to-error-500/5 border border-error-500/30 rounded-2xl p-8 text-center">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(239,68,68,0.1),transparent)]" />
-          <div className="relative z-10 space-y-3">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-error-500/20 rounded-full border border-error-500/30 mb-2">
-              <svg
-                className="w-8 h-8 text-error-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold text-error-300">
-              Aforo Completo
-            </h3>
-            <p className="text-error-400 text-sm max-w-md mx-auto">
-              Este evento ha alcanzado el aforo máximo. No es posible inscribir
-              más alumnos en este momento.
-            </p>
-          </div>
-        </div>
-      ) : (
-        <EnrollTabs
+      {/* My enrollment section — instructor can enroll themselves */}
+      <div className="space-y-3">
+        <h2 className="text-sm font-semibold text-neutral-300 flex items-center gap-2">
+          <span className="w-1 h-4 bg-primary-500 rounded-full" />
+          Mi participación
+        </h2>
+        <SelfEnrollSection
           eventId={eventId}
-          students={students}
-          registrations={myRegistrations}
-          isCompetition={isCompetition}
+          selfRegistrationStatus={selfRegistrationStatus}
+          registrationFee={event.registration_fee}
         />
-      )}
+      </div>
+
+      {/* Tabs — Students enrollment */}
+      <div className="space-y-3">
+        <h2 className="text-sm font-semibold text-neutral-300 flex items-center gap-2">
+          <span className="w-1 h-4 bg-emerald-500 rounded-full" />
+          Inscripción de alumnos
+        </h2>
+        {!capacity &&
+        myRegistrations.filter((r) => r.status !== "cancelada").length === 0 ? (
+          <div className="relative overflow-hidden bg-linear-to-br from-error-500/10 to-error-500/5 border border-error-500/30 rounded-2xl p-8 text-center">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(239,68,68,0.1),transparent)]" />
+            <div className="relative z-10 space-y-3">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-error-500/20 rounded-full border border-error-500/30 mb-2">
+                <svg
+                  className="w-8 h-8 text-error-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-error-300">
+                Aforo Completo
+              </h3>
+              <p className="text-error-400 text-sm max-w-md mx-auto">
+                Este evento ha alcanzado el aforo máximo. No es posible
+                inscribir más alumnos en este momento.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <EnrollTabs
+            eventId={eventId}
+            students={students}
+            registrations={myRegistrations}
+            isCompetition={isCompetition}
+          />
+        )}
+      </div>
     </main>
   );
 }

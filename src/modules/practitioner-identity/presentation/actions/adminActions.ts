@@ -631,17 +631,16 @@ export async function deletePractitionerAction(
     // SOFT DELETE: Marcar como eliminado lógicamente, solo auth.users se elimina físicamente
     const practitionerId = parsed.data.publicId;
 
-    // 1. Desactivar todas las membresías de academias (soft delete)
-    const { data: deactivatedMemberships } = await adminSupabase
+    // 1. Eliminar todas las membresías de academias
+    const { data: deletedMemberships } = await adminSupabase
       .from("academy_memberships")
-      .update({ is_active: false })
+      .delete()
       .eq("practitioner_id", practitionerId)
-      .eq("is_active", true)
       .select("id");
 
     console.log(
-      "[deletePractitionerAction] Deactivated memberships:",
-      deactivatedMemberships?.length ?? 0,
+      "[deletePractitionerAction] Deleted memberships:",
+      deletedMemberships?.length ?? 0,
     );
 
     // 2. Revocar todas las certificaciones (soft delete)

@@ -32,8 +32,7 @@ export default async function NewGradeExamPage({
     const { data: memberships } = await adminSupabase
       .from("academy_memberships")
       .select("practitioner_id")
-      .in("academy_id", academyIds)
-      .eq("is_active", true);
+      .in("academy_id", academyIds);
 
     const memberIds = (memberships ?? []).map(
       (m: { practitioner_id: string }) => m.practitioner_id,

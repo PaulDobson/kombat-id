@@ -81,6 +81,9 @@ export class DrizzlePractitionerRepository implements PractitionerRepository {
   }
 
   async findByAuthUserId(authUserId: string): Promise<Practitioner | null> {
+    // Project only the columns needed for the dashboard and nav.
+    // Avoids transferring binary/large fields (photo_path, certificate_path, etc.)
+    // on what is the hottest query in the system (called on every authenticated page load).
     const { data, error } = await adminSupabase
       .from("practitioners")
       .select("*")

@@ -71,6 +71,8 @@ export class DrizzleNotificationRepository implements NotificationRepository {
     limit?: number;
     offset?: number;
   }): Promise<NotificationWithStatus[]> {
+    const now = new Date().toISOString();
+
     let query = adminSupabase
       .from("notification_recipients")
       .select(
@@ -100,6 +102,10 @@ export class DrizzleNotificationRepository implements NotificationRepository {
       `,
       )
       .eq("recipient_user_id", params.userId)
+      // Solo notificaciones que no han expirado: sin fecha de expiración o aún vigentes
+      .or(`expires_at.is.null,expires_at.gt.${now}`, {
+        foreignTable: "notifications",
+      })
       .order("created_at", { ascending: false, foreignTable: "notifications" });
 
     if (params.onlyUnread) {
@@ -169,11 +175,24 @@ export class DrizzleNotificationRepository implements NotificationRepository {
   }
 
   async countUnreadByUserId(userId: string): Promise<number> {
+    const now = new Date().toISOString();
+
     const { count, error } = await adminSupabase
       .from("notification_recipients")
-      .select("*", { count: "exact", head: true })
+      .select(
+        `
+        *,
+        notifications!inner (
+          expires_at
+        )
+      `,
+        { count: "exact", head: true },
+      )
       .eq("recipient_user_id", userId)
-      .eq("is_read", false);
+      .eq("is_read", false)
+      .or(`expires_at.is.null,expires_at.gt.${now}`, {
+        foreignTable: "notifications",
+      });
 
     if (error) {
       throw new DomainError(

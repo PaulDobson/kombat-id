@@ -19,4 +19,8 @@ export interface AcademyRepository {
   ): Promise<void>;
   /** Req 10.10 — Conteo de practicantes activos en la academia */
   countActivePractitioners(academyId: string): Promise<number>;
+  /** Batch version — resolves counts for multiple academies in a single query */
+  countActivePractitionersBatch(
+    academyIds: string[],
+  ): Promise<Map<string, number>>;
 }

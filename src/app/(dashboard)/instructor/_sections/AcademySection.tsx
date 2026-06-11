@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2, MapPin, ChevronRight } from "lucide-react";
+import { Building2, MapPin, ChevronRight, Users } from "lucide-react";
 import { REGION_LABELS } from "@/lib/presentation-constants";
 import type { ChileanRegion } from "@/modules/practitioner-identity/domain/entities/academy";
 import { CreateAcademyModal } from "./CreateAcademyModal";
@@ -10,6 +10,7 @@ interface Academy {
   region: string;
   city: string;
   is_active: boolean;
+  studentCount?: number;
 }
 
 interface Props {
@@ -32,13 +33,19 @@ export function AcademySection({ academies }: Props) {
       </div>
 
       {academies.length === 0 ? (
-        <div className="bg-neutral-900 border border-neutral-700 rounded-2xl flex flex-col items-center justify-center gap-3 py-12">
+        <div className="bg-neutral-900 border border-neutral-700 rounded-2xl flex flex-col items-center justify-center gap-4 py-12">
           <div className="w-12 h-12 rounded-xl bg-neutral-800 flex items-center justify-center">
             <Building2 className="w-6 h-6 text-neutral-600" />
           </div>
-          <p className="text-neutral-500 text-sm">
-            No estás vinculado a ninguna academia.
-          </p>
+          <div className="text-center space-y-1">
+            <p className="text-neutral-300 text-sm font-medium">
+              Aún no tienes academias registradas
+            </p>
+            <p className="text-neutral-500 text-xs">
+              Crea tu primera academia para empezar a gestionar alumnos
+            </p>
+          </div>
+          <CreateAcademyModal />
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -76,6 +83,12 @@ export function AcademySection({ academies }: Props) {
                     {a.region
                       ? `, ${REGION_LABELS[a.region as ChileanRegion] ?? a.region}`
                       : ""}
+                  </p>
+                )}
+                {a.studentCount !== undefined && (
+                  <p className="flex items-center gap-1 text-xs text-neutral-500 mt-1">
+                    <Users className="w-3 h-3 shrink-0" />
+                    {a.studentCount} alumno{a.studentCount !== 1 ? "s" : ""}
                   </p>
                 )}
               </div>

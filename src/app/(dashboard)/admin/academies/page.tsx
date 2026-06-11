@@ -170,7 +170,6 @@ export default async function AdminAcademiesPage({
       ? await adminSupabase
           .from("academy_memberships")
           .select("academy_id")
-          .eq("is_active", true)
           .in("academy_id", academyIds)
       : { data: [] };
 

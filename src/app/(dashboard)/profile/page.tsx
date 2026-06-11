@@ -2,22 +2,9 @@ import { requireUser } from "@/lib/supabase/server";
 import { DrizzlePractitionerRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzlePractitionerRepository";
 import { PractitionerQrCode } from "@/modules/practitioner-identity/presentation/components/PractitionerQrCode";
 import { CertificateDownloadButton } from "@/modules/practitioner-identity/presentation/components/CertificateDownloadButton";
+import { ContactEditForm } from "./ContactEditForm";
 import { notFound } from "next/navigation";
-
-const GRADE_LABELS: Record<string, string> = {
-  white: "Blanco",
-  yellow: "Amarillo",
-  green: "Verde",
-  blue: "Azul",
-  red: "Rojo",
-  black: "Negro",
-};
-
-const GENDER_LABELS: Record<string, string> = {
-  male: "Masculino",
-  female: "Femenino",
-  other: "Otro",
-};
+import { GRADE_LABELS, GENDER_LABELS } from "@/lib/presentation-constants";
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -113,27 +100,13 @@ export default async function ProfilePage() {
           </p>
         </div>
 
-        {/* Contact */}
-        <div className="lg:col-span-2 bg-neutral-900 border border-neutral-700 rounded-xl p-6 space-y-5">
-          <h2 className="text-sm font-semibold text-neutral-50">Contacto</h2>
-          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <Field
-              label="Email de contacto"
-              value={
-                practitioner.contactEmail ?? (
-                  <span className="text-neutral-600">No registrado</span>
-                )
-              }
-            />
-            <Field
-              label="Teléfono"
-              value={
-                practitioner.contactPhone ?? (
-                  <span className="text-neutral-600">No registrado</span>
-                )
-              }
-            />
-          </dl>
+        {/* Contact — editable */}
+        <div className="lg:col-span-2 bg-neutral-900 border border-neutral-700 rounded-xl p-6">
+          <ContactEditForm
+            practitionerId={practitioner.id}
+            currentEmail={practitioner.contactEmail}
+            currentPhone={practitioner.contactPhone}
+          />
         </div>
 
         {/* Deactivation info */}

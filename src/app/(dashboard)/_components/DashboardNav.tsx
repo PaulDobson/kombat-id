@@ -1,6 +1,4 @@
 import { requireUser } from "@/lib/supabase/server";
-import { adminSupabase } from "@/lib/supabase/admin";
-import { DrizzlePractitionerRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzlePractitionerRepository";
 import Link from "next/link";
 import { signOutAction } from "@/app/auth/actions";
 import { NavLink } from "./NavLink";
@@ -11,6 +9,11 @@ import {
   type MobileNavSection,
 } from "./DashboardMobileNav";
 import { NotificationBell } from "@/modules/notifications/presentation/components/NotificationBell";
+import {
+  getPractitionerByAuthUserId,
+  getIsAdmin,
+  getInstructorAcademyItems,
+} from "@/lib/request-cache";
 
 const ROLE_LABELS: Record<string, string> = {
   alumno: "Alumno",
@@ -22,46 +25,33 @@ const ROLE_LABELS: Record<string, string> = {
 export async function DashboardNav() {
   const user = await requireUser();
 
-  const repo = new DrizzlePractitionerRepository();
-  const practitioner = await repo.findByAuthUserId(user.id);
+  // Use React.cache() deduped helpers — if DashboardNav and the page both call
+  // these functions in the same request, only one DB query fires per function.
+  const [practitionerRow, isAdmin] = await Promise.all([
+    getPractitionerByAuthUserId(user.id),
+    getIsAdmin(user.id),
+  ]);
 
-  const { data: adminData } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  const isAdmin = !!adminData;
-
-  const roleLabel = practitioner
-    ? (ROLE_LABELS[practitioner.role ?? ""] ?? practitioner.role ?? null)
+  const roleLabel = practitionerRow
+    ? (ROLE_LABELS[practitionerRow.role ?? ""] ?? practitionerRow.role ?? null)
     : null;
 
   const isInstructor =
-    practitioner &&
-    ["instructor", "profesor", "maestro"].includes(practitioner.role ?? "");
+    practitionerRow &&
+    ["instructor", "profesor", "maestro"].includes(practitionerRow.role ?? "");
 
   // For instructors: fetch their academies to build the nav dropdown
   let instructorAcademyItems: { href: string; label: string }[] = [];
-  if (isInstructor && practitioner) {
-    const { data: academyRows } = await adminSupabase
-      .from("academies")
-      .select("id, name")
-      .contains("responsible_instructor_ids", [practitioner.id])
-      .eq("is_active", true)
-      .order("name")
-      .limit(10);
-
-    instructorAcademyItems = (academyRows ?? []).map(
-      (a: { id: string; name: string }) => ({
-        href: `/instructor/academies/${a.id}`,
-        label: a.name,
-      }),
-    );
+  if (isInstructor && practitionerRow) {
+    const academyRows = await getInstructorAcademyItems(practitionerRow.id);
+    instructorAcademyItems = academyRows.map((a) => ({
+      href: `/instructor/academies/${a.id}`,
+      label: a.name,
+    }));
   }
 
-  const initials = practitioner
-    ? practitioner.fullName
+  const initials = practitionerRow
+    ? practitionerRow.full_name
         .split(" ")
         .slice(0, 2)
         .map((n) => n[0])
@@ -286,18 +276,18 @@ export async function DashboardNav() {
             </>
           ) : (
             <>
-              {practitioner && (
+              {practitionerRow && (
                 <UserMenu
                   profileHref={
                     isInstructor ? "/instructor/profile" : "/profile"
                   }
-                  name={practitioner.fullName.split(" ")[0]!}
+                  name={practitionerRow.full_name.split(" ")[0]!}
                   gradeLabel={roleLabel}
                   initials={initials}
                   signOutAction={signOutAction}
                 />
               )}
-              {!practitioner && (
+              {!practitionerRow && (
                 <form action={signOutAction} className="hidden md:block">
                   <button
                     type="submit"
@@ -314,7 +304,7 @@ export async function DashboardNav() {
             signOutAction={signOutAction}
             isAdmin={isAdmin}
             userEmail={user.email ?? null}
-            userName={practitioner?.fullName.split(" ")[0] ?? null}
+            userName={practitionerRow?.full_name.split(" ")[0] ?? null}
             userInitials={initials}
             roleLabel={roleLabel}
             profileHref={isInstructor ? "/instructor/profile" : "/profile"}

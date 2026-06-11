@@ -9,7 +9,11 @@ import {
   Pencil,
   ChevronLeft,
   ChevronRight,
+  RotateCcw,
+  GraduationCap,
+  Info,
 } from "lucide-react";
+import { ReactivateStudentButton } from "../students/[id]/ReactivateStudentButton";
 
 const PAGE_SIZE = 10;
 
@@ -30,8 +34,10 @@ interface Props {
   practitionerId: string;
   searchQuery: string;
   page: number;
-  /** Pre-fetched academy member IDs shared with AcademySection to avoid duplicate query */
+  /** Pre-fetched academy member IDs (all, active + inactive) shared with AcademySection */
   academyMemberIds: string[];
+  /** When true, shows only inactive students */
+  showInactive?: boolean;
 }
 
 export async function StudentSection({
@@ -39,6 +45,7 @@ export async function StudentSection({
   searchQuery,
   page,
   academyMemberIds,
+  showInactive = false,
 }: Props) {
   const offset = (page - 1) * PAGE_SIZE;
 
@@ -47,9 +54,7 @@ export async function StudentSection({
     .from("practitioners")
     .select(
       "id, full_name, rut, grade, dan, is_active, auth_user_id, start_date",
-      {
-        count: "exact",
-      },
+      { count: "exact" },
     )
     .not("role", "in", '("instructor","profesor","maestro")')
     .order("full_name");
@@ -57,11 +62,15 @@ export async function StudentSection({
   if (academyMemberIds.length > 0) {
     studentsQuery = studentsQuery.in("id", academyMemberIds);
   } else {
+    // No members — return empty result set without a full table scan
     studentsQuery = studentsQuery.eq(
       "id",
       "00000000-0000-0000-0000-000000000000",
     );
   }
+
+  // Filter by active/inactive state
+  studentsQuery = studentsQuery.eq("is_active", !showInactive);
 
   if (searchQuery) {
     studentsQuery = studentsQuery.ilike("full_name", `%${searchQuery}%`);
@@ -103,7 +112,8 @@ export async function StudentSection({
 
   return (
     <section className="space-y-4">
-      <div className="flex items-center justify-between">
+      {/* Header row */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg bg-emerald-400/10 flex items-center justify-center">
             <Users className="w-4 h-4 text-emerald-400" />
@@ -115,14 +125,44 @@ export async function StudentSection({
             <p className="text-xs text-neutral-500">
               {totalCount.toLocaleString("es-CL")} registro
               {totalCount !== 1 ? "s" : ""}
-              {searchQuery && ` para “${searchQuery}”`}
+              {searchQuery && ` para "${searchQuery}"`}
             </p>
           </div>
+        </div>
+
+        {/* Active / Inactive toggle */}
+        <div className="flex items-center gap-1 bg-neutral-800 border border-neutral-700 rounded-lg p-1">
+          <a
+            href={buildUrl(
+              { q: searchQuery || undefined },
+              { inactive: undefined },
+            )}
+            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+              !showInactive
+                ? "bg-neutral-700 text-neutral-100"
+                : "text-neutral-400 hover:text-neutral-200"
+            }`}
+          >
+            Activos
+          </a>
+          <a
+            href={buildUrl({ q: searchQuery || undefined, inactive: "1" }, {})}
+            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+              showInactive
+                ? "bg-neutral-700 text-neutral-100"
+                : "text-neutral-400 hover:text-neutral-200"
+            }`}
+          >
+            <RotateCcw className="w-3 h-3" />
+            Inactivos
+          </a>
         </div>
       </div>
 
       {/* Search bar */}
       <form method="GET" action="/instructor" className="flex gap-2">
+        {/* Preserve inactive tab state across searches */}
+        {showInactive && <input type="hidden" name="inactive" value="1" />}
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 pointer-events-none" />
           <input
@@ -141,7 +181,7 @@ export async function StudentSection({
         </button>
         {searchQuery && (
           <Link
-            href="/instructor"
+            href={showInactive ? "/instructor?inactive=1" : "/instructor"}
             className="px-4 py-2 bg-transparent border border-neutral-700 rounded-lg text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
           >
             Limpiar
@@ -157,8 +197,10 @@ export async function StudentSection({
             </div>
             <p className="text-neutral-500 text-sm">
               {searchQuery
-                ? `No se encontraron alumnos con el nombre “${searchQuery}”.`
-                : "No tienes alumnos asignados."}
+                ? `No se encontraron alumnos con el nombre "${searchQuery}".`
+                : showInactive
+                  ? "No tienes alumnos inactivos."
+                  : "No tienes alumnos asignados."}
             </p>
           </div>
         ) : (
@@ -184,14 +226,18 @@ export async function StudentSection({
                   <th className="text-left px-4 py-3 text-xs font-medium text-neutral-400 uppercase tracking-wider">
                     Estado
                   </th>
-                  <th className="px-4 py-3 w-12" />
+                  <th className="px-4 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-800">
                 {students.map((s) => (
                   <tr
                     key={s.id}
-                    className="hover:bg-neutral-800/40 transition-colors"
+                    className={`transition-colors ${
+                      s.is_active
+                        ? "hover:bg-neutral-800/40"
+                        : "bg-neutral-900/60 hover:bg-neutral-800/30 opacity-75"
+                    }`}
                   >
                     <td className="px-4 py-3 text-neutral-100 font-medium">
                       {s.full_name}
@@ -223,13 +269,21 @@ export async function StudentSection({
                           Activo
                         </span>
                       ) : s.auth_user_id === null ? (
-                        <span className="inline-flex items-center gap-1 bg-amber-900/40 text-amber-400 border border-amber-700/60 px-2 py-0.5 rounded-full text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <span className="inline-flex items-center gap-1 bg-amber-900/40 text-amber-400 border border-amber-700/60 px-2 py-0.5 rounded-full text-xs">
+                            <span
+                              className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0"
+                              aria-hidden="true"
+                            />
+                            Pendiente
+                          </span>
                           <span
-                            className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0"
-                            aria-hidden="true"
-                          />
-                          Pendiente activación
-                        </span>
+                            className="group relative"
+                            title="El alumno aún no ha activado su cuenta. Comparte el link de activación para que pueda ingresar al sistema."
+                          >
+                            <Info className="w-3.5 h-3.5 text-neutral-600 hover:text-amber-400 transition-colors cursor-help" />
+                          </span>
+                        </div>
                       ) : (
                         <span className="bg-neutral-800 text-neutral-400 border border-neutral-700 px-2 py-0.5 rounded-full text-xs">
                           Inactivo
@@ -238,22 +292,41 @@ export async function StudentSection({
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="inline-flex items-center gap-1">
-                        <Link
-                          href={`/instructor/students/${s.id}`}
-                          title="Ver ficha"
-                          className="p-1.5 rounded-lg text-primary-400 hover:text-primary-300 hover:bg-neutral-800 transition-colors"
-                        >
-                          <Eye className="w-4 h-4" />
-                          <span className="sr-only">Ver ficha</span>
-                        </Link>
-                        <Link
-                          href={`/instructor/students/${s.id}/edit`}
-                          title="Editar alumno"
-                          className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800 transition-colors"
-                        >
-                          <Pencil className="w-4 h-4" />
-                          <span className="sr-only">Editar alumno</span>
-                        </Link>
+                        {!s.is_active ? (
+                          <ReactivateStudentButton
+                            publicId={s.id}
+                            studentName={s.full_name}
+                          />
+                        ) : (
+                          <>
+                            <Link
+                              href={`/instructor/students/${s.id}`}
+                              title="Ver ficha"
+                              className="p-1.5 rounded-lg text-primary-400 hover:text-primary-300 hover:bg-neutral-800 transition-colors"
+                            >
+                              <Eye className="w-4 h-4" />
+                              <span className="sr-only">Ver ficha</span>
+                            </Link>
+                            <Link
+                              href={`/instructor/grade-exams/new?practitionerId=${s.id}`}
+                              title="Iniciar examen de grado"
+                              className="p-1.5 rounded-lg text-emerald-400 hover:text-emerald-300 hover:bg-neutral-800 transition-colors"
+                            >
+                              <GraduationCap className="w-4 h-4" />
+                              <span className="sr-only">
+                                Iniciar examen de grado
+                              </span>
+                            </Link>
+                            <Link
+                              href={`/instructor/students/${s.id}/edit`}
+                              title="Editar alumno"
+                              className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800 transition-colors"
+                            >
+                              <Pencil className="w-4 h-4" />
+                              <span className="sr-only">Editar alumno</span>
+                            </Link>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -274,7 +347,10 @@ export async function StudentSection({
             {page > 1 && (
               <Link
                 href={buildUrl(
-                  { q: searchQuery || undefined },
+                  {
+                    q: searchQuery || undefined,
+                    inactive: showInactive ? "1" : undefined,
+                  },
                   { page: String(page - 1) },
                 )}
                 className="inline-flex items-center gap-1 px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded-lg text-xs text-neutral-200 transition-colors"
@@ -289,10 +365,17 @@ export async function StudentSection({
                 <Link
                   key={p2}
                   href={buildUrl(
-                    { q: searchQuery || undefined },
+                    {
+                      q: searchQuery || undefined,
+                      inactive: showInactive ? "1" : undefined,
+                    },
                     { page: String(p2) },
                   )}
-                  className={`px-3 py-1.5 rounded-lg text-xs transition-colors border ${p2 === page ? "bg-primary-600 border-primary-600 text-white" : "bg-neutral-800 hover:bg-neutral-700 border-neutral-700 text-neutral-300"}`}
+                  className={`px-3 py-1.5 rounded-lg text-xs transition-colors border ${
+                    p2 === page
+                      ? "bg-primary-600 border-primary-600 text-white"
+                      : "bg-neutral-800 hover:bg-neutral-700 border-neutral-700 text-neutral-300"
+                  }`}
                 >
                   {p2}
                 </Link>
@@ -301,7 +384,10 @@ export async function StudentSection({
             {page < totalPages && (
               <Link
                 href={buildUrl(
-                  { q: searchQuery || undefined },
+                  {
+                    q: searchQuery || undefined,
+                    inactive: showInactive ? "1" : undefined,
+                  },
                   { page: String(page + 1) },
                 )}
                 className="inline-flex items-center gap-1 px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded-lg text-xs text-neutral-200 transition-colors"

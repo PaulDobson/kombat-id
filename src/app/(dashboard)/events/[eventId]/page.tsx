@@ -7,6 +7,7 @@ import type { EventType, EventAttachment } from "@/types/database.types";
 import { formatDateWithWeekday, formatDateLong } from "@/lib/format-date";
 import { ShareButton } from "./ShareButton";
 import { ArrowLeft } from "lucide-react";
+import { DrizzlePractitionerRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzlePractitionerRepository";
 
 async function getAdminStatus(): Promise<boolean> {
   try {
@@ -23,6 +24,21 @@ async function getAdminStatus(): Promise<boolean> {
     return !!data;
   } catch {
     return false;
+  }
+}
+
+async function getCurrentUserRole(): Promise<string | null> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return null;
+    const repo = new DrizzlePractitionerRepository();
+    const practitioner = await repo.findByAuthUserId(user.id);
+    return practitioner?.role ?? null;
+  } catch {
+    return null;
   }
 }
 
@@ -68,7 +84,12 @@ export default async function PublicEventDetailPage({
   const { eventId } = await params;
   const today = new Date().toISOString().slice(0, 10);
 
-  const isAdmin = await getAdminStatus();
+  const [isAdmin, currentUserRole] = await Promise.all([
+    getAdminStatus(),
+    getCurrentUserRole(),
+  ]);
+
+  const isAlumno = currentUserRole === "alumno";
 
   const { data: event } = (await adminSupabase
     .from("martial_events")
@@ -164,15 +185,15 @@ export default async function PublicEventDetailPage({
   );
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-neutral-50">
+    <main className="text-neutral-50">
       {/* Breadcrumb + admin bar */}
       <div className="max-w-4xl mx-auto px-6 pt-6 space-y-3">
         <Link
-          href="/events"
+          href="/dashboard"
           className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-neutral-200 transition-colors"
         >
           <ArrowLeft size={16} />
-          Volver a eventos
+          Volver al inicio
         </Link>
 
         {isAdmin && (
@@ -215,7 +236,12 @@ export default async function PublicEventDetailPage({
             </div>
             {/* Hero text below the image */}
             <div className="bg-linear-to-b from-neutral-950 to-neutral-950 border-b border-neutral-800/60">
-              <HeroContent event={event} isPast={isPast} eventId={eventId} />
+              <HeroContent
+                event={event}
+                isPast={isPast}
+                eventId={eventId}
+                isAlumno={isAlumno}
+              />
             </div>
           </>
         ) : (
@@ -229,7 +255,12 @@ export default async function PublicEventDetailPage({
               className="absolute bottom-0 right-1/4 w-[300px] h-[300px] bg-indigo-600/8 rounded-full blur-3xl pointer-events-none"
               aria-hidden="true"
             />
-            <HeroContent event={event} isPast={isPast} eventId={eventId} />
+            <HeroContent
+              event={event}
+              isPast={isPast}
+              eventId={eventId}
+              isAlumno={isAlumno}
+            />
           </div>
         )}
       </div>
@@ -421,6 +452,14 @@ export default async function PublicEventDetailPage({
                 >
                   Ver resultados
                 </a>
+              ) : isAlumno ? (
+                <button
+                  disabled
+                  className="w-full flex items-center justify-center gap-2 bg-neutral-800 border border-neutral-700 text-neutral-500 text-sm font-semibold px-4 py-3 rounded-xl cursor-not-allowed"
+                  title="Los alumnos no pueden inscribirse directamente. Contacta a tu instructor."
+                >
+                  Inscribirse →
+                </button>
               ) : (
                 <Link
                   href="/login"
@@ -446,6 +485,7 @@ export default async function PublicEventDetailPage({
 function HeroContent({
   event,
   isPast,
+  isAlumno,
 }: {
   event: {
     name: string;
@@ -455,6 +495,7 @@ function HeroContent({
   };
   isPast: boolean;
   eventId: string;
+  isAlumno: boolean;
 }) {
   return (
     <div className="max-w-4xl mx-auto px-6 py-8 space-y-3">
@@ -494,12 +535,22 @@ function HeroContent({
 
       {!isPast && (
         <div className="pt-1">
-          <Link
-            href="/login"
-            className="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-500 text-white px-6 py-3 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-primary-900/50 hover:-translate-y-0.5"
-          >
-            Inscribirse →
-          </Link>
+          {isAlumno ? (
+            <button
+              disabled
+              className="inline-flex items-center gap-2 bg-neutral-800 border border-neutral-700 text-neutral-500 px-6 py-3 rounded-xl text-sm font-semibold cursor-not-allowed"
+              title="Los alumnos no pueden inscribirse directamente. Contacta a tu instructor."
+            >
+              Inscribirse →
+            </button>
+          ) : (
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-500 text-white px-6 py-3 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-primary-900/50 hover:-translate-y-0.5"
+            >
+              Inscribirse →
+            </Link>
+          )}
         </div>
       )}
     </div>

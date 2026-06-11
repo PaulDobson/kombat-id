@@ -31,7 +31,19 @@ export async function middleware(request: NextRequest) {
   }
 
   const response = NextResponse.next({ request });
-  const { user } = await updateSession(request, response);
+  const { user, response: sessionResponse } = await updateSession(
+    request,
+    response,
+  );
+
+  // If updateSession returned a redirect (e.g. to clear invalid cookies), honour it
+  if (
+    sessionResponse.status === 302 ||
+    sessionResponse.status === 307 ||
+    sessionResponse.status === 308
+  ) {
+    return sessionResponse;
+  }
 
   // Redirect authenticated users away from auth pages
   if (user && AUTH_ROUTES.some((r) => pathname.startsWith(r))) {
@@ -69,7 +81,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  return response;
+  return sessionResponse;
 }
 
 export const config = {

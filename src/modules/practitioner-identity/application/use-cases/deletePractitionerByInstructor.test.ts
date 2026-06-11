@@ -48,9 +48,18 @@ describe("deletePractitionerByInstructor", () => {
     certificatePath: null,
   };
 
-  type MockDeps = Parameters<typeof deletePractitionerByInstructor>[1];
+  // Tipo para los mocks con métodos de Vitest
+  type MockedDeps = {
+    practitionerRepo: {
+      findById: ReturnType<typeof vi.fn>;
+    };
+    verifyInstructorOwnership: ReturnType<typeof vi.fn>;
+    verifyAcademyMembership: ReturnType<typeof vi.fn>;
+    softDeletePractitioner: ReturnType<typeof vi.fn>;
+    deleteAuthUser: ReturnType<typeof vi.fn>;
+  };
 
-  const mockDeps = {
+  const mockDeps: MockedDeps = {
     practitionerRepo: {
       findById: vi.fn(),
     },
@@ -58,7 +67,7 @@ describe("deletePractitionerByInstructor", () => {
     verifyAcademyMembership: vi.fn(),
     softDeletePractitioner: vi.fn(),
     deleteAuthUser: vi.fn(),
-  } as unknown as MockDeps;
+  };
 
   it("should validate input schema", () => {
     const validInput = {
@@ -94,7 +103,7 @@ describe("deletePractitionerByInstructor", () => {
           instructorId: INST_ID,
           academyId: ACAD_ID,
         },
-        mockDeps,
+        mockDeps as never,
       ),
     ).rejects.toThrow(PractitionerNotFoundError);
   });
@@ -110,7 +119,7 @@ describe("deletePractitionerByInstructor", () => {
           instructorId: OTHER_INST_ID,
           academyId: ACAD_ID,
         },
-        mockDeps,
+        mockDeps as never,
       ),
     ).rejects.toThrow(UnauthorizedError);
 
@@ -132,7 +141,7 @@ describe("deletePractitionerByInstructor", () => {
           instructorId: INST_ID,
           academyId: ACAD_ID,
         },
-        mockDeps,
+        mockDeps as never,
       ),
     ).rejects.toThrow(UnauthorizedError);
 
@@ -155,7 +164,7 @@ describe("deletePractitionerByInstructor", () => {
         instructorId: INST_ID,
         academyId: ACAD_ID,
       },
-      mockDeps,
+      mockDeps as never,
     );
 
     expect(mockDeps.softDeletePractitioner).toHaveBeenCalledWith(
@@ -183,7 +192,7 @@ describe("deletePractitionerByInstructor", () => {
         instructorId: INST_ID,
         academyId: ACAD_ID,
       },
-      mockDeps,
+      mockDeps as never,
     );
 
     expect(mockDeps.softDeletePractitioner).toHaveBeenCalledWith(
