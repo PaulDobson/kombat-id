@@ -116,8 +116,7 @@ export default async function AcademyRegistrationsPage({
       adminSupabase
         .from("academy_memberships")
         .select("practitioner_id, academies(id, name, city, region)")
-        .in("practitioner_id", practitionerIds)
-        .eq("is_active", true),
+        .in("practitioner_id", practitionerIds),
       adminSupabase
         .from("practitioners")
         .select("id, rut")

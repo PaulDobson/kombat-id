@@ -36,8 +36,7 @@ export async function verifyInstructorStudentAccess({
   const { data: studentMemberships } = await adminSupabase
     .from("academy_memberships")
     .select("academy_id")
-    .eq("practitioner_id", studentId)
-    .eq("is_active", true);
+    .eq("practitioner_id", studentId);
 
   const studentAcademyIds = (studentMemberships ?? []).map(
     (m: { academy_id: string }) => m.academy_id,

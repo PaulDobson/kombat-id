@@ -62,9 +62,21 @@ export function DeleteStudentButton({ publicId, studentName }: Props) {
     if (!result.isConfirmed) return;
 
     startTransition(async () => {
+      console.log("[DeleteStudentButton] Iniciando eliminación:", {
+        publicId,
+        studentName,
+        timestamp: new Date().toISOString(),
+      });
+
       const deleteResult = await instructorDeletePractitionerAction({
         publicId,
       });
+
+      console.log(
+        "[DeleteStudentButton] Resultado de eliminación:",
+        deleteResult,
+      );
+
       if (deleteResult.success) {
         await Swal.fire({
           title: "¡Eliminado!",
@@ -77,6 +89,11 @@ export function DeleteStudentButton({ publicId, studentName }: Props) {
         router.push("/instructor");
         router.refresh();
       } else {
+        console.error(
+          "[DeleteStudentButton] Error en eliminación:",
+          deleteResult,
+        );
+
         await Swal.fire({
           title: "Error",
           text: deleteResult.error,

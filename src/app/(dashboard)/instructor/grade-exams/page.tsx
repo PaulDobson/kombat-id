@@ -92,8 +92,7 @@ async function fetchPractitionerNames(
     .from("academy_memberships")
     .select("practitioner_id")
     .in("academy_id", academyIds)
-    .in("practitioner_id", ids)
-    .eq("is_active", true);
+    .in("practitioner_id", ids);
 
   const allowedIds = (memberships ?? []).map(
     (m) => m.practitioner_id as string,

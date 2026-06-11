@@ -58,10 +58,12 @@ export async function createNotification(
 ): Promise<string> {
   const parsed = CreateNotificationInputSchema.parse(input);
 
-  // Calcular fecha de expiración si aplica
-  const expiresAt = parsed.expiresInDays
-    ? new Date(Date.now() + parsed.expiresInDays * 24 * 60 * 60 * 1000)
-    : null;
+  // Calcular fecha de expiración:
+  // - Si se especifica expiresInDays, usar ese valor
+  // - Si es null, aplicar el máximo por defecto de 3 días
+  const DEFAULT_EXPIRY_DAYS = 3;
+  const daysToExpire = parsed.expiresInDays ?? DEFAULT_EXPIRY_DAYS;
+  const expiresAt = new Date(Date.now() + daysToExpire * 24 * 60 * 60 * 1000);
 
   // 1. Crear la notificación
   const notification = await deps.notificationRepo.create({
@@ -171,8 +173,7 @@ async function getUsersByAcademy(academyId: string): Promise<string[]> {
   const { data: rows, error } = await adminSupabase
     .from("academy_memberships")
     .select("practitioner:practitioners!inner(auth_user_id)")
-    .eq("academy_id", academyId)
-    .eq("is_active", true);
+    .eq("academy_id", academyId);
 
   if (error) {
     throw new DomainError(`Failed to fetch users by academy: ${error.message}`);

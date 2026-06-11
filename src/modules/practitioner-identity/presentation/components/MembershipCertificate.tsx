@@ -11,17 +11,24 @@ import {
 } from "@react-pdf/renderer";
 
 // ---------------------------------------------------------------------------
-// Paleta de colores
+// Paleta de colores — oficial Kombat Federation
 // ---------------------------------------------------------------------------
 
 const GOLD = "#C9A84C";
-const GOLD_LIGHT = "#E8C96A";
-const GOLD_DARK = "#8B6914";
-const BG_DARK = "#111111";
-const BG_PANEL = "#0C0C0C";
-const OFF_WHITE = "#F0E6C8";
-const MUTED = "#888877";
-const MUTED_LIGHT = "#BBAA99";
+const GOLD_LIGHT = "#E2C96A";
+const GOLD_MID = "#A8882E";
+const GOLD_DARK = "#6B500E";
+const GOLD_FAINT = "#2A1F08";
+
+const BG_PAGE = "#0D0D0D";
+const BG_SIDEBAR = "#080808";
+const BG_HEADER = "#111111";
+const SIG_BG = "#F5F0E8"; // color cálido similar al papel de firma
+
+const WHITE = "#FFFFFF";
+const TEXT_BODY = "#C8BEA8";
+const TEXT_MUTED = "#6B6455";
+const TEXT_DARK_ON_LIGHT = "#1A1408";
 
 // ---------------------------------------------------------------------------
 // Estilos
@@ -29,282 +36,394 @@ const MUTED_LIGHT = "#BBAA99";
 
 const styles = StyleSheet.create({
   page: {
-    backgroundColor: BG_DARK,
+    backgroundColor: BG_PAGE,
     padding: 0,
     fontFamily: "Helvetica",
-  },
-
-  // Acentos de esquina (L-brackets dorados)
-  cornerTL: {
-    position: "absolute",
-    top: 10,
-    left: 10,
-    width: 24,
-    height: 24,
-    borderTopWidth: 2,
-    borderLeftWidth: 2,
-    borderColor: GOLD,
-  },
-  cornerTR: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    width: 24,
-    height: 24,
-    borderTopWidth: 2,
-    borderRightWidth: 2,
-    borderColor: GOLD,
-  },
-  cornerBL: {
-    position: "absolute",
-    bottom: 10,
-    left: 10,
-    width: 24,
-    height: 24,
-    borderBottomWidth: 2,
-    borderLeftWidth: 2,
-    borderColor: GOLD,
-  },
-  cornerBR: {
-    position: "absolute",
-    bottom: 10,
-    right: 10,
-    width: 24,
-    height: 24,
-    borderBottomWidth: 2,
-    borderRightWidth: 2,
-    borderColor: GOLD,
-  },
-
-  // Layout principal en dos columnas
-  mainRow: {
-    flex: 1,
     flexDirection: "row",
   },
 
-  // ── Panel izquierdo ──────────────────────────────────────────────────────
-  leftPanel: {
-    width: 220,
-    backgroundColor: BG_PANEL,
+  // ── SIDEBAR IZQUIERDO ───────────────────────────────────────────────────
+  sidebar: {
+    width: 200,
+    backgroundColor: BG_SIDEBAR,
     borderRightWidth: 1,
     borderRightColor: GOLD_DARK,
-    paddingHorizontal: 22,
-    paddingTop: 30,
-    paddingBottom: 24,
-    alignItems: "center",
+    flexDirection: "column",
     justifyContent: "space-between",
-  },
-  leftTop: {
     alignItems: "center",
-    width: "100%",
+    paddingTop: 28,
+    paddingBottom: 24,
+    paddingHorizontal: 18,
   },
-  leftBottom: {
+
+  sidebarTop: {
     alignItems: "center",
     width: "100%",
   },
 
   logo: {
-    width: 155,
-    height: 44,
+    width: 140,
+    height: 40,
     objectFit: "contain",
+    marginBottom: 16,
+  },
+
+  sidebarGoldLine: {
+    width: 40,
+    height: 1,
+    backgroundColor: GOLD,
     marginBottom: 20,
   },
 
-  leftDivider: {
-    width: "50%",
-    height: 1,
-    backgroundColor: GOLD_DARK,
-    marginBottom: 18,
-  },
-
-  // QR con marco sutil
-  qrFrame: {
-    padding: 6,
+  // Número de federación — destacado
+  fedBadge: {
+    backgroundColor: GOLD_FAINT,
     borderWidth: 1,
     borderColor: GOLD_DARK,
-    marginBottom: 8,
-  },
-  qrImage: {
-    width: 96,
-    height: 96,
-  },
-  qrLabel: {
-    color: MUTED,
-    fontSize: 6,
-    fontFamily: "Helvetica",
-    letterSpacing: 1.5,
-    textTransform: "uppercase",
-    textAlign: "center",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
     marginBottom: 20,
+    alignItems: "center",
+    width: "100%",
   },
-
-  // Member ID
-  memberIdCaption: {
-    color: "#555544",
-    fontSize: 6,
+  fedBadgeLabel: {
+    color: TEXT_MUTED,
+    fontSize: 5.5,
     fontFamily: "Helvetica",
     letterSpacing: 2,
     textTransform: "uppercase",
     textAlign: "center",
     marginBottom: 3,
   },
-  memberIdValue: {
+  fedBadgeValue: {
     color: GOLD,
     fontSize: 10,
     fontFamily: "Helvetica-Bold",
-    letterSpacing: 2,
+    letterSpacing: 2.5,
     textAlign: "center",
   },
 
-  // ── Panel derecho ────────────────────────────────────────────────────────
-  rightPanel: {
-    flex: 1,
-    paddingHorizontal: 38,
-    paddingTop: 28,
-    paddingBottom: 22,
-    justifyContent: "space-between",
+  // QR
+  qrFrame: {
+    padding: 5,
+    borderWidth: 1,
+    borderColor: GOLD_DARK,
+    backgroundColor: WHITE,
+    marginBottom: 7,
   },
-
-  topSection: {},
-  bottomSection: {},
-
-  // Etiqueta organización
-  orgLabel: {
-    color: GOLD_DARK,
-    fontSize: 7,
-    fontFamily: "Helvetica-Bold",
-    letterSpacing: 4,
-    textTransform: "uppercase",
-    marginBottom: 10,
+  qrImage: {
+    width: 108,
+    height: 108,
   },
-
-  // Título principal
-  certTitle: {
-    color: OFF_WHITE,
-    fontSize: 30,
-    fontFamily: "Helvetica-Bold",
-    letterSpacing: 7,
-    textTransform: "uppercase",
-    marginBottom: 2,
-  },
-  certSubtitle: {
-    color: GOLD,
-    fontSize: 12,
-    fontFamily: "Helvetica-Bold",
-    letterSpacing: 4,
-    textTransform: "uppercase",
-    marginBottom: 14,
-  },
-
-  titleDivider: {
-    width: "100%",
-    height: 1,
-    backgroundColor: GOLD_DARK,
-    marginBottom: 14,
-  },
-
-  // "Este certificado se otorga a:"
-  grantedLabel: {
-    color: MUTED,
-    fontSize: 9,
-    fontFamily: "Helvetica-Oblique",
-    letterSpacing: 0.5,
-    marginBottom: 5,
-  },
-
-  // Nombre del alumno — Times-Bold para elegancia
-  studentName: {
-    color: GOLD_LIGHT,
-    fontSize: 30,
-    fontFamily: "Times-Bold",
-    letterSpacing: 0.5,
-    marginBottom: 10,
-  },
-
-  // Grado con acento de barra
-  gradeBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  gradeAccent: {
-    width: 3,
-    height: 16,
-    backgroundColor: GOLD,
-    marginRight: 10,
-  },
-  gradeText: {
-    color: GOLD_LIGHT,
-    fontSize: 13,
-    fontFamily: "Helvetica-Bold",
-    letterSpacing: 0.5,
-  },
-
-  // Academia
-  academyText: {
-    color: MUTED_LIGHT,
-    fontSize: 10,
+  qrLabel: {
+    color: TEXT_MUTED,
+    fontSize: 5.5,
     fontFamily: "Helvetica",
-    letterSpacing: 0.3,
-    marginBottom: 12,
+    letterSpacing: 1.8,
+    textTransform: "uppercase",
+    textAlign: "center",
   },
 
-  // Descripción
-  description: {
-    color: MUTED,
-    fontSize: 8.5,
-    fontFamily: "Helvetica-Oblique",
-    lineHeight: 1.75,
-  },
-
-  // Divisor firmas
-  sigDivider: {
+  sidebarBottom: {
+    alignItems: "center",
     width: "100%",
-    height: 1,
-    backgroundColor: GOLD_DARK,
-    marginBottom: 14,
   },
 
-  // Firmas
-  signatureRow: {
-    flexDirection: "row",
-  },
-  signatureBlock: {
-    marginRight: 48,
-    alignItems: "flex-start",
-  },
-  signatureScript: {
-    color: GOLD_LIGHT,
-    fontSize: 18,
-    fontFamily: "Helvetica-BoldOblique",
-    marginBottom: 4,
-    letterSpacing: 0.5,
-  },
-  signatureLine: {
-    width: 155,
-    height: 1,
-    backgroundColor: GOLD_DARK,
-    marginBottom: 4,
-  },
-  signatureLabel: {
-    color: MUTED,
-    fontSize: 7,
+  sealText: {
+    color: GOLD_DARK,
+    fontSize: 5.5,
     fontFamily: "Helvetica",
     letterSpacing: 1.5,
     textTransform: "uppercase",
+    textAlign: "center",
+    lineHeight: 1.6,
   },
 
-  // Fecha de emisión
-  issueDateRow: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    marginTop: 8,
+  // ── CONTENIDO PRINCIPAL ─────────────────────────────────────────────────
+  main: {
+    flex: 1,
+    flexDirection: "column",
   },
-  issueDateText: {
-    color: "#444433",
-    fontSize: 7.5,
+
+  // Cabecera dorada
+  header: {
+    backgroundColor: BG_HEADER,
+    borderBottomWidth: 2,
+    borderBottomColor: GOLD,
+    paddingHorizontal: 32,
+    paddingTop: 22,
+    paddingBottom: 16,
+  },
+
+  headerTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 10,
+  },
+
+  federationTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 0,
+  },
+  fedTagAccent: {
+    width: 3,
+    height: 10,
+    backgroundColor: GOLD,
+    marginRight: 8,
+  },
+  fedTagText: {
+    color: GOLD_MID,
+    fontSize: 7,
+    fontFamily: "Helvetica-Bold",
+    letterSpacing: 3,
+    textTransform: "uppercase",
+  },
+
+  certNumber: {
+    color: TEXT_MUTED,
+    fontSize: 6.5,
+    fontFamily: "Helvetica",
+    letterSpacing: 1.5,
+  },
+
+  certTitleBlock: {},
+  certTitleMain: {
+    color: WHITE,
+    fontSize: 34,
+    fontFamily: "Helvetica-Bold",
+    letterSpacing: 9,
+    textTransform: "uppercase",
+    marginBottom: 0,
+  },
+  certTitleSub: {
+    color: GOLD,
+    fontSize: 11,
+    fontFamily: "Helvetica-Bold",
+    letterSpacing: 5,
+    textTransform: "uppercase",
+  },
+
+  // Cuerpo
+  body: {
+    flex: 1,
+    paddingHorizontal: 32,
+    paddingTop: 18,
+    paddingBottom: 0,
+    flexDirection: "column",
+    justifyContent: "space-between",
+  },
+
+  bodyTop: {},
+
+  // Intro
+  grantedLabel: {
+    color: TEXT_MUTED,
+    fontSize: 8,
+    fontFamily: "Helvetica-Oblique",
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+
+  studentName: {
+    color: GOLD_LIGHT,
+    fontSize: 34,
+    fontFamily: "Times-Bold",
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+
+  // Datos del practicante — fila con separadores
+  dataRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+    gap: 0,
+  },
+  dataPill: {
+    backgroundColor: GOLD_FAINT,
+    borderWidth: 1,
+    borderColor: GOLD_DARK,
+    paddingVertical: 3,
+    paddingHorizontal: 10,
+    marginRight: 10,
+  },
+  dataPillText: {
+    color: GOLD_LIGHT,
+    fontSize: 9,
+    fontFamily: "Helvetica-Bold",
+    letterSpacing: 1,
+  },
+  dataAcademy: {
+    color: TEXT_BODY,
+    fontSize: 9,
+    fontFamily: "Helvetica",
+    letterSpacing: 0.3,
+  },
+
+  // Texto descriptivo oficial
+  descBox: {
+    borderLeftWidth: 2,
+    borderLeftColor: GOLD_DARK,
+    paddingLeft: 12,
+    marginTop: 4,
+    marginBottom: 14,
+  },
+  descText: {
+    color: TEXT_BODY,
+    fontSize: 8.5,
+    fontFamily: "Helvetica",
+    lineHeight: 1.7,
+  },
+
+  // Bandas de datos adicionales
+  infoGrid: {
+    flexDirection: "row",
+    gap: 0,
+    marginBottom: 14,
+  },
+  infoCell: {
+    flex: 1,
+    borderTopWidth: 1,
+    borderTopColor: GOLD_DARK,
+    paddingTop: 7,
+    paddingRight: 16,
+  },
+  infoCellLabel: {
+    color: TEXT_MUTED,
+    fontSize: 5.5,
+    fontFamily: "Helvetica",
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    marginBottom: 3,
+  },
+  infoCellValue: {
+    color: TEXT_BODY,
+    fontSize: 8.5,
+    fontFamily: "Helvetica-Bold",
+    letterSpacing: 0.3,
+  },
+
+  // ── SECCIÓN FIRMAS ──────────────────────────────────────────────────────
+  sigSection: {
+    backgroundColor: SIG_BG,
+    borderTopWidth: 2,
+    borderTopColor: GOLD,
+    paddingHorizontal: 32,
+    paddingTop: 14,
+    paddingBottom: 12,
+  },
+
+  sigRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "flex-start",
+    gap: 0,
+  },
+
+  sigBlock: {
+    marginRight: 40,
+    alignItems: "flex-start",
+  },
+
+  sigImage: {
+    width: 130,
+    height: 52,
+    objectFit: "contain",
+    marginBottom: 0,
+  },
+
+  sigLine: {
+    width: 160,
+    height: 1,
+    backgroundColor: GOLD_MID,
+    marginBottom: 4,
+  },
+
+  sigName: {
+    color: TEXT_DARK_ON_LIGHT,
+    fontSize: 8.5,
+    fontFamily: "Helvetica-Bold",
+    letterSpacing: 0.3,
+    marginBottom: 1,
+  },
+
+  sigRole: {
+    color: "#5A4E3A",
+    fontSize: 6.5,
+    fontFamily: "Helvetica",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+  },
+
+  // Pie derecho — fecha + sello
+  sigFooter: {
+    marginTop: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  issuedText: {
+    color: "#9A8A72",
+    fontSize: 7,
     fontFamily: "Helvetica-Oblique",
     letterSpacing: 0.3,
+  },
+
+  officialStamp: {
+    color: GOLD_DARK,
+    fontSize: 6,
+    fontFamily: "Helvetica-Bold",
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    borderWidth: 1,
+    borderColor: GOLD_DARK,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+  },
+
+  // Acentos de esquina — solo en la página completa
+  cornerTL: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    width: 18,
+    height: 18,
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+    borderColor: GOLD,
+  },
+  cornerTR: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 18,
+    height: 18,
+    borderTopWidth: 2,
+    borderRightWidth: 2,
+    borderColor: GOLD,
+  },
+  cornerBL: {
+    position: "absolute",
+    bottom: 8,
+    left: 8,
+    width: 18,
+    height: 18,
+    borderBottomWidth: 2,
+    borderLeftWidth: 2,
+    borderColor: GOLD,
+  },
+  cornerBR: {
+    position: "absolute",
+    bottom: 8,
+    right: 8,
+    width: 18,
+    height: 18,
+    borderBottomWidth: 2,
+    borderRightWidth: 2,
+    borderColor: GOLD,
   },
 });
 
@@ -321,6 +440,8 @@ interface MembershipCertificateProps {
   activationDate: string;
   qrDataUrl: string;
   logoUrl: string;
+  signatureUrl: string;
+  signatureUrl2: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -336,15 +457,22 @@ export function MembershipCertificate({
   activationDate,
   qrDataUrl,
   logoUrl,
+  signatureUrl,
+  signatureUrl2,
 }: MembershipCertificateProps) {
   const locationText = academyCity
-    ? `${academyName}, ${academyCity}, Chile`
-    : `${academyName}, Chile`;
+    ? `${academyName} · ${academyCity}`
+    : academyName;
+
+  // Número de certificado basado en memberId para trazabilidad
+  const certNumber = `CERT-${memberId.replace("KMBT-", "").replace("-", "")}`;
 
   return (
     <Document
       title={`Certificado de Membresía — ${fullName}`}
-      author="Kombat Taekwondo Chile"
+      author="Federación Kombat Taekwondo Chile"
+      subject="Certificado Oficial de Membresía"
+      keywords="kombat taekwondo chile federacion membresia oficial"
     >
       <Page size="A4" orientation="landscape" style={styles.page}>
         {/* Acentos de esquina */}
@@ -353,71 +481,132 @@ export function MembershipCertificate({
         <View style={styles.cornerBL} />
         <View style={styles.cornerBR} />
 
-        {/* Layout principal dos columnas */}
-        <View style={styles.mainRow}>
-          {/* ── Panel izquierdo ── */}
-          <View style={styles.leftPanel}>
-            <View style={styles.leftTop}>
+        {/* ── SIDEBAR ── */}
+        <View style={styles.sidebar}>
+          <View style={styles.sidebarTop}>
+            {/* eslint-disable-next-line jsx-a11y/alt-text */}
+            <Image src={logoUrl} style={styles.logo} />
+            <View style={styles.sidebarGoldLine} />
+
+            {/* QR verificación */}
+            <View style={styles.qrFrame}>
               {/* eslint-disable-next-line jsx-a11y/alt-text */}
-              <Image src={logoUrl} style={styles.logo} />
-              <View style={styles.leftDivider} />
-              {/* QR */}
-              <View style={styles.qrFrame}>
-                {/* eslint-disable-next-line jsx-a11y/alt-text */}
-                <Image src={qrDataUrl} style={styles.qrImage} />
-              </View>
-              <Text style={styles.qrLabel}>Escanear para verificar</Text>
+              <Image src={qrDataUrl} style={styles.qrImage} />
             </View>
-            <View style={styles.leftBottom}>
-              <Text style={styles.memberIdCaption}>Member ID</Text>
-              <Text style={styles.memberIdValue}>{memberId}</Text>
+            <Text style={styles.qrLabel}>Escanear para verificar</Text>
+          </View>
+
+          <View style={styles.sidebarBottom}>
+            {/* Member ID badge */}
+            <View style={styles.fedBadge}>
+              <Text style={styles.fedBadgeLabel}>Member ID</Text>
+              <Text style={styles.fedBadgeValue}>{memberId}</Text>
+            </View>
+            <Text style={styles.sealText}>
+              Federación Oficial{"\n"}Kombat Taekwondo Chile
+            </Text>
+          </View>
+        </View>
+
+        {/* ── CONTENIDO PRINCIPAL ── */}
+        <View style={styles.main}>
+          {/* Cabecera */}
+          <View style={styles.header}>
+            <View style={styles.headerTopRow}>
+              <View style={styles.federationTag}>
+                <View style={styles.fedTagAccent} />
+                <Text style={styles.fedTagText}>
+                  Federación Kombat Taekwondo Chile
+                </Text>
+              </View>
+              <Text style={styles.certNumber}>{certNumber}</Text>
+            </View>
+            <View style={styles.certTitleBlock}>
+              <Text style={styles.certTitleMain}>Certificado</Text>
+              <Text style={styles.certTitleSub}>de Membresía Oficial</Text>
             </View>
           </View>
 
-          {/* ── Panel derecho ── */}
-          <View style={styles.rightPanel}>
-            {/* Sección superior */}
-            <View style={styles.topSection}>
-              <Text style={styles.orgLabel}>Kombat Taekwondo Chile</Text>
-              <Text style={styles.certTitle}>Certificado</Text>
-              <Text style={styles.certSubtitle}>de Membresía</Text>
-              <View style={styles.titleDivider} />
+          {/* Cuerpo */}
+          <View style={styles.body}>
+            <View style={styles.bodyTop}>
               <Text style={styles.grantedLabel}>
-                Este certificado se otorga a:
+                La Federación Kombat Taekwondo Chile certifica que:
               </Text>
               <Text style={styles.studentName}>{fullName}</Text>
-              <View style={styles.gradeBadge}>
-                <View style={styles.gradeAccent} />
-                <Text style={styles.gradeText}>{gradeLabel}</Text>
-              </View>
-              <Text style={styles.academyText}>{locationText}</Text>
-              <Text style={styles.description}>
-                Este documento acredita su membresía activa y vigente en Kombat
-                Taekwondo Chile.
-              </Text>
-            </View>
 
-            {/* Sección inferior — firmas */}
-            <View style={styles.bottomSection}>
-              <View style={styles.sigDivider} />
-              <View style={styles.signatureRow}>
-                <View style={styles.signatureBlock}>
-                  <Text style={styles.signatureScript}>Dir. Educacional</Text>
-                  <View style={styles.signatureLine} />
-                  <Text style={styles.signatureLabel}>
-                    Director Educacional
-                  </Text>
+              {/* Grado + Academia */}
+              <View style={styles.dataRow}>
+                <View style={styles.dataPill}>
+                  <Text style={styles.dataPillText}>{gradeLabel}</Text>
                 </View>
-                <View style={styles.signatureBlock}>
-                  <View style={styles.signatureLine} />
-                  <Text style={styles.signatureLabel}>Firma Director</Text>
-                </View>
+                <Text style={styles.dataAcademy}>{locationText}</Text>
               </View>
-              <View style={styles.issueDateRow}>
-                <Text style={styles.issueDateText}>
-                  Emitido el {activationDate}
+
+              {/* Texto oficial */}
+              <View style={styles.descBox}>
+                <Text style={styles.descText}>
+                  Se encuentra debidamente inscrito y afiliado a la Federación
+                  Kombat Taekwondo Chile, con membresía activa y vigente. El
+                  presente documento lo habilita para participar en torneos,
+                  seminarios, exámenes de grado y demás actividades oficiales
+                  organizadas o reconocidas por la federación, en conformidad
+                  con los reglamentos internos vigentes.
                 </Text>
               </View>
+
+              {/* Grid de datos */}
+              <View style={styles.infoGrid}>
+                <View style={styles.infoCell}>
+                  <Text style={styles.infoCellLabel}>Fecha de emisión</Text>
+                  <Text style={styles.infoCellValue}>{activationDate}</Text>
+                </View>
+                <View style={styles.infoCell}>
+                  <Text style={styles.infoCellLabel}>Estado</Text>
+                  <Text style={styles.infoCellValue}>Activo · Vigente</Text>
+                </View>
+                <View style={styles.infoCell}>
+                  <Text style={styles.infoCellLabel}>Tipo de membresía</Text>
+                  <Text style={styles.infoCellValue}>Practicante Oficial</Text>
+                </View>
+                <View style={styles.infoCell}>
+                  <Text style={styles.infoCellLabel}>Verificación</Text>
+                  <Text style={styles.infoCellValue}>kombat-id.cl/verify</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* ── SECCIÓN FIRMAS (fondo cálido) ── */}
+          <View style={styles.sigSection}>
+            <View style={styles.sigRow}>
+              {/* Firma 1 — Presidente */}
+              <View style={styles.sigBlock}>
+                {/* eslint-disable-next-line jsx-a11y/alt-text */}
+                <Image src={signatureUrl} style={styles.sigImage} />
+                <View style={styles.sigLine} />
+                <Text style={styles.sigName}>Juan Marcelo Gallardo</Text>
+                <Text style={styles.sigRole}>Presidente · Kombat Chile</Text>
+              </View>
+
+              {/* Firma 2 — Director Educacional */}
+              <View style={styles.sigBlock}>
+                {/* eslint-disable-next-line jsx-a11y/alt-text */}
+                <Image src={signatureUrl2} style={styles.sigImage} />
+                <View style={styles.sigLine} />
+                <Text style={styles.sigName}>Juan Riquelme Pavez</Text>
+                <Text style={styles.sigRole}>
+                  Director Educacional · Kombat Taekwondo Chile
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.sigFooter}>
+              <Text style={styles.issuedText}>
+                Documento emitido digitalmente el {activationDate}. Válido con
+                verificación QR.
+              </Text>
+              <Text style={styles.officialStamp}>Documento Oficial</Text>
             </View>
           </View>
         </View>

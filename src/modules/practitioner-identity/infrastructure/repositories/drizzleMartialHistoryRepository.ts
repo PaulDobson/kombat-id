@@ -99,6 +99,49 @@ export class DrizzleMartialHistoryRepository implements MartialHistoryRepository
     };
   }
 
+  /**
+   * Paginates the martial history of a practitioner with optional event type filter.
+   * Used by the full /martial-history page to avoid loading all entries at once.
+   */
+  async findPaginatedByPractitionerId(
+    publicId: string,
+    options: {
+      page: number;
+      pageSize: number;
+      eventType?: string;
+    },
+  ): Promise<{ entries: MartialHistoryEntry[]; total: number }> {
+    const { page, pageSize, eventType } = options;
+    const offset = (page - 1) * pageSize;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let query: any = adminSupabase
+      .from("martial_history")
+      .select("*", { count: "exact" })
+      .eq("practitioner_id", publicId)
+      .order("event_date", { ascending: false })
+      .range(offset, offset + pageSize - 1);
+
+    if (eventType) {
+      query = query.eq("event_type", eventType);
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      throw new DomainError(
+        `Failed to paginate martial history for practitioner: ${error.message}`,
+      );
+    }
+
+    return {
+      entries: ((data as MartialHistoryRow[]) ?? []).map((row) =>
+        this.fromRow(row),
+      ),
+      total: count ?? 0,
+    };
+  }
+
   // -------------------------------------------------------------------------
   // Mutations
   // -------------------------------------------------------------------------

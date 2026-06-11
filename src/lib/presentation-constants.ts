@@ -141,3 +141,36 @@ export const GENDER_LABELS: Record<string, string> = {
   female: "Femenino",
   other: "Otro",
 };
+
+// ---------------------------------------------------------------------------
+// Ranking
+// ---------------------------------------------------------------------------
+
+export const WEIGHT_LABELS: Record<string, string> = {
+  fin: "Fin",
+  fly: "Fly",
+  bantam: "Bantam",
+  feather: "Pluma",
+  light: "Ligero",
+  welter: "Welter",
+  middle: "Medio",
+  heavy: "Pesado",
+};
+
+export const AGE_RANGE_LABELS: Record<string, string> = {
+  "under-12": "Sub-12",
+  "12-17": "12–17 años",
+  "18-30": "18–30 años",
+  "30+": "30+ años",
+};
+
+// ---------------------------------------------------------------------------
+// Role
+// ---------------------------------------------------------------------------
+
+export const ROLE_LABELS: Record<string, string> = {
+  alumno: "Alumno",
+  instructor: "Instructor",
+  profesor: "Profesor",
+  maestro: "Maestro",
+};

@@ -9,6 +9,7 @@ import { DrizzleGradeExamRepository } from "@/modules/grade-exam/infrastructure/
 import { verifyInstructorStudentAccess } from "@/modules/practitioner-identity/application/use-cases/verifyInstructorStudentAccess";
 import { formatDateLong } from "@/lib/format-date";
 import { DeleteStudentButton } from "./DeleteStudentButton";
+import { ReactivateStudentButton } from "./ReactivateStudentButton";
 
 const EXAM_STATUS_LABELS: Record<string, string> = {
   draft: "Borrador",
@@ -138,7 +139,6 @@ export default async function InstructorStudentDetailPage({
     .from("academy_memberships")
     .select("academies(id, name)")
     .eq("practitioner_id", id)
-    .eq("is_active", true)
     .maybeSingle();
 
   const academy = membership?.academies as { id: string; name: string } | null;
@@ -210,6 +210,12 @@ export default async function InstructorStudentDetailPage({
             >
               Editar alumno
             </Link>
+            {!practitioner.isActive && (
+              <ReactivateStudentButton
+                publicId={id}
+                studentName={practitioner.fullName}
+              />
+            )}
             {practitioner.instructorId === session.practitionerId && (
               <DeleteStudentButton
                 publicId={id}

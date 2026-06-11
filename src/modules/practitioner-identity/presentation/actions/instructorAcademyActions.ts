@@ -188,7 +188,6 @@ export async function instructorAssignPractitionerAction(
       .from("academy_memberships")
       .select("id")
       .eq("practitioner_id", parsed.data.practitionerId)
-      .eq("is_active", true)
       .maybeSingle();
 
     if (existing) {
@@ -203,7 +202,6 @@ export async function instructorAssignPractitionerAction(
       id: crypto.randomUUID(),
       academy_id: parsed.data.academyId,
       practitioner_id: parsed.data.practitionerId,
-      is_active: true,
       joined_at: new Date().toISOString(),
     });
 
@@ -251,10 +249,9 @@ export async function instructorRemovePractitionerAction(
   try {
     await adminSupabase
       .from("academy_memberships")
-      .update({ is_active: false })
+      .delete()
       .eq("academy_id", parsed.data.academyId)
-      .eq("practitioner_id", parsed.data.practitionerId)
-      .eq("is_active", true);
+      .eq("practitioner_id", parsed.data.practitionerId);
 
     revalidatePath(`/instructor/academies/${parsed.data.academyId}`);
     return { success: true, data: undefined };
@@ -324,7 +321,6 @@ export async function instructorDeletePractitionerAction(
       .from("academy_memberships")
       .select("academy_id, academies!inner(responsible_instructor_ids)")
       .eq("practitioner_id", parsed.data.publicId)
-      .eq("is_active", true)
       .single();
 
     if (!activeMembership) {
@@ -354,123 +350,96 @@ export async function instructorDeletePractitionerAction(
     console.log(
       "[instructorDeletePractitionerAction] Instructor",
       instructor.practitionerId,
-      "soft deleting practitioner:",
+      "deleting practitioner:",
       parsed.data.publicId,
     );
 
-    // SOFT DELETE: Marcar como eliminado lógicamente, solo auth.users se elimina físicamente
     const practitionerId = parsed.data.publicId;
+    const academyId = activeMembership.academy_id;
 
-    // 1. Desactivar todas las membresías de academias (soft delete)
-    const { data: deactivatedMemberships } = await adminSupabase
-      .from("academy_memberships")
-      .update({ is_active: false })
-      .eq("practitioner_id", practitionerId)
-      .eq("is_active", true)
-      .select("id");
-
-    console.log(
-      "[instructorDeletePractitionerAction] Deactivated memberships:",
-      deactivatedMemberships?.length ?? 0,
+    // Paso 1: Llamar a la función SQL que desactiva todos los registros en public
+    // (practitioners, academy_memberships, certifications, discipline_grades).
+    // La función retorna el auth_user_id para que lo eliminemos aquí via Admin API.
+    const { data: result, error: functionError } = await adminSupabase.rpc(
+      "delete_practitioner_by_instructor",
+      {
+        p_practitioner_id: practitionerId,
+        p_instructor_id: instructor.practitionerId,
+        p_academy_id: academyId,
+      },
     );
 
-    // 2. Revocar todas las certificaciones (soft delete)
-    const { data: revokedCerts } = await adminSupabase
-      .from("certifications")
-      .update({ is_revoked: true })
-      .eq("practitioner_id", practitionerId)
-      .eq("is_revoked", false)
-      .select("id");
-
-    console.log(
-      "[instructorDeletePractitionerAction] Revoked certifications:",
-      revokedCerts?.length ?? 0,
-    );
-
-    // 3. Desactivar grados de disciplinas (soft delete)
-    const { data: deactivatedDisciplines } = await adminSupabase
-      .from("discipline_grades")
-      .update({ is_active: false })
-      .eq("practitioner_id", practitionerId)
-      .eq("is_active", true)
-      .select("id");
-
-    console.log(
-      "[instructorDeletePractitionerAction] Deactivated discipline grades:",
-      deactivatedDisciplines?.length ?? 0,
-    );
-
-    // 4. Marcar el alumno como eliminado (soft delete)
-    const { data: deactivatedPractitioner, error: practitionerError } =
-      await adminSupabase
-        .from("practitioners")
-        .update({
-          is_active: false,
-          deactivated_at: new Date().toISOString(),
-          deactivation_reason: `Eliminado por instructor: ${instructor.practitionerId}`,
-        })
-        .eq("id", practitionerId)
-        .select("id");
-
-    console.log(
-      "[instructorDeletePractitionerAction] Deactivated practitioner:",
-      deactivatedPractitioner,
-    );
-
-    if (practitionerError) {
+    if (functionError) {
       console.error(
-        "[instructorDeletePractitionerAction] Error deactivating practitioner:",
-        practitionerError,
+        "[instructorDeletePractitionerAction] Function error:",
+        functionError,
       );
       return {
         success: false,
-        error: `Error al desactivar alumno: ${practitionerError.message}`,
+        error: `Error al eliminar alumno: ${functionError.message}`,
         code: "INTERNAL_ERROR",
       };
     }
 
-    // 5. ÚNICO ELIMINACIÓN FÍSICA: Eliminar la cuenta de autenticación de auth.users
-    if (practitioner.authUserId) {
-      console.log(
-        "[instructorDeletePractitionerAction] Physically deleting auth user:",
-        practitioner.authUserId,
-      );
+    // La función retorna un objeto JSONB con { success, data?, error?, code? }
+    type FunctionResult = {
+      success: boolean;
+      data?: {
+        practitioner_id: string;
+        auth_user_id: string | null;
+        deactivated_memberships: number;
+        revoked_certifications: number;
+        deactivated_disciplines: number;
+      };
+      error?: string;
+      code?: string;
+    };
 
-      const { error: authError } = await adminSupabase.auth.admin.deleteUser(
-        practitioner.authUserId,
-      );
+    const typedResult = result as FunctionResult;
 
-      if (authError) {
+    if (!typedResult?.success) {
+      console.error(
+        "[instructorDeletePractitionerAction] Function returned error:",
+        typedResult?.error,
+      );
+      return {
+        success: false,
+        error: typedResult?.error || "Error desconocido al eliminar alumno",
+        code: (typedResult?.code as never) || "INTERNAL_ERROR",
+      };
+    }
+
+    // Paso 2: Eliminar el usuario de auth.users via Admin API.
+    // Este es el único método confiable en Supabase — limpia sesiones activas,
+    // refresh tokens, MFA factors y demás datos del esquema auth.
+    const authUserId = typedResult.data?.auth_user_id;
+    if (authUserId) {
+      const { error: deleteAuthError } =
+        await adminSupabase.auth.admin.deleteUser(authUserId);
+
+      if (deleteAuthError) {
+        // El registro en public ya fue desactivado correctamente.
+        // Logueamos el error pero no fallamos la operación — el alumno
+        // ya no puede acceder (practitioners.is_active = false) aunque
+        // su registro en auth.users persista temporalmente.
         console.error(
           "[instructorDeletePractitionerAction] Error deleting auth user:",
-          authError,
-        );
-        // No retornamos error aquí porque el practicante ya fue desactivado
-      } else {
-        console.log(
-          "[instructorDeletePractitionerAction] Auth user physically deleted successfully",
-        );
-
-        // 6. Limpiar el campo auth_user_id en practitioners (ya no existe en auth.users)
-        await adminSupabase
-          .from("practitioners")
-          .update({ auth_user_id: null })
-          .eq("id", practitionerId);
-
-        console.log(
-          "[instructorDeletePractitionerAction] Cleaned up auth_user_id reference",
+          deleteAuthError.message,
+          "auth_user_id:",
+          authUserId,
         );
       }
     }
 
+    console.log(
+      "[instructorDeletePractitionerAction] Deletion completed successfully:",
+      typedResult.data,
+    );
+
     // Revalidar rutas para limpiar caché
     revalidatePath("/instructor");
     revalidatePath("/instructor/students");
-    revalidatePath(`/instructor/students/${practitionerId}`);
-
-    console.log(
-      "[instructorDeletePractitionerAction] Soft deletion completed successfully",
-    );
+    revalidatePath(`/instructor/academies/${academyId}`);
 
     return { success: true, data: undefined };
   } catch (err) {
@@ -617,6 +586,101 @@ export async function updateInstructorAcademyAction(
     return { success: true, data: undefined };
   } catch (err) {
     console.error("[updateInstructorAcademyAction] Unexpected error:", err);
+    return {
+      success: false,
+      error: "Error interno del servidor",
+      code: "INTERNAL_ERROR",
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Action — instructor reactivates an inactive student they registered
+// Restriction: Only the instructor who originally registered the student can
+// reactivate them. Sets is_active = true and clears deactivation fields.
+// ---------------------------------------------------------------------------
+
+export async function reactivateStudentAction(
+  rawInput: unknown,
+): Promise<ActionResult> {
+  const instructor = await requireInstructor();
+  if (!instructor) {
+    return { success: false, error: "No autorizado", code: "FORBIDDEN" };
+  }
+
+  const parsed = z.object({ publicId: z.string().uuid() }).safeParse(rawInput);
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Datos inválidos",
+      code: "VALIDATION_ERROR",
+    };
+  }
+
+  try {
+    const practitionerRepo = new DrizzlePractitionerRepository();
+    const practitioner = await practitionerRepo.findById(parsed.data.publicId);
+
+    if (!practitioner) {
+      return {
+        success: false,
+        error: "Alumno no encontrado",
+        code: "NOT_FOUND",
+      };
+    }
+
+    if (practitioner.isActive) {
+      return {
+        success: false,
+        error: "El alumno ya está activo",
+        code: "ALREADY_ACTIVE",
+      };
+    }
+
+    // Authorization: instructor must have originally registered the student
+    // OR the student must belong to one of their academies
+    const isDirectInstructor =
+      practitioner.instructorId === instructor.practitionerId;
+
+    if (!isDirectInstructor) {
+      // Check academy membership as fallback
+      const { data: membership } = await adminSupabase
+        .from("academy_memberships")
+        .select("academies!inner(responsible_instructor_ids)")
+        .eq("practitioner_id", parsed.data.publicId)
+        .maybeSingle();
+
+      const academyData = membership?.academies as {
+        responsible_instructor_ids: string[];
+      } | null;
+      const hasAcademyAccess =
+        academyData?.responsible_instructor_ids.includes(
+          instructor.practitionerId,
+        ) ?? false;
+
+      if (!hasAcademyAccess) {
+        return {
+          success: false,
+          error: "Solo puedes reactivar alumnos de tus academias",
+          code: "FORBIDDEN",
+        };
+      }
+    }
+
+    await practitionerRepo.save({
+      ...practitioner,
+      isActive: true,
+      deactivatedAt: null,
+      deactivationReason: null,
+      updatedAt: new Date().toISOString(),
+    });
+
+    revalidatePath("/instructor");
+    revalidatePath(`/instructor/students/${parsed.data.publicId}`);
+    return { success: true, data: undefined };
+  } catch (err) {
+    console.error("[reactivateStudentAction] Unexpected error:", err);
     return {
       success: false,
       error: "Error interno del servidor",
