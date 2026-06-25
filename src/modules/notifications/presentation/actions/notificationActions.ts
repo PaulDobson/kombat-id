@@ -5,7 +5,6 @@ import { markNotificationAsRead } from "../../application/use-cases/markNotifica
 import { markAllNotificationsAsRead } from "../../application/use-cases/markAllNotificationsAsRead";
 import { getUnreadNotificationsCount } from "../../application/use-cases/getUnreadNotificationsCount";
 import { getNotificationsByUser } from "../../application/use-cases/getNotificationsByUser";
-import { revalidatePath } from "next/cache";
 import type { NotificationWithStatus } from "../../domain/entities/notification";
 import type { NotificationCategory } from "../../domain/enums/notificationCategory";
 import { createNotificationModuleDeps } from "./_notificationDeps";
@@ -22,8 +21,6 @@ export async function markAsReadAction(notificationId: string): Promise<void> {
       { notificationId, userId: user.id },
       { notificationRepo },
     );
-
-    revalidatePath("/dashboard");
   } catch (error) {
     console.error("[markAsReadAction] Error:", error);
     throw new Error("No se pudo marcar la notificación como leída");
@@ -39,8 +36,6 @@ export async function markAllAsReadAction(): Promise<void> {
 
   try {
     await markAllNotificationsAsRead({ userId: user.id }, { notificationRepo });
-
-    revalidatePath("/dashboard");
   } catch (error) {
     console.error("[markAllAsReadAction] Error:", error);
     throw new Error("No se pudieron marcar las notificaciones como leídas");

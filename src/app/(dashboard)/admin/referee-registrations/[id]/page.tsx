@@ -3,8 +3,8 @@
 
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/auth-guards";
 import { SupabaseRefereeRegistrationRepository } from "@/modules/referee-registration/infrastructure/repositories/supabaseRefereeRegistrationRepository";
 import { getRefereeRegistrationById } from "@/modules/referee-registration/application/use-cases/getRefereeRegistrationById";
 import { EditRegistrationForm } from "@/modules/referee-registration/presentation/components/EditRegistrationForm";
@@ -25,29 +25,12 @@ const STATUS_COLORS = {
   rejected: "bg-red-900/40 text-red-300 border-red-700/40",
 } as const;
 
-async function requireAdminUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!data) redirect("/dashboard");
-  return user;
-}
-
 export default async function AdminRefereeDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireAdminUser();
+  await requireAdmin();
 
   const { id } = await params;
   const repo = new SupabaseRefereeRegistrationRepository();

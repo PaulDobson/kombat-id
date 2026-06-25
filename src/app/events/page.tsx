@@ -1,5 +1,4 @@
 import { adminSupabase } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import type { EventType } from "@/types/database.types";
 import {
@@ -110,24 +109,6 @@ function daysUntil(dateStr: string): number {
   );
 }
 
-async function getAdminStatus(): Promise<boolean> {
-  try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return false;
-    const { data } = await adminSupabase
-      .from("admin_users")
-      .select("user_id")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    return !!data;
-  } catch {
-    return false;
-  }
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function PublicEventsPage({
@@ -137,7 +118,8 @@ export default async function PublicEventsPage({
 }) {
   const params = await searchParams;
   const today = new Date().toISOString().slice(0, 10);
-  const isAdmin = await getAdminStatus();
+  // Esta es una ruta pública - no intentar validar sesión de admin
+  const isAdmin = false;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let query: any = adminSupabase

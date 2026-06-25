@@ -127,7 +127,9 @@ export class DrizzlePractitionerRepository implements PractitionerRepository {
     if (query.rut) builder = builder.eq("rut", query.rut);
     if (query.grade) builder = builder.eq("grade", query.grade);
 
-    const { data, error } = await builder;
+    // Limitar a 1000 resultados para evitar transferir datasets enormes.
+    // Para casos que necesiten más, usar paginación explícita en application layer.
+    const { data, error } = await builder.limit(1000);
     if (error)
       throw new DomainError(`Failed to search practitioners: ${error.message}`);
 
@@ -135,11 +137,14 @@ export class DrizzlePractitionerRepository implements PractitionerRepository {
   }
 
   async findActiveByGrade(grade: Grade): Promise<Practitioner[]> {
+    // Limitar a 1000 para evitar memoria excesiva.
+    // Ranking y reportes deberían usar paginación explícita.
     const { data, error } = await adminSupabase
       .from("practitioners")
       .select("*")
       .eq("grade", grade)
-      .eq("is_active", true);
+      .eq("is_active", true)
+      .limit(1000);
 
     if (error)
       throw new DomainError(

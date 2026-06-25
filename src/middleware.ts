@@ -19,14 +19,16 @@ const PUBLIC_ROUTES = [
 ];
 
 const EXACT_PUBLIC_ROUTES = new Set(
-  PUBLIC_ROUTES.filter((r) => !r.endsWith("/")),
+  PUBLIC_ROUTES.filter((r) => !r.endsWith("/") || r === "/"),
 );
-const PREFIX_PUBLIC_ROUTES = PUBLIC_ROUTES.filter((r) => r !== "/").map(
-  (r) => `${r}/`,
-);
+const PREFIX_PUBLIC_ROUTES = PUBLIC_ROUTES.filter(
+  (r) => r !== "/" && !r.endsWith("/"),
+).map((r) => `${r}/`);
 
 function isPublicRoute(pathname: string): boolean {
+  // Ruta exacta (incluyendo "/")
   if (EXACT_PUBLIC_ROUTES.has(pathname)) return true;
+  // Rutas con prefijo (ej: /academies/123)
   return PREFIX_PUBLIC_ROUTES.some((prefix) => pathname.startsWith(prefix));
 }
 

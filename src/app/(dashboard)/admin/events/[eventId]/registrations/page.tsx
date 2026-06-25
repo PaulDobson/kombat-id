@@ -1,7 +1,7 @@
-import { createClient } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
+import { requireAdmin } from "@/lib/auth-guards";
 import { DrizzleEventRegistrationRepository } from "@/modules/event-registration/infrastructure/repositories/drizzleEventRegistrationRepository";
 import { RegistrationsGrouped } from "./RegistrationsGrouped";
 import { RegistrationsList } from "./RegistrationsList";
@@ -10,23 +10,6 @@ import type { RegistrationRow } from "./RegistrationsGrouped";
 import type { Database } from "@/types/database.types";
 
 type MartialEvent = Database["public"]["Tables"]["martial_events"]["Row"];
-
-async function requireAdminUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!data) redirect("/");
-  return user;
-}
 
 type ViewMode = "agrupado" | "lista";
 
@@ -37,7 +20,7 @@ export default async function EventRegistrationsPage({
   params: Promise<{ eventId: string }>;
   searchParams: Promise<{ vista?: string }>;
 }) {
-  await requireAdminUser();
+  await requireAdmin();
   const { eventId } = await params;
   const sp = await searchParams;
   const view: ViewMode = sp.vista === "lista" ? "lista" : "agrupado";

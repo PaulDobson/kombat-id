@@ -1,4 +1,3 @@
-import { createClient } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
 import { redirect, notFound } from "next/navigation";
 import { DrizzlePractitionerRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzlePractitionerRepository";
@@ -10,22 +9,6 @@ import type {
 } from "@/modules/practitioner-identity/domain/entities/charge";
 import Link from "next/link";
 
-async function requireAdminUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!data) redirect("/dashboard");
-  return user;
-}
 
 const CHARGE_TYPE_LABELS: Record<ChargeType, string> = {
   examen_grado: "Examen de grado",
@@ -48,6 +31,7 @@ const STATUS_LABELS: Record<ChargeStatus, string> = {
 };
 
 import { formatDateNumeric } from "@/lib/format-date";
+import { requireAdmin } from "@/lib/auth-guards";
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "—";
@@ -67,7 +51,7 @@ export default async function PractitionerChargesPage({
 }: {
   params: Promise<{ practitionerId: string }>;
 }) {
-  await requireAdminUser();
+  await requireAdmin();
 
   const { practitionerId } = await params;
 

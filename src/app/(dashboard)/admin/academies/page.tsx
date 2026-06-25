@@ -1,27 +1,13 @@
-import { createClient } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import type { ChileanRegion } from "@/modules/practitioner-identity/domain/entities/academy";
 import Link from "next/link";
+import { requireAdmin } from "@/lib/auth-guards";
 
 // ---------------------------------------------------------------------------
 // Auth guard
 // ---------------------------------------------------------------------------
 
-async function requireAdminUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!data) redirect("/dashboard");
-  return user;
-}
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -115,7 +101,7 @@ export default async function AdminAcademiesPage({
     page?: string;
   }>;
 }) {
-  await requireAdminUser();
+  await requireAdmin();
   const sp = await searchParams;
 
   const name = sp.name?.trim() ?? "";

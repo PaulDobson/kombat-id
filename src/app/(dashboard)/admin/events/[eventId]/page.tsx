@@ -1,4 +1,3 @@
-import { createClient } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
@@ -7,22 +6,6 @@ import { DeleteEventButton } from "../DeleteEventButton";
 
 type MartialEvent = Database["public"]["Tables"]["martial_events"]["Row"];
 
-async function requireAdminUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!data) redirect("/");
-  return user;
-}
 
 const EVENT_TYPE_LABELS: Record<EventType, string> = {
   competition: "Competencia",
@@ -42,13 +25,14 @@ import {
 } from "@/lib/format-date";
 import { formatRegistrationFee } from "@/modules/event-registration/domain/entities/eventRegistration";
 import { DrizzleEventRegistrationRepository } from "@/modules/event-registration/infrastructure/repositories/drizzleEventRegistrationRepository";
+import { requireAdmin } from "@/lib/auth-guards";
 
 export default async function EventDetailPage({
   params,
 }: {
   params: Promise<{ eventId: string }>;
 }) {
-  await requireAdminUser();
+  await requireAdmin();
   const { eventId } = await params;
 
   const { data: event } = (await adminSupabase

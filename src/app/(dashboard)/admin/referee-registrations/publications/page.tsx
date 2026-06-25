@@ -3,29 +3,12 @@
 
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/auth-guards";
 import { SupabaseRefereePortalPublicationRepository } from "@/modules/referee-registration/infrastructure/repositories/supabaseRefereePortalPublicationRepository";
 import { SupabaseRefereeEventRegistrationRepository } from "@/modules/referee-registration/infrastructure/repositories/supabaseRefereeEventRegistrationRepository";
 import { listPortalPublications } from "@/modules/referee-registration/application/use-cases/listPortalPublications";
 import { AdminPublicationCard } from "@/modules/referee-registration/presentation/components/AdminPublicationCard";
-
-async function requireAdminUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!data) redirect("/dashboard");
-  return user;
-}
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const BUCKET = "referee-portal-images";
@@ -35,7 +18,7 @@ function buildCoverImageUrl(coverImagePath: string): string {
 }
 
 export default async function AdminRefereePortalPage() {
-  await requireAdminUser();
+  await requireAdmin();
 
   const repo = new SupabaseRefereePortalPublicationRepository();
   const publications = await listPortalPublications({ repo });

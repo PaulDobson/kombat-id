@@ -3,8 +3,8 @@
 
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/auth-guards";
 import { SupabaseRefereeRegistrationRepository } from "@/modules/referee-registration/infrastructure/repositories/supabaseRefereeRegistrationRepository";
 import { listRefereeRegistrations } from "@/modules/referee-registration/application/use-cases/listRefereeRegistrations";
 import { RefereeRegistrationTable } from "@/modules/referee-registration/presentation/components/RefereeRegistrationTable";
@@ -19,29 +19,12 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: "rejected", label: "Rechazados" },
 ];
 
-async function requireAdminUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!data) redirect("/dashboard");
-  return user;
-}
-
 export default async function AdminRefereesPage({
   searchParams,
 }: {
   searchParams: Promise<{ status?: string; page?: string }>;
 }) {
-  await requireAdminUser();
+  await requireAdmin();
 
   const params = await searchParams;
   const statusFilter = params.status as RefereeRegistrationStatus | undefined;

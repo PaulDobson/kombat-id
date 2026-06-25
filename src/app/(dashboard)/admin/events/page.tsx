@@ -1,25 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
+import { requireAdmin } from "@/lib/auth-guards";
 import Link from "next/link";
 import type { EventType } from "@/types/database.types";
-
-async function requireAdminUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!data) redirect("/");
-  return user;
-}
 
 const EVENT_TYPE_LABELS: Record<EventType, string> = {
   competition: "Competencia",
@@ -40,7 +23,7 @@ export default async function AdminEventsPage({
 }: {
   searchParams: Promise<{ type?: string; q?: string }>;
 }) {
-  await requireAdminUser();
+  await requireAdmin();
   const params = await searchParams;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

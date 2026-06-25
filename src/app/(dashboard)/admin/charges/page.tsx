@@ -1,27 +1,10 @@
-import { createClient } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
+import { requireAdmin } from "@/lib/auth-guards";
 import { DrizzlePractitionerRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzlePractitionerRepository";
 import { DrizzleChargeRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzleChargeRepository";
 import type { Grade } from "@/modules/practitioner-identity/domain/entities/practitioner";
 import Link from "next/link";
-
-async function requireAdminUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!data) redirect("/dashboard");
-  return user;
-}
 
 const GRADE_LABELS: Record<Grade, string> = {
   white: "Blanco",
@@ -33,7 +16,7 @@ const GRADE_LABELS: Record<Grade, string> = {
 };
 
 export default async function AdminChargesPage() {
-  await requireAdminUser();
+  await requireAdmin();
 
   const practitionerRepo = new DrizzlePractitionerRepository();
   const chargeRepo = new DrizzleChargeRepository();

@@ -1,33 +1,16 @@
-import { createClient } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
 import { redirect, notFound } from "next/navigation";
+import { requireAdmin } from "@/lib/auth-guards";
 import { DrizzlePractitionerRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzlePractitionerRepository";
 import Link from "next/link";
 import { UpdateGradeForm } from "./UpdateGradeForm";
-
-async function requireAdminUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!data) redirect("/");
-  return user;
-}
 
 export default async function UpdateGradePage({
   params,
 }: {
   params: Promise<{ publicId: string }>;
 }) {
-  const adminUser = await requireAdminUser();
+  const user = await requireAdmin();
   const { publicId } = await params;
 
   const repo = new DrizzlePractitionerRepository();
@@ -47,7 +30,7 @@ export default async function UpdateGradePage({
       </p>
       <UpdateGradeForm
         publicId={publicId}
-        adminId={adminUser.id}
+        adminId={user.id}
         currentGrade={practitioner.grade}
       />
     </main>

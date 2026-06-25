@@ -1,7 +1,7 @@
-import { createClient } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
+import { requireAdmin } from "@/lib/auth-guards";
 import { DrizzleEventRegistrationRepository } from "@/modules/event-registration/infrastructure/repositories/drizzleEventRegistrationRepository";
 import { AcademyStudentsTable } from "./AcademyStudentsTable";
 import type { RegistrationRow } from "../../RegistrationsGrouped";
@@ -12,23 +12,6 @@ type MartialEvent = Database["public"]["Tables"]["martial_events"]["Row"];
 // ---------------------------------------------------------------------------
 // Auth guard
 // ---------------------------------------------------------------------------
-
-async function requireAdminUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!data) redirect("/");
-  return user;
-}
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -62,7 +45,7 @@ export default async function AcademyRegistrationsPage({
 }: {
   params: Promise<{ eventId: string; academyId: string }>;
 }) {
-  await requireAdminUser();
+  await requireAdmin();
   const { eventId, academyId } = await params;
   const isSinAcademia = academyId === "sin-academia";
 

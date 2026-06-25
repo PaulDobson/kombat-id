@@ -2,8 +2,29 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
+import { getIsAdmin } from "@/lib/request-cache";
 import { isInstructorRole } from "@/lib/roles";
 import type { InstructorRole } from "@/lib/roles";
+
+// ---------------------------------------------------------------------------
+// Admin guard
+// ---------------------------------------------------------------------------
+
+/**
+ * Verifica que la sesión actual pertenezca a un usuario administrador.
+ * Usa React.cache() internamente — si DashboardNav ya llamó requireUser() y
+ * getIsAdmin() en el mismo request, NO se disparan queries adicionales a la DB.
+ *
+ * Uso en Server Components y Server Actions:
+ *   const user = await requireAdmin();
+ *   // user.id disponible para auditoría
+ */
+export async function requireAdmin(redirectTo = "/dashboard") {
+  const user = await requireUser(); // deduplicado vía React.cache()
+  const isAdmin = await getIsAdmin(user.id); // deduplicado vía React.cache()
+  if (!isAdmin) redirect(redirectTo);
+  return user;
+}
 
 // ---------------------------------------------------------------------------
 // Instructor guard

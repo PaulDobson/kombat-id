@@ -23,6 +23,7 @@ import { verifyInstructorStudentAccess } from "../../application/use-cases/verif
 import { resolveStudentAuthAccount } from "../../application/use-cases/resolveStudentAuthAccount";
 import { requireInstructorPractitioner } from "./_requireInstructorPractitioner";
 import { notifyAdminsNewStudent } from "@/modules/notifications/presentation/actions/notificationHelpers";
+import { sendStudentWelcomeEmail } from "@/lib/email";
 import type { ActionResult } from "@/lib/types";
 
 // ── Schemas ───────────────────────────────────────────────────────────────────
@@ -180,7 +181,28 @@ export async function registerStudentAction(
       revalidatePath(`/instructor/academies/${targetAcademyId}`);
     }
 
-    // 6. Notificar a los administradores del nuevo alumno pendiente
+    // 6. Enviar email de bienvenida al alumno con sus credenciales (si se creó la cuenta)
+    const tempPassword =
+      "temporaryPassword" in authAccountResult
+        ? authAccountResult.temporaryPassword
+        : undefined;
+    if (studentEmail && tempPassword) {
+      try {
+        await sendStudentWelcomeEmail(
+          studentEmail,
+          parsed.data.fullName,
+          tempPassword,
+        );
+      } catch (emailErr) {
+        // No bloquear el registro si falla el email
+        console.error(
+          "[registerStudentAction] Failed to send welcome email:",
+          emailErr,
+        );
+      }
+    }
+
+    // 7. Notificar a los administradores del nuevo alumno pendiente
     try {
       // Obtener el auth_user_id y nombre del instructor para la notificación
       const { data: instructorData } = await supabase

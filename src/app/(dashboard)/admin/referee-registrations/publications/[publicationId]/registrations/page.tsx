@@ -3,36 +3,18 @@
 
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
-import { adminSupabase } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/auth-guards";
 import { SupabaseRefereePortalPublicationRepository } from "@/modules/referee-registration/infrastructure/repositories/supabaseRefereePortalPublicationRepository";
 import { SupabaseRefereeEventRegistrationRepository } from "@/modules/referee-registration/infrastructure/repositories/supabaseRefereeEventRegistrationRepository";
 import { listEventRegistrations } from "@/modules/referee-registration/application/use-cases/listEventRegistrations";
 import { NotAnEventError } from "@/modules/referee-registration/domain/errors";
-
-async function requireAdminUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!data) redirect("/dashboard");
-  return user;
-}
 
 interface Props {
   params: Promise<{ publicationId: string }>;
 }
 
 export default async function EventRegistrationsPage({ params }: Props) {
-  await requireAdminUser();
+  await requireAdmin();
 
   const { publicationId } = await params;
 

@@ -1,28 +1,14 @@
-import { createClient } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { DrizzleGradeExamRepository } from "@/modules/grade-exam/infrastructure/repositories/drizzleGradeExamRepository";
 import { ExamAuthorizationActions } from "./ExamAuthorizationActions";
+import { requireAdmin } from "@/lib/auth-guards";
 
 // ---------------------------------------------------------------------------
 // Auth guard
 // ---------------------------------------------------------------------------
 
-async function requireAdminUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!data) redirect("/dashboard");
-  return user;
-}
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -85,7 +71,7 @@ export default async function GradeExamDetailPage({
 }: {
   params: Promise<{ examId: string }>;
 }) {
-  await requireAdminUser();
+  await requireAdmin();
   const { examId } = await params;
 
   const repo = new DrizzleGradeExamRepository();
