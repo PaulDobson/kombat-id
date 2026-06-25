@@ -359,6 +359,13 @@ export default async function InstructorAcademyDetailPage({
             city={academy.city}
             address={academy.address}
             foundedDate={academy.foundedDate}
+            description={academy.description ?? null}
+            founderStory={academy.founderStory ?? null}
+            contactPhone={academy.contactPhone ?? null}
+            contactEmail={academy.contactEmail ?? null}
+            contactInstagram={academy.contactInstagram ?? null}
+            contactWhatsapp={academy.contactWhatsapp ?? null}
+            contactWebsite={academy.contactWebsite ?? null}
           />
         </div>
       </div>

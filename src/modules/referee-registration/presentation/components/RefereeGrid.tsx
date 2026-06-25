@@ -10,11 +10,13 @@ interface RefereeGridProps {
 }
 
 export function RefereeGrid({ referees, searchQuery }: RefereeGridProps) {
+  const normalizedQuery = searchQuery?.trim().toLowerCase();
+
   // Requisitos 4.4, 4.5 — filter by fullName when searchQuery is a non-empty string
   const filtered =
-    searchQuery != null && searchQuery !== ""
+    normalizedQuery != null && normalizedQuery !== ""
       ? referees.filter((r) =>
-          r.fullName.toLowerCase().includes(searchQuery.toLowerCase()),
+          r.fullName.toLowerCase().includes(normalizedQuery),
         )
       : referees;
 

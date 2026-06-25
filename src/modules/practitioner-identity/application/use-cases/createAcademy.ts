@@ -80,6 +80,14 @@ export async function createAcademy(
     createdBy: validated.adminId,
     updatedAt: now,
     createdAt: now,
+    description: null,
+    founderStory: null,
+    contactPhone: null,
+    contactEmail: null,
+    contactInstagram: null,
+    contactWhatsapp: null,
+    contactWebsite: null,
+    coverImagePath: null,
   };
 
   await deps.academyRepo.save(academy);

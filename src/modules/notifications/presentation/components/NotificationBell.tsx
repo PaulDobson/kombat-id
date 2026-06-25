@@ -5,6 +5,8 @@ import { useState, useEffect } from "react";
 import { getUnreadCountAction } from "../actions/notificationActions";
 import { NotificationDropdown } from "./NotificationDropdown";
 
+const POLL_INTERVAL_MS = 30_000;
+
 export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -12,25 +14,59 @@ export function NotificationBell() {
 
   // Cargar el contador inicial y configurar polling
   useEffect(() => {
+    let isMounted = true;
+    let inFlight = false;
+    let timerId: ReturnType<typeof setTimeout> | null = null;
+
+    const scheduleNext = () => {
+      if (!isMounted) return;
+      timerId = setTimeout(() => {
+        void fetchUnreadCount();
+      }, POLL_INTERVAL_MS);
+    };
+
     const fetchUnreadCount = async () => {
+      if (!isMounted || inFlight) return;
+
+      // Evita trabajo cuando la pestaña no está visible o no hay red.
+      if (document.visibilityState !== "visible" || !navigator.onLine) {
+        scheduleNext();
+        return;
+      }
+
+      inFlight = true;
       try {
         const count = await getUnreadCountAction();
-        setUnreadCount(count);
+        if (isMounted) {
+          setUnreadCount(count);
+        }
       } catch (error) {
         console.error("[NotificationBell] Error fetching unread count:", error);
       } finally {
-        setIsLoading(false);
+        inFlight = false;
+        if (isMounted) {
+          setIsLoading(false);
+          scheduleNext();
+        }
       }
     };
 
     void fetchUnreadCount();
 
-    // Polling cada 30 segundos para sincronizar el badge
-    const interval = setInterval(() => {
-      void fetchUnreadCount();
-    }, 30000);
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        if (timerId) clearTimeout(timerId);
+        void fetchUnreadCount();
+      }
+    };
 
-    return () => clearInterval(interval);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      isMounted = false;
+      document.removeEventListener("visibilitychange", handleVisibility);
+      if (timerId) clearTimeout(timerId);
+    };
   }, []);
 
   /**

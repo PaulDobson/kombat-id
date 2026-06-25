@@ -2,27 +2,10 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
-import { adminSupabase } from "@/lib/supabase/admin";
 import { generateAndStoreMembershipCertificate } from "../../infrastructure/services/membershipCertificateService";
 import type { ActionResult } from "@/lib/types";
-
-async function requireAdmin(): Promise<{ userId: string } | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!data) return null;
-  return { userId: user.id };
-}
+import { requireAdmin } from "./_requireAdmin";
+import { createPractitionerIdentityAdminClient } from "./_practitionerIdentityDeps";
 
 /**
  * Regenera y sobreescribe el certificado de membresía de un practicante.
@@ -32,6 +15,7 @@ async function requireAdmin(): Promise<{ userId: string } | null> {
 export async function regenerateCertificateAction(
   rawInput: unknown,
 ): Promise<ActionResult> {
+  const supabase = createPractitionerIdentityAdminClient();
   // 1. Auth
   const admin = await requireAdmin();
   if (!admin) {
@@ -50,7 +34,7 @@ export async function regenerateCertificateAction(
   }
 
   // 3. Verificar que el practicante existe y está activo
-  const { data: practitioner } = await adminSupabase
+  const { data: practitioner } = await supabase
     .from("practitioners")
     .select("id, full_name, is_active")
     .eq("id", parsed.data.publicId)

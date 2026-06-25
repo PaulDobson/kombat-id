@@ -224,29 +224,19 @@ export async function sendInstructorApprovalEmail(
         </td>
       </tr>
     </table>
-    <p style="margin:0 0 24px;font-size:13px;color:#888877;line-height:1.7;">
-      Por seguridad, <strong style="color:#ccbbaa;">cambia tu contraseña</strong>
-      inmediatamente después de tu primer inicio de sesión desde el perfil de usuario.
+    <p style="margin:0 0 8px;font-size:14px;color:#ccbbaa;line-height:1.7;">
+      Ingresa por primera vez con las credenciales indicadas arriba.
+      El sistema te <strong style="color:#F0E6C8;">pedirá cambiar tu contraseña</strong> de forma automática al iniciar sesión.
     </p>
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px;">
-      <tr>
-        <td style="background-color:#C9A84C;border-radius:6px;">
-          <a href="${SITE_URL}/login"
-             style="display:block;padding:13px 32px;font-size:14px;font-weight:700;color:#111111;text-decoration:none;letter-spacing:0.5px;">
-            Iniciar sesión
-          </a>
-        </td>
-      </tr>
-    </table>
-    <p style="margin:0;font-size:12px;color:#555544;">
-      Si el botón no funciona, copia este enlace:
-      <span style="color:#C9A84C;">${SITE_URL}/login</span>
+    <p style="margin:0;font-size:13px;color:#888877;line-height:1.7;">
+      Accede desde:
+      <a href="${SITE_URL}/login" style="color:#C9A84C;text-decoration:none;">${SITE_URL}/login</a>
     </p>
   `;
 
   await send(
     to,
-    "Tu cuenta de instructor fue aprobada — Kombat Taekwondo",
+    "Bienvenido a Kombat ID — Tu cuenta de instructor está lista",
     wrap(content),
   );
 }

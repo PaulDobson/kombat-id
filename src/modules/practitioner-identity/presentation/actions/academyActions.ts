@@ -3,11 +3,13 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { adminSupabase } from "@/lib/supabase/admin";
+import { isAdmin, requireAdmin } from "./_requireAdmin";
 import type { Academy } from "../../domain/entities/academy";
-import { DrizzleAcademyRepository } from "../../infrastructure/repositories/drizzleAcademyRepository";
-import { DrizzleAcademyMembershipRepository } from "../../infrastructure/repositories/drizzleAcademyMembershipRepository";
-import { DrizzlePractitionerRepository } from "../../infrastructure/repositories/drizzlePractitionerRepository";
+import {
+  createAcademyMembershipRepo,
+  createAcademyRepo,
+  createPractitionerRepo,
+} from "./_practitionerIdentityDeps";
 import {
   createAcademy,
   CreateAcademyInputSchema,
@@ -40,32 +42,6 @@ type ActionResult<T = void> =
   | { success: true; data: T }
   | { success: false; error: string; code: string };
 
-async function requireAdmin(): Promise<{ userId: string } | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!data) return null;
-  return { userId: user.id };
-}
-
-async function isAdmin(userId: string): Promise<boolean> {
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", userId)
-    .maybeSingle();
-  return data !== null;
-}
-
 export async function createAcademyAction(
   rawInput: unknown,
 ): Promise<ActionResult<{ academyId: string }>> {
@@ -87,8 +63,8 @@ export async function createAcademyAction(
   }
 
   try {
-    const academyRepo = new DrizzleAcademyRepository();
-    const practitionerRepo = new DrizzlePractitionerRepository();
+    const academyRepo = createAcademyRepo();
+    const practitionerRepo = createPractitionerRepo();
     const result = await createAcademy(parsed.data, {
       academyRepo,
       practitionerRepo,
@@ -137,7 +113,7 @@ export async function deactivateAcademyAction(
   }
 
   try {
-    const academyRepo = new DrizzleAcademyRepository();
+    const academyRepo = createAcademyRepo();
     await deactivateAcademy(parsed.data, { academyRepo, isAdmin });
     revalidatePath("/admin/academies");
     revalidatePath("/academies");
@@ -190,9 +166,9 @@ export async function assignPractitionerToAcademyAction(
   }
 
   try {
-    const academyRepo = new DrizzleAcademyRepository();
-    const membershipRepo = new DrizzleAcademyMembershipRepository();
-    const practitionerRepo = new DrizzlePractitionerRepository();
+    const academyRepo = createAcademyRepo();
+    const membershipRepo = createAcademyMembershipRepo();
+    const practitionerRepo = createPractitionerRepo();
     const result = await assignPractitionerToAcademy(parsed.data, {
       academyRepo,
       membershipRepo,
@@ -263,7 +239,7 @@ export async function removePractitionerFromAcademyAction(
   }
 
   try {
-    const membershipRepo = new DrizzleAcademyMembershipRepository();
+    const membershipRepo = createAcademyMembershipRepo();
     await removePractitionerFromAcademy(parsed.data, {
       membershipRepo,
       isAdmin,
@@ -315,8 +291,8 @@ export async function addInstructorToAcademyAction(
   const { academyId, instructorId } = parsed.data;
 
   try {
-    const academyRepo = new DrizzleAcademyRepository();
-    const practitionerRepo = new DrizzlePractitionerRepository();
+    const academyRepo = createAcademyRepo();
+    const practitionerRepo = createPractitionerRepo();
 
     const [academy, instructor] = await Promise.all([
       academyRepo.findById(academyId),
@@ -397,7 +373,7 @@ export async function removeInstructorFromAcademyAction(
   const { academyId, instructorId } = parsed.data;
 
   try {
-    const academyRepo = new DrizzleAcademyRepository();
+    const academyRepo = createAcademyRepo();
     const academy = await academyRepo.findById(academyId);
 
     if (!academy) {
@@ -439,7 +415,7 @@ export async function searchAcademiesAction(
   const query = rawInput as AcademySearchQuery;
 
   try {
-    const academyRepo = new DrizzleAcademyRepository();
+    const academyRepo = createAcademyRepo();
     const academies = await academyRepo.search(query ?? {});
     return { success: true, data: academies };
   } catch (err) {

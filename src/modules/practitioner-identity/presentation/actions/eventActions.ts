@@ -2,10 +2,10 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
-import { adminSupabase } from "@/lib/supabase/admin";
 import { notifyInstructorsEventPublished } from "@/modules/notifications/presentation/actions/notificationHelpers";
 import type { EventAttachment, EventType } from "@/types/database.types";
+import { requireAdmin } from "./_requireAdmin";
+import { createEventAdminClient } from "./_eventDeps";
 
 type ActionResult<T = void> =
   | { success: true; data: T }
@@ -25,27 +25,6 @@ export interface MartialEvent {
   attachments: EventAttachment[];
   created_by: string;
   created_at: string;
-}
-
-// ---------------------------------------------------------------------------
-// Auth helper
-// ---------------------------------------------------------------------------
-
-async function requireAdmin(): Promise<{ userId: string } | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!data) return null;
-  return { userId: user.id };
 }
 
 // ---------------------------------------------------------------------------
@@ -116,6 +95,7 @@ const UpdateEventSchema = CreateEventSchema.extend({
 export async function createEventAction(
   rawInput: unknown,
 ): Promise<ActionResult<{ id: string }>> {
+  const supabase = createEventAdminClient();
   const admin = await requireAdmin();
   if (!admin) {
     return { success: false, error: "No autorizado", code: "UNAUTHORIZED" };
@@ -130,7 +110,7 @@ export async function createEventAction(
     };
   }
 
-  const { data, error } = await adminSupabase
+  const { data, error } = await supabase
     .from("martial_events")
     .insert({
       name: parsed.data.name,
@@ -160,7 +140,7 @@ export async function createEventAction(
   // Notificar a los instructores sobre el nuevo evento
   try {
     // Obtener nombre del administrador que publicó el evento
-    const { data: adminData } = await adminSupabase
+    const { data: adminData } = await supabase
       .from("practitioners")
       .select("full_name")
       .eq("auth_user_id", admin.userId)
@@ -195,6 +175,7 @@ export async function createEventAction(
 export async function updateEventAction(
   rawInput: unknown,
 ): Promise<ActionResult> {
+  const supabase = createEventAdminClient();
   const admin = await requireAdmin();
   if (!admin) {
     return { success: false, error: "No autorizado", code: "UNAUTHORIZED" };
@@ -209,7 +190,7 @@ export async function updateEventAction(
     };
   }
 
-  const { error } = await adminSupabase
+  const { error } = await supabase
     .from("martial_events")
     .update({
       name: parsed.data.name,
@@ -241,6 +222,7 @@ export async function updateEventAction(
 }
 
 export async function deleteEventAction(id: string): Promise<ActionResult> {
+  const supabase = createEventAdminClient();
   const admin = await requireAdmin();
   if (!admin) {
     return { success: false, error: "No autorizado", code: "UNAUTHORIZED" };
@@ -250,10 +232,7 @@ export async function deleteEventAction(id: string): Promise<ActionResult> {
     return { success: false, error: "ID inválido", code: "VALIDATION_ERROR" };
   }
 
-  const { error } = await adminSupabase
-    .from("martial_events")
-    .delete()
-    .eq("id", id);
+  const { error } = await supabase.from("martial_events").delete().eq("id", id);
 
   if (error) {
     console.error("[deleteEventAction]", error);

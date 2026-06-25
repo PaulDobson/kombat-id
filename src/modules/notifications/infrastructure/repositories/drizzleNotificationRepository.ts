@@ -177,22 +177,22 @@ export class DrizzleNotificationRepository implements NotificationRepository {
   async countUnreadByUserId(userId: string): Promise<number> {
     const now = new Date().toISOString();
 
-    const { count, error } = await adminSupabase
+    // Fetch unread recipient rows for this user, join notifications to check expiry.
+    // We avoid `head: true` + `foreignTable` filter in the same query because
+    // PostgREST rejects that combination — instead we fetch just the IDs and count
+    // client-side. Unread counts are small (< hundreds) so this is safe.
+    const { data: rows, error } = await adminSupabase
       .from("notification_recipients")
       .select(
         `
-        *,
+        notification_id,
         notifications!inner (
           expires_at
         )
       `,
-        { count: "exact", head: true },
       )
       .eq("recipient_user_id", userId)
-      .eq("is_read", false)
-      .or(`expires_at.is.null,expires_at.gt.${now}`, {
-        foreignTable: "notifications",
-      });
+      .eq("is_read", false);
 
     if (error) {
       throw new DomainError(
@@ -200,7 +200,17 @@ export class DrizzleNotificationRepository implements NotificationRepository {
       );
     }
 
-    return count ?? 0;
+    if (!rows || rows.length === 0) return 0;
+
+    // Filter out expired notifications client-side
+    return rows.filter((row) => {
+      const notif = Array.isArray(row.notifications)
+        ? row.notifications[0]
+        : row.notifications;
+      if (!notif) return false;
+      const expiresAt = notif.expires_at;
+      return expiresAt === null || expiresAt > now;
+    }).length;
   }
 
   async markAsRead(notificationId: string, userId: string): Promise<void> {

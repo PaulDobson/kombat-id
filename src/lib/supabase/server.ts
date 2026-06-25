@@ -1,5 +1,6 @@
 import "server-only";
 import { createServerClient } from "@supabase/ssr";
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -28,12 +29,18 @@ export const createClient = async () => {
   });
 };
 
-export async function requireUser() {
+const getCurrentUser = cache(async () => {
   const supabase = await createClient();
   const {
     data: { user },
     error,
   } = await supabase.auth.getUser();
+
+  return { user, error };
+});
+
+export async function requireUser() {
+  const { user, error } = await getCurrentUser();
 
   if (error || !user) redirect("/login");
 

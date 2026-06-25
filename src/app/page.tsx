@@ -22,6 +22,8 @@ interface MartialEvent {
   location: string | null;
 }
 
+const MAX_SEARCH_QUERY_LENGTH = 80;
+
 async function _getUpcomingEventsLanding(): Promise<MartialEvent[]> {
   const today = new Date().toISOString().slice(0, 10);
   const { data } = await adminSupabase
@@ -98,7 +100,8 @@ export default async function LandingPage({
     getApprovedReferees(),
   ]);
   const { search } = await searchParams;
-  const searchQuery = search?.trim() || undefined;
+  const normalizedSearch = search?.trim().slice(0, MAX_SEARCH_QUERY_LENGTH);
+  const searchQuery = normalizedSearch ? normalizedSearch : undefined;
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-50 overflow-x-hidden">

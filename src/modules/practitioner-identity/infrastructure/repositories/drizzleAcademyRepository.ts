@@ -27,6 +27,17 @@ const AcademyRowSchema = z.object({
   created_by: z.string().uuid(),
   updated_at: z.string().min(1),
   created_at: z.string().min(1),
+  // Perfil público
+  description: z.string().nullable().optional(),
+  founder_story: z.string().nullable().optional(),
+  // Contacto
+  contact_phone: z.string().nullable().optional(),
+  contact_email: z.string().nullable().optional(),
+  contact_instagram: z.string().nullable().optional(),
+  contact_whatsapp: z.string().nullable().optional(),
+  contact_website: z.string().nullable().optional(),
+  // Media
+  cover_image_path: z.string().nullable().optional(),
 });
 
 export class DrizzleAcademyRepository implements AcademyRepository {
@@ -179,6 +190,14 @@ export class DrizzleAcademyRepository implements AcademyRepository {
       createdBy: parsed.data.created_by,
       updatedAt: parsed.data.updated_at,
       createdAt: parsed.data.created_at,
+      description: parsed.data.description ?? null,
+      founderStory: parsed.data.founder_story ?? null,
+      contactPhone: parsed.data.contact_phone ?? null,
+      contactEmail: parsed.data.contact_email ?? null,
+      contactInstagram: parsed.data.contact_instagram ?? null,
+      contactWhatsapp: parsed.data.contact_whatsapp ?? null,
+      contactWebsite: parsed.data.contact_website ?? null,
+      coverImagePath: parsed.data.cover_image_path ?? null,
     };
   }
 
@@ -197,6 +216,14 @@ export class DrizzleAcademyRepository implements AcademyRepository {
       created_by: academy.createdBy,
       updated_at: academy.updatedAt,
       created_at: academy.createdAt,
+      description: academy.description,
+      founder_story: academy.founderStory,
+      contact_phone: academy.contactPhone,
+      contact_email: academy.contactEmail,
+      contact_instagram: academy.contactInstagram,
+      contact_whatsapp: academy.contactWhatsapp,
+      contact_website: academy.contactWebsite,
+      cover_image_path: academy.coverImagePath,
     };
   }
 }
