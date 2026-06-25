@@ -13,12 +13,15 @@ import {
 
 export interface RefereeAuthService {
   /**
-   * Creates a Supabase Auth user with role 'referee' in app_metadata
-   * and sends a password-setup invitation email.
-   * Returns the auth user id.
-   * If the user already exists, assigns the role if missing and returns the existing id.
+   * Crea un usuario Supabase Auth con rol 'referee' en app_metadata
+   * y una contraseña temporal. Retorna el auth user id y la contraseña
+   * temporal para enviarla en el email de bienvenida.
+   * Si el usuario ya existe, asigna el rol si falta y retorna el id existente
+   * (sin temporaryPassword).
    */
-  inviteRefereeUser(email: string): Promise<{ authUserId: string }>;
+  inviteRefereeUser(
+    email: string,
+  ): Promise<{ authUserId: string; temporaryPassword?: string }>;
 }
 
 // ---------------------------------------------------------------------------
@@ -54,7 +57,7 @@ export async function approveRefereeRegistration(
     repo: RefereeRegistrationRepository;
     authService: RefereeAuthService;
   },
-): Promise<void> {
+): Promise<{ temporaryPassword?: string }> {
   const { repo, authService } = deps;
 
   const registration = await repo.findById(input.id);
@@ -66,12 +69,14 @@ export async function approveRefereeRegistration(
     throw new InvalidStatusTransitionError(registration.status, "approved");
   }
 
-  // Create Auth user BEFORE updating the registration status.
-  // If this fails, the registration remains 'pending' (invariant preserved).
+  // Crear cuenta Auth ANTES de actualizar el estado del registro.
+  // Si falla, el registro permanece en 'pending' (invariante preservado).
   let authUserId: string;
+  let temporaryPassword: string | undefined;
   try {
     const result = await authService.inviteRefereeUser(registration.email);
     authUserId = result.authUserId;
+    temporaryPassword = result.temporaryPassword;
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
     throw new AuthUserCreationError(registration.email, reason);
@@ -83,4 +88,6 @@ export async function approveRefereeRegistration(
     authUserId,
     timestamp: now,
   });
+
+  return temporaryPassword ? { temporaryPassword } : {};
 }

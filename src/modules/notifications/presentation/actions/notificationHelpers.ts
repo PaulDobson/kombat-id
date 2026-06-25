@@ -1,8 +1,8 @@
-import { DrizzleNotificationRepository } from "../../infrastructure/repositories/drizzleNotificationRepository";
 import { createNotification } from "../../application/use-cases/createNotification";
 import { NotificationType } from "../../domain/enums/notificationType";
 import { NotificationCategory } from "../../domain/enums/notificationCategory";
 import { NotificationPriority } from "../../domain/enums/notificationPriority";
+import { createNotificationModuleDeps } from "./_notificationDeps";
 
 /**
  * Helper: Notifica a los administradores que hay un nuevo alumno pendiente de autorización
@@ -15,7 +15,7 @@ export async function notifyAdminsNewStudent(data: {
   instructorId: string;
   instructorName: string;
 }): Promise<void> {
-  const notificationRepo = new DrizzleNotificationRepository();
+  const deps = createNotificationModuleDeps();
 
   await createNotification(
     {
@@ -43,7 +43,7 @@ export async function notifyAdminsNewStudent(data: {
       recipientStrategy: "specific_users",
       specificUserIds: undefined, // Se resolverán los admin_users en el use case
     },
-    { notificationRepo },
+    deps,
   );
 }
 
@@ -60,7 +60,7 @@ export async function notifyInstructorsEventPublished(data: {
   publishedByName: string;
   publishedByUserId: string;
 }): Promise<void> {
-  const notificationRepo = new DrizzleNotificationRepository();
+  const deps = createNotificationModuleDeps();
 
   await createNotification(
     {
@@ -88,7 +88,7 @@ export async function notifyInstructorsEventPublished(data: {
       recipientStrategy: "role_based",
       roles: ["instructor", "profesor", "maestro"],
     },
-    { notificationRepo },
+    deps,
   );
 }
 
@@ -104,7 +104,7 @@ export async function notifyInstructorStudentActivated(data: {
   activatedByName: string;
   activatedByUserId: string;
 }): Promise<void> {
-  const notificationRepo = new DrizzleNotificationRepository();
+  const deps = createNotificationModuleDeps();
 
   await createNotification(
     {
@@ -131,7 +131,7 @@ export async function notifyInstructorStudentActivated(data: {
       recipientStrategy: "specific_users",
       specificUserIds: [data.instructorId], // Auth user ID del instructor
     },
-    { notificationRepo },
+    deps,
   );
 }
 
@@ -148,7 +148,7 @@ export async function notifyCertificationRequestApproved(data: {
   approvedByUserId: string;
   approvedByName: string;
 }): Promise<void> {
-  const notificationRepo = new DrizzleNotificationRepository();
+  const deps = createNotificationModuleDeps();
 
   await createNotification(
     {
@@ -177,7 +177,7 @@ export async function notifyCertificationRequestApproved(data: {
       recipientStrategy: "specific_users",
       specificUserIds: [data.instructorUserId],
     },
-    { notificationRepo },
+    deps,
   );
 }
 
@@ -194,7 +194,7 @@ export async function notifyGradeUpdated(data: {
   updatedByUserId: string;
   updatedByName: string;
 }): Promise<void> {
-  const notificationRepo = new DrizzleNotificationRepository();
+  const deps = createNotificationModuleDeps();
 
   const gradeLabel = data.newDan
     ? `${data.newGrade} ${data.newDan}º Dan`
@@ -227,6 +227,49 @@ export async function notifyGradeUpdated(data: {
       recipientStrategy: "specific_users",
       specificUserIds: [data.practitionerUserId],
     },
-    { notificationRepo },
+    deps,
+  );
+}
+
+/**
+ * Helper: Notifica a los administradores que hay una nueva solicitud de cuenta de instructor pendiente
+ * Uso: Llamar desde submitInstructorAccountRequestAction (fire-and-forget con .catch())
+ */
+export async function notifyAdminsInstructorRequestPending(data: {
+  requestId: string;
+  fullName: string;
+  email: string;
+  academyName: string | null | undefined;
+}): Promise<void> {
+  const deps = createNotificationModuleDeps();
+
+  const academySuffix = data.academyName ? ` (${data.academyName})` : "";
+
+  await createNotification(
+    {
+      type: NotificationType.INSTRUCTOR_REQUEST_PENDING,
+      category: NotificationCategory.APPROVAL,
+      priority: NotificationPriority.HIGH,
+      title: "Nueva solicitud de instructor pendiente",
+      message: `${data.fullName}${academySuffix} ha solicitado una cuenta de instructor`,
+      actionUrl: "/admin/instructor-requests",
+      actionLabel: "Revisar solicitud",
+      metadata: {
+        requestId: data.requestId,
+        fullName: data.fullName,
+        email: data.email,
+        academyName: data.academyName ?? null,
+      },
+      actorUserId: null,
+      actorName: data.fullName,
+      relatedEntityType: "instructor_account_request",
+      relatedEntityId: data.requestId,
+      expiresInDays: null,
+
+      // Dirigida a todos los administradores
+      recipientStrategy: "specific_users",
+      specificUserIds: undefined, // Se resolverán los admin_users en el use case
+    },
+    deps,
   );
 }

@@ -18,15 +18,25 @@ const PUBLIC_ROUTES = [
   "/",
 ];
 
+const EXACT_PUBLIC_ROUTES = new Set(
+  PUBLIC_ROUTES.filter((r) => !r.endsWith("/") || r === "/"),
+);
+const PREFIX_PUBLIC_ROUTES = PUBLIC_ROUTES.filter(
+  (r) => r !== "/" && !r.endsWith("/"),
+).map((r) => `${r}/`);
+
+function isPublicRoute(pathname: string): boolean {
+  // Ruta exacta (incluyendo "/")
+  if (EXACT_PUBLIC_ROUTES.has(pathname)) return true;
+  // Rutas con prefijo (ej: /academies/123)
+  return PREFIX_PUBLIC_ROUTES.some((prefix) => pathname.startsWith(prefix));
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Rutas públicas no necesitan sesión — saltar Supabase completamente
-  if (
-    PUBLIC_ROUTES.some(
-      (r) => pathname === r || (r !== "/" && pathname.startsWith(r)),
-    )
-  ) {
+  if (isPublicRoute(pathname)) {
     return NextResponse.next({ request });
   }
 
@@ -86,6 +96,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|css|js|map|txt|xml|woff|woff2|ttf)$).*)",
   ],
 };

@@ -2,16 +2,11 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
-import { adminSupabase } from "@/lib/supabase/admin";
+import { isAdmin, requireAdmin } from "./_requireAdmin";
 import type { Practitioner } from "../../domain/entities/practitioner";
 import type { MartialHistoryEntry } from "../../domain/entities/martialHistoryEntry";
-import { DrizzlePractitionerRepository } from "../../infrastructure/repositories/drizzlePractitionerRepository";
-import { DrizzleMartialHistoryRepository } from "../../infrastructure/repositories/drizzleMartialHistoryRepository";
-import { DrizzleCertificationRepository } from "../../infrastructure/repositories/drizzleCertificationRepository";
 import { generateAndStoreMembershipCertificate } from "../../infrastructure/services/membershipCertificateService";
 import { notifyInstructorStudentActivated } from "@/modules/notifications/presentation/actions/notificationHelpers";
-import { DrizzleAuditLogRepository } from "../../infrastructure/repositories/drizzleAuditLogRepository";
 import {
   addMartialHistoryEntry,
   AddMartialHistoryEntryInputSchema,
@@ -24,7 +19,6 @@ import {
   updateDisciplineGrade,
   UpdateDisciplineGradeInputSchema,
 } from "../../application/use-cases/updateDisciplineGrade";
-import { DrizzleDisciplineGradeRepository } from "../../infrastructure/repositories/drizzleDisciplineGradeRepository";
 import {
   issueCertification,
   IssueCertificationInputSchema,
@@ -46,6 +40,14 @@ import {
   SearchPractitionersInputSchema,
 } from "../../application/use-cases/searchPractitioners";
 import {
+  createAuditLogRepo,
+  createCertificationRepo,
+  createDisciplineGradeRepo,
+  createMartialHistoryRepo,
+  createPractitionerIdentityAdminClient,
+  createPractitionerRepo,
+} from "./_practitionerIdentityDeps";
+import {
   PractitionerNotFoundError,
   PractitionerInactiveError,
   DuplicateHistoryEntryError,
@@ -59,32 +61,6 @@ import { DomainError } from "@/lib/errors";
 type ActionResult<T = void> =
   | { success: true; data: T }
   | { success: false; error: string; code: string };
-
-async function requireAdmin(): Promise<{ userId: string } | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!data) return null;
-  return { userId: user.id };
-}
-
-async function isAdmin(userId: string): Promise<boolean> {
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", userId)
-    .maybeSingle();
-  return data !== null;
-}
 
 export async function addMartialHistoryEntryAction(
   rawInput: unknown,
@@ -104,8 +80,8 @@ export async function addMartialHistoryEntryAction(
   }
 
   try {
-    const practitionerRepo = new DrizzlePractitionerRepository();
-    const martialHistoryRepo = new DrizzleMartialHistoryRepository();
+    const practitionerRepo = createPractitionerRepo();
+    const martialHistoryRepo = createMartialHistoryRepo();
     const entry = await addMartialHistoryEntry(parsed.data, {
       practitionerRepo,
       martialHistoryRepo,
@@ -167,8 +143,8 @@ export async function updatePractitionerGradeAction(
   }
 
   try {
-    const practitionerRepo = new DrizzlePractitionerRepository();
-    const martialHistoryRepo = new DrizzleMartialHistoryRepository();
+    const practitionerRepo = createPractitionerRepo();
+    const martialHistoryRepo = createMartialHistoryRepo();
 
     if (parsed.data.discipline) {
       // Req 13.4, 13.7 — discipline specified: delegate to updateDisciplineGrade
@@ -184,7 +160,7 @@ export async function updatePractitionerGradeAction(
         certificationId: parsed.data.certificationId ?? null,
       });
 
-      const disciplineGradeRepo = new DrizzleDisciplineGradeRepository();
+      const disciplineGradeRepo = createDisciplineGradeRepo();
       await updateDisciplineGrade(disciplineInput, {
         practitionerRepo,
         disciplineGradeRepo,
@@ -193,7 +169,7 @@ export async function updatePractitionerGradeAction(
       });
     } else {
       // Req 13.7 — no discipline: existing behaviour (kombat_taekwondo only)
-      const auditLogRepo = new DrizzleAuditLogRepository();
+      const auditLogRepo = createAuditLogRepo();
       await updatePractitionerGrade(
         {
           publicId: parsed.data.publicId,
@@ -263,8 +239,8 @@ export async function issueCertificationAction(
   }
 
   try {
-    const practitionerRepo = new DrizzlePractitionerRepository();
-    const certificationRepo = new DrizzleCertificationRepository();
+    const practitionerRepo = createPractitionerRepo();
+    const certificationRepo = createCertificationRepo();
     const result = await issueCertification(parsed.data, {
       practitionerRepo,
       certificationRepo,
@@ -312,7 +288,7 @@ export async function revokeCertificationAction(
   }
 
   try {
-    const certificationRepo = new DrizzleCertificationRepository();
+    const certificationRepo = createCertificationRepo();
     await revokeCertification(parsed.data, { certificationRepo, isAdmin });
     return { success: true, data: undefined };
   } catch (err) {
@@ -360,8 +336,8 @@ export async function deactivatePractitionerAction(
   }
 
   try {
-    const practitionerRepo = new DrizzlePractitionerRepository();
-    const auditLogRepo = new DrizzleAuditLogRepository();
+    const practitionerRepo = createPractitionerRepo();
+    const auditLogRepo = createAuditLogRepo();
     await deactivatePractitioner(parsed.data, {
       practitionerRepo,
       auditLogRepo,
@@ -406,8 +382,8 @@ export async function regenerateQrTokenAction(
   }
 
   try {
-    const practitionerRepo = new DrizzlePractitionerRepository();
-    const auditLogRepo = new DrizzleAuditLogRepository();
+    const practitionerRepo = createPractitionerRepo();
+    const auditLogRepo = createAuditLogRepo();
     const result = await regenerateQrToken(parsed.data, {
       practitionerRepo,
       auditLogRepo,
@@ -452,7 +428,7 @@ export async function searchPractitionersAction(
   }
 
   try {
-    const practitionerRepo = new DrizzlePractitionerRepository();
+    const practitionerRepo = createPractitionerRepo();
     const practitioners = await searchPractitioners(parsed.data, {
       practitionerRepo,
     });
@@ -497,7 +473,7 @@ export async function activatePractitionerAction(
   }
 
   try {
-    const practitionerRepo = new DrizzlePractitionerRepository();
+    const practitionerRepo = createPractitionerRepo();
     const practitioner = await practitionerRepo.findById(parsed.data.publicId);
 
     if (!practitioner) {
@@ -537,16 +513,17 @@ export async function activatePractitionerAction(
 
     // Notificar al instructor que registró al alumno
     if (practitioner.instructorId) {
+      const supabase = createPractitionerIdentityAdminClient();
       try {
         // Obtener el auth_user_id del instructor
-        const { data: instructorData } = await adminSupabase
+        const { data: instructorData } = await supabase
           .from("practitioners")
           .select("auth_user_id, full_name")
           .eq("id", practitioner.instructorId)
           .single();
 
         // Obtener nombre del administrador que activó
-        const { data: adminData } = await adminSupabase
+        const { data: adminData } = await supabase
           .from("practitioners")
           .select("full_name")
           .eq("auth_user_id", admin.userId)
@@ -612,7 +589,7 @@ export async function deletePractitionerAction(
   }
 
   try {
-    const practitionerRepo = new DrizzlePractitionerRepository();
+    const practitionerRepo = createPractitionerRepo();
     const practitioner = await practitionerRepo.findById(parsed.data.publicId);
 
     if (!practitioner) {
@@ -629,10 +606,11 @@ export async function deletePractitionerAction(
     );
 
     // SOFT DELETE: Marcar como eliminado lógicamente, solo auth.users se elimina físicamente
+    const supabase = createPractitionerIdentityAdminClient();
     const practitionerId = parsed.data.publicId;
 
     // 1. Eliminar todas las membresías de academias
-    const { data: deletedMemberships } = await adminSupabase
+    const { data: deletedMemberships } = await supabase
       .from("academy_memberships")
       .delete()
       .eq("practitioner_id", practitionerId)
@@ -644,7 +622,7 @@ export async function deletePractitionerAction(
     );
 
     // 2. Revocar todas las certificaciones (soft delete)
-    const { data: revokedCerts } = await adminSupabase
+    const { data: revokedCerts } = await supabase
       .from("certifications")
       .update({ is_revoked: true })
       .eq("practitioner_id", practitionerId)
@@ -657,7 +635,7 @@ export async function deletePractitionerAction(
     );
 
     // 3. Desactivar grados de disciplinas (soft delete)
-    const { data: deactivatedDisciplines } = await adminSupabase
+    const { data: deactivatedDisciplines } = await supabase
       .from("discipline_grades")
       .update({ is_active: false })
       .eq("practitioner_id", practitionerId)
@@ -670,7 +648,7 @@ export async function deletePractitionerAction(
     );
 
     // 4. Actualizar practitioners que tienen este practitioner como instructor (SET NULL)
-    const { data: updatedStudents } = await adminSupabase
+    const { data: updatedStudents } = await supabase
       .from("practitioners")
       .update({ instructor_id: null })
       .eq("instructor_id", practitionerId)
@@ -683,7 +661,7 @@ export async function deletePractitionerAction(
 
     // 5. Marcar el practicante como eliminado (soft delete)
     const { data: deactivatedPractitioner, error: practitionerError } =
-      await adminSupabase
+      await supabase
         .from("practitioners")
         .update({
           is_active: false,
@@ -717,7 +695,7 @@ export async function deletePractitionerAction(
         practitioner.authUserId,
       );
 
-      const { error: authError } = await adminSupabase.auth.admin.deleteUser(
+      const { error: authError } = await supabase.auth.admin.deleteUser(
         practitioner.authUserId,
       );
 

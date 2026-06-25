@@ -1,34 +1,14 @@
-import { createClient } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
-import { redirect } from "next/navigation";
+import { requireAdmin } from "@/lib/auth-guards";
 import type { Grade } from "@/modules/practitioner-identity/domain/entities/practitioner";
 import Link from "next/link";
-
 // ---------------------------------------------------------------------------
 // Auth guard
 // ---------------------------------------------------------------------------
-
-async function requireAdminUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!data) redirect("/dashboard");
-  return user;
-}
-
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
 const PAGE_SIZE = 25;
-
 const GRADE_ORDER: Grade[] = [
   "white",
   "yellow",
@@ -37,7 +17,6 @@ const GRADE_ORDER: Grade[] = [
   "red",
   "black",
 ];
-
 const GRADE_LABELS: Record<Grade, string> = {
   white: "Blanco",
   yellow: "Amarillo",
@@ -46,7 +25,6 @@ const GRADE_LABELS: Record<Grade, string> = {
   red: "Rojo",
   black: "Negro",
 };
-
 const GRADE_STYLES: Record<Grade, string> = {
   white: "bg-neutral-700 text-neutral-200 border border-neutral-600",
   yellow: "bg-yellow-900/50 text-yellow-400 border border-yellow-800",
@@ -55,14 +33,11 @@ const GRADE_STYLES: Record<Grade, string> = {
   red: "bg-red-900/50 text-red-400 border border-red-800",
   black: "bg-neutral-800 text-neutral-100 border border-neutral-600",
 };
-
 type SortField = "full_name" | "start_date" | "grade" | "created_at";
 type SortDir = "asc" | "desc";
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
 function buildUrl(
   base: Record<string, string | undefined>,
   overrides: Record<string, string | undefined>,
@@ -75,7 +50,6 @@ function buildUrl(
   const qs = params.toString();
   return `/admin/practitioners${qs ? `?${qs}` : ""}`;
 }
-
 function SortLink({
   label,
   field,
@@ -101,11 +75,9 @@ function SortLink({
     </Link>
   );
 }
-
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
-
 export default async function AdminPractitionersPage({
   searchParams,
 }: {
@@ -119,9 +91,8 @@ export default async function AdminPractitionersPage({
     page?: string;
   }>;
 }) {
-  await requireAdminUser();
+  await requireAdmin();
   const sp = await searchParams;
-
   const name = sp.name?.trim() ?? "";
   const rut = sp.rut?.trim() ?? "";
   const grade = sp.grade ?? "";
@@ -134,7 +105,6 @@ export default async function AdminPractitionersPage({
   const dir: SortDir = sp.dir === "desc" ? "desc" : "asc";
   const page = Math.max(1, parseInt(sp.page ?? "1", 10));
   const offset = (page - 1) * PAGE_SIZE;
-
   const baseParams: Record<string, string | undefined> = {
     name: name || undefined,
     rut: rut || undefined,
@@ -143,19 +113,16 @@ export default async function AdminPractitionersPage({
     sort,
     dir,
   };
-
   // ── Fetch academies for filter dropdown (cheap, small table) ──────────────
   const { data: academyList } = await adminSupabase
     .from("academies")
     .select("id, name")
     .eq("is_active", true)
     .order("name");
-
   // ── Main query — server-side filtered, sorted, paginated ─────────────────
   // We join through academy_memberships to get academy name in one query.
   // Supabase doesn't support arbitrary JOINs via the JS client, so we use
   // two targeted queries and merge in JS — still O(PAGE_SIZE) per render.
-
   // Step 1: build the practitioners query with all filters
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let query: any = adminSupabase
@@ -164,11 +131,9 @@ export default async function AdminPractitionersPage({
       "id, full_name, rut, grade, dan, is_active, start_date, created_at, address_city, address_region, instructor_id",
       { count: "exact" },
     );
-
   if (name) query = query.ilike("full_name", `%${name}%`);
   if (rut) query = query.ilike("rut", `%${rut}%`);
   if (grade) query = query.eq("grade", grade);
-
   // Academy filter
   if (academyFilter === "none") {
     // Sin academia: obtener IDs con membresía activa y excluirlos
@@ -202,7 +167,6 @@ export default async function AdminPractitionersPage({
       query = query.in("id", ids);
     }
   }
-
   // Sort: grade needs special handling (enum order, not alpha)
   if (sort === "grade") {
     // Sort by grade order index via a CASE-like approach: fetch all and sort in JS
@@ -211,17 +175,13 @@ export default async function AdminPractitionersPage({
   } else {
     query = query.order(sort, { ascending: dir === "asc" });
   }
-
   query = query.range(offset, offset + PAGE_SIZE - 1);
-
   const { data: rows, count } = await query;
   const practitioners = rows ?? [];
   const totalCount = count ?? 0;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
-
   // Step 2: enrich with academy names and instructor names (only for current page)
   const practitionerIds = practitioners.map((p: { id: string }) => p.id);
-
   const [{ data: memberships }, { data: instructorRows }] = await Promise.all([
     practitionerIds.length > 0
       ? adminSupabase
@@ -235,7 +195,6 @@ export default async function AdminPractitionersPage({
       .select("id, full_name")
       .in("role", ["instructor", "profesor", "maestro"]),
   ]);
-
   const academyByPractitioner = new Map<string, string>();
   for (const m of memberships ?? []) {
     const name = (m.academies as { name: string } | null)?.name;
@@ -245,7 +204,6 @@ export default async function AdminPractitionersPage({
   for (const i of instructorRows ?? []) {
     instructorNameById.set(i.id as string, i.full_name as string);
   }
-
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-5">
@@ -266,7 +224,6 @@ export default async function AdminPractitionersPage({
           + Registrar nuevo
         </Link>
       </div>
-
       {/* Filters */}
       <form
         method="GET"
@@ -349,7 +306,6 @@ export default async function AdminPractitionersPage({
           )}
         </div>
       </form>
-
       {/* Table */}
       <div className="bg-neutral-900 border border-neutral-700 rounded-xl overflow-hidden">
         {practitioners.length === 0 ? (
@@ -501,7 +457,6 @@ export default async function AdminPractitionersPage({
           </div>
         )}
       </div>
-
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">

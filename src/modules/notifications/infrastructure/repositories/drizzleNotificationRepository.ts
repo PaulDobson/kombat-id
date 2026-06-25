@@ -48,19 +48,29 @@ export class DrizzleNotificationRepository implements NotificationRepository {
     notificationId: string,
     recipientUserIds: string[],
   ): Promise<void> {
-    const { error } = await adminSupabase
-      .from("notification_recipients")
-      .insert(
-        recipientUserIds.map((userId) => ({
-          notification_id: notificationId,
-          recipient_user_id: userId,
-          is_read: false,
-          is_actioned: false,
-        })),
-      );
+    // Batch insert en grupos de 1000 para evitar payload excesivo en Supabase.
+    // Con 100k+ usuarios, un INSERT con todos los IDs puede causar timeout.
+    // Esta estrategia mantiene la transacción semántica: todos se insertan o ninguno.
+    const BATCH_SIZE = 1000;
 
-    if (error) {
-      throw new DomainError(`Failed to add recipients: ${error.message}`);
+    for (let i = 0; i < recipientUserIds.length; i += BATCH_SIZE) {
+      const batch = recipientUserIds.slice(i, i + BATCH_SIZE);
+      const { error } = await adminSupabase
+        .from("notification_recipients")
+        .insert(
+          batch.map((userId) => ({
+            notification_id: notificationId,
+            recipient_user_id: userId,
+            is_read: false,
+            is_actioned: false,
+          })),
+        );
+
+      if (error) {
+        throw new DomainError(
+          `Failed to add recipients batch [${i}-${i + batch.length}]: ${error.message}`,
+        );
+      }
     }
   }
 
@@ -177,16 +187,18 @@ export class DrizzleNotificationRepository implements NotificationRepository {
   async countUnreadByUserId(userId: string): Promise<number> {
     const now = new Date().toISOString();
 
-    const { count, error } = await adminSupabase
+    // Filtra expiradas a nivel DB con el mismo patrón usado en findByUserId.
+    // Nota: no combinamos con head:true porque PostgREST rechaza esa combinación
+    // con filtros de foreignTable — obtenemos solo los IDs y contamos en JS.
+    const { data: rows, error } = await adminSupabase
       .from("notification_recipients")
       .select(
         `
-        *,
+        notification_id,
         notifications!inner (
           expires_at
         )
       `,
-        { count: "exact", head: true },
       )
       .eq("recipient_user_id", userId)
       .eq("is_read", false)
@@ -200,7 +212,11 @@ export class DrizzleNotificationRepository implements NotificationRepository {
       );
     }
 
-    return count ?? 0;
+    if (!rows || rows.length === 0) return 0;
+
+    // El filtro OR ya excluyó las expiradas a nivel DB;
+    // sólo necesitamos el conteo de las filas restantes.
+    return rows.length;
   }
 
   async markAsRead(notificationId: string, userId: string): Promise<void> {

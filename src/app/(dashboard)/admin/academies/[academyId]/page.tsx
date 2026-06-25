@@ -1,6 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
+import { notFound } from "next/navigation";
 import { adminSupabase } from "@/lib/supabase/admin";
-import { redirect, notFound } from "next/navigation";
 import { DrizzleAcademyRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzleAcademyRepository";
 import type { ChileanRegion } from "@/modules/practitioner-identity/domain/entities/academy";
 import type { Grade } from "@/modules/practitioner-identity/domain/entities/practitioner";
@@ -21,25 +20,11 @@ import { DeactivateAcademyButton } from "./DeactivateAcademyButton";
 import { AssignPractitionerPanel } from "./AssignPractitionerPanel";
 import { RemoveMemberButton } from "./RemoveMemberButton";
 import { ManageInstructorsPanel } from "./ManageInstructorsPanel";
+import { requireAdmin } from "@/lib/auth-guards";
 
 // ---------------------------------------------------------------------------
 // Auth guard
 // ---------------------------------------------------------------------------
-
-async function requireAdminUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!data) redirect("/dashboard");
-  return user;
-}
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -113,7 +98,7 @@ export default async function AcademyDetailPage({
   params: Promise<{ academyId: string }>;
   searchParams: Promise<{ page?: string }>;
 }) {
-  await requireAdminUser();
+  await requireAdmin();
   const { academyId } = await params;
   const sp = await searchParams;
 

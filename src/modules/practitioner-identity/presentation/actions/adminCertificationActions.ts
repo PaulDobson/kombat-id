@@ -2,10 +2,12 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
-import { adminSupabase } from "@/lib/supabase/admin";
-import { DrizzlePractitionerRepository } from "../../infrastructure/repositories/drizzlePractitionerRepository";
-import { DrizzleCertificationRepository } from "../../infrastructure/repositories/drizzleCertificationRepository";
+import { isAdmin, requireAdmin } from "./_requireAdmin";
+import {
+  createCertificationRepo,
+  createPractitionerIdentityAdminClient,
+  createPractitionerRepo,
+} from "./_practitionerIdentityDeps";
 import {
   issueCertification,
   type IssueCertificationInput,
@@ -33,39 +35,12 @@ const ObserveCertificationRequestInputSchema = z.object({
   observationNotes: z.string().min(1),
 });
 
-// ── Helper: require admin ─────────────────────────────────────────────────────
-
-async function requireAdmin(): Promise<{ userId: string } | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!data) return null;
-  return { userId: user.id };
-}
-
-async function isAdmin(userId: string): Promise<boolean> {
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", userId)
-    .maybeSingle();
-  return data !== null;
-}
-
 // ── approveCertificationRequestAction ────────────────────────────────────────
 
 export async function approveCertificationRequestAction(
   rawInput: unknown,
 ): Promise<ActionResult<{ certId: string }>> {
+  const supabase = createPractitionerIdentityAdminClient();
   const admin = await requireAdmin();
   if (!admin) {
     return { success: false, error: "No autorizado", code: "UNAUTHORIZED" };
@@ -83,7 +58,7 @@ export async function approveCertificationRequestAction(
   try {
     // Fetch the request
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: request, error: fetchError } = await (adminSupabase as any)
+    const { data: request, error: fetchError } = await (supabase as any)
       .from("certification_requests")
       .select("*")
       .eq("id", parsed.data.requestId)
@@ -98,8 +73,8 @@ export async function approveCertificationRequestAction(
     }
 
     // Issue the certification via existing use case
-    const practitionerRepo = new DrizzlePractitionerRepository();
-    const certificationRepo = new DrizzleCertificationRepository();
+    const practitionerRepo = createPractitionerRepo();
+    const certificationRepo = createCertificationRepo();
 
     const result = await issueCertification(
       {
@@ -113,7 +88,7 @@ export async function approveCertificationRequestAction(
 
     // Update request status to approved
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (adminSupabase as any)
+    await (supabase as any)
       .from("certification_requests")
       .update({ status: "approved" })
       .eq("id", parsed.data.requestId);
@@ -148,6 +123,7 @@ export async function approveCertificationRequestAction(
 export async function rejectCertificationRequestAction(
   rawInput: unknown,
 ): Promise<ActionResult> {
+  const supabase = createPractitionerIdentityAdminClient();
   const admin = await requireAdmin();
   if (!admin) {
     return { success: false, error: "No autorizado", code: "UNAUTHORIZED" };
@@ -164,7 +140,7 @@ export async function rejectCertificationRequestAction(
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (adminSupabase as any)
+    const { error } = await (supabase as any)
       .from("certification_requests")
       .update({
         status: "rejected",
@@ -198,6 +174,7 @@ export async function rejectCertificationRequestAction(
 export async function observeCertificationRequestAction(
   rawInput: unknown,
 ): Promise<ActionResult> {
+  const supabase = createPractitionerIdentityAdminClient();
   const admin = await requireAdmin();
   if (!admin) {
     return { success: false, error: "No autorizado", code: "UNAUTHORIZED" };
@@ -214,7 +191,7 @@ export async function observeCertificationRequestAction(
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (adminSupabase as any)
+    const { error } = await (supabase as any)
       .from("certification_requests")
       .update({
         status: "observed",

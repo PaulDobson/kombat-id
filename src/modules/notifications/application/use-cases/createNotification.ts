@@ -1,19 +1,10 @@
 import { z } from "zod";
 import type { NotificationRepository } from "../../domain/interfaces/notificationRepository";
+import type { NotificationRecipientResolver } from "../../domain/interfaces/notificationRecipientResolver";
 import { NotificationType } from "../../domain/enums/notificationType";
 import { NotificationCategory } from "../../domain/enums/notificationCategory";
 import { NotificationPriority } from "../../domain/enums/notificationPriority";
-import { adminSupabase } from "@/lib/supabase/admin";
 import { DomainError } from "@/lib/errors";
-
-/**
- * Estrategias de destinatarios
- */
-type _RecipientStrategy =
-  | "specific_users" // Lista explícita de user IDs
-  | "role_based" // Todos los usuarios con uno o más roles
-  | "academy_members" // Todos los miembros de una academia
-  | "all_users"; // Todos los usuarios autenticados
 
 /**
  * Input para crear una notificación
@@ -54,7 +45,10 @@ export type CreateNotificationInput = z.infer<
  */
 export async function createNotification(
   input: CreateNotificationInput,
-  deps: { notificationRepo: NotificationRepository },
+  deps: {
+    notificationRepo: NotificationRepository;
+    recipientResolver: NotificationRecipientResolver;
+  },
 ): Promise<string> {
   const parsed = CreateNotificationInputSchema.parse(input);
 
@@ -91,7 +85,7 @@ export async function createNotification(
         recipientUserIds = parsed.specificUserIds;
       } else {
         // Caso especial: notificar a admins
-        recipientUserIds = await getAdminUserIds();
+        recipientUserIds = await deps.recipientResolver.getAdminUserIds();
       }
       break;
 
@@ -99,7 +93,9 @@ export async function createNotification(
       if (!parsed.roles || parsed.roles.length === 0) {
         throw new DomainError("roles is required for role_based strategy");
       }
-      recipientUserIds = await getUsersByRoles(parsed.roles);
+      recipientUserIds = await deps.recipientResolver.getUsersByRoles(
+        parsed.roles,
+      );
       break;
 
     case "academy_members":
@@ -108,11 +104,14 @@ export async function createNotification(
           "academyId is required for academy_members strategy",
         );
       }
-      recipientUserIds = await getUsersByAcademy(parsed.academyId);
+      recipientUserIds = await deps.recipientResolver.getUsersByAcademy(
+        parsed.academyId,
+      );
       break;
 
     case "all_users":
-      recipientUserIds = await getAllAuthenticatedUsers();
+      recipientUserIds =
+        await deps.recipientResolver.getAllAuthenticatedUsers();
       break;
 
     default:
@@ -130,79 +129,4 @@ export async function createNotification(
   }
 
   return notification.id;
-}
-
-/**
- * Helper: Obtiene los auth_user_id de todos los admin_users
- */
-async function getAdminUserIds(): Promise<string[]> {
-  const { data: rows, error } = await adminSupabase
-    .from("admin_users")
-    .select("user_id");
-
-  if (error) {
-    throw new DomainError(`Failed to fetch admin users: ${error.message}`);
-  }
-
-  return rows.map((row) => row.user_id);
-}
-
-/**
- * Helper: Obtiene los auth_user_id de practicantes con los roles especificados
- */
-async function getUsersByRoles(roles: string[]): Promise<string[]> {
-  const { data: rows, error } = await adminSupabase
-    .from("practitioners")
-    .select("auth_user_id")
-    .in("role", roles)
-    .not("auth_user_id", "is", null);
-
-  if (error) {
-    throw new DomainError(`Failed to fetch users by roles: ${error.message}`);
-  }
-
-  return rows
-    .map((row) => row.auth_user_id)
-    .filter((id): id is string => id !== null);
-}
-
-/**
- * Helper: Obtiene los auth_user_id de todos los miembros de una academia
- */
-async function getUsersByAcademy(academyId: string): Promise<string[]> {
-  const { data: rows, error } = await adminSupabase
-    .from("academy_memberships")
-    .select("practitioner:practitioners!inner(auth_user_id)")
-    .eq("academy_id", academyId);
-
-  if (error) {
-    throw new DomainError(`Failed to fetch users by academy: ${error.message}`);
-  }
-
-  return rows
-    .map((row) => {
-      const practitioner = Array.isArray(row.practitioner)
-        ? row.practitioner[0]
-        : row.practitioner;
-      return practitioner?.auth_user_id;
-    })
-    .filter((id): id is string => id !== null && id !== undefined);
-}
-
-/**
- * Helper: Obtiene los auth_user_id de todos los usuarios autenticados con practitioner
- */
-async function getAllAuthenticatedUsers(): Promise<string[]> {
-  const { data: rows, error } = await adminSupabase
-    .from("practitioners")
-    .select("auth_user_id")
-    .not("auth_user_id", "is", null);
-
-  if (error) {
-    throw new DomainError(`Failed to fetch all users: ${error.message}`);
-  }
-
-  return rows
-    .map((row) => row.auth_user_id)
-    .filter((id): id is string => id !== null);
 }

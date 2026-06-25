@@ -64,7 +64,9 @@ async function requireAdmin(): Promise<{ userId: string } | null> {
 // ---------------------------------------------------------------------------
 
 const refereeAuthService: RefereeAuthService = {
-  async inviteRefereeUser(email: string): Promise<{ authUserId: string }> {
+  async inviteRefereeUser(
+    email: string,
+  ): Promise<{ authUserId: string; temporaryPassword?: string }> {
     // Check if user already exists — idempotent
     const { data: existingUsers } = await adminSupabase.auth.admin.listUsers();
     const existing = existingUsers?.users?.find((u) => u.email === email);
@@ -85,17 +87,22 @@ const refereeAuthService: RefereeAuthService = {
       }
       // Sincronizar en tabla user_roles (idempotente)
       await assignSystemRole(existing.id, "referee", null, adminSupabase);
+      // Usuario ya existía — no se genera contraseña temporal nueva
       return { authUserId: existing.id };
     }
 
-    // Create the user with email_confirm: true so no SMTP is required.
-    // A random temporary password is set — the referee must use
-    // "forgot password" to set their own password on first login.
-    const tempPassword = crypto.randomUUID() + crypto.randomUUID();
+    // Generar contraseña temporal legible, sin caracteres ambiguos (0/O, 1/l).
+    // El árbitro la recibirá por email y deberá cambiarla en el primer login.
+    const chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+    const array = new Uint8Array(12);
+    crypto.getRandomValues(array);
+    const temporaryPassword = Array.from(array)
+      .map((b) => chars[b % chars.length])
+      .join("");
 
     const { data, error } = await adminSupabase.auth.admin.createUser({
       email,
-      password: tempPassword,
+      password: temporaryPassword,
       email_confirm: true,
       app_metadata: { role: "referee" },
       user_metadata: { must_change_password: true },
@@ -108,7 +115,7 @@ const refereeAuthService: RefereeAuthService = {
     // Sincronizar en tabla user_roles
     await assignSystemRole(data.user.id, "referee", null, adminSupabase);
 
-    return { authUserId: data.user.id };
+    return { authUserId: data.user.id, temporaryPassword };
   },
 };
 
@@ -147,14 +154,17 @@ export async function approveRefereeRegistrationAction(
   try {
     const repo = new SupabaseRefereeRegistrationRepository();
     const registration = await repo.findById(parsed.data.id);
-    await approveRefereeRegistration(
+    const approvalResult = await approveRefereeRegistration(
       { id: parsed.data.id, adminId: admin.userId },
       { repo, authService: refereeAuthService },
     );
     if (registration) {
-      sendRefereeApprovalEmail(registration.email, registration.fullName).catch(
-        (err) =>
-          console.error("[approveRefereeRegistrationAction] Email error:", err),
+      sendRefereeApprovalEmail(
+        registration.email,
+        registration.fullName,
+        approvalResult.temporaryPassword ?? "",
+      ).catch((err) =>
+        console.error("[approveRefereeRegistrationAction] Email error:", err),
       );
     }
     revalidatePath(REGISTRATIONS_PATH);

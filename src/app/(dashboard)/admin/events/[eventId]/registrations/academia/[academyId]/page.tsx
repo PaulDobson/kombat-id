@@ -1,39 +1,18 @@
-import { createClient } from "@/lib/supabase/server";
-import { adminSupabase } from "@/lib/supabase/admin";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import Link from "next/link";
+import { requireAdmin } from "@/lib/auth-guards";
 import { DrizzleEventRegistrationRepository } from "@/modules/event-registration/infrastructure/repositories/drizzleEventRegistrationRepository";
 import { AcademyStudentsTable } from "./AcademyStudentsTable";
 import type { RegistrationRow } from "../../RegistrationsGrouped";
 import type { Database } from "@/types/database.types";
-
+import { adminSupabase } from "@/lib/supabase/admin";
 type MartialEvent = Database["public"]["Tables"]["martial_events"]["Row"];
-
 // ---------------------------------------------------------------------------
 // Auth guard
 // ---------------------------------------------------------------------------
-
-async function requireAdminUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!data) redirect("/");
-  return user;
-}
-
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
 const REGION_LABELS: Record<string, string> = {
   arica_y_parinacota: "Arica y Parinacota",
   tarapaca: "Tarapacá",
@@ -52,65 +31,53 @@ const REGION_LABELS: Record<string, string> = {
   aysen: "Aysén",
   magallanes: "Magallanes",
 };
-
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
-
 export default async function AcademyRegistrationsPage({
   params,
 }: {
   params: Promise<{ eventId: string; academyId: string }>;
 }) {
-  await requireAdminUser();
+  await requireAdmin();
   const { eventId, academyId } = await params;
   const isSinAcademia = academyId === "sin-academia";
-
   // ── Evento ────────────────────────────────────────────────────────────────
   const { data: event } = (await adminSupabase
     .from("martial_events")
     .select("*")
     .eq("id", eventId)
     .maybeSingle()) as { data: MartialEvent | null };
-
   if (!event) notFound();
-
   // ── Academia (si aplica) ──────────────────────────────────────────────────
   let academyName = "Sin academia";
   let academyCity: string | null = null;
   let academyRegion: string | null = null;
-
   if (!isSinAcademia) {
     const { data: academy } = await adminSupabase
       .from("academies")
       .select("id, name, city, region")
       .eq("id", academyId)
       .maybeSingle();
-
     if (!academy) notFound();
     academyName = academy.name;
     academyCity = academy.city;
     academyRegion = academy.region;
   }
-
   // ── Inscripciones del evento ──────────────────────────────────────────────
   const repo = new DrizzleEventRegistrationRepository();
   const allRegistrations = await repo.findByEvent(eventId);
-
   const practitionerIds = [
     ...new Set(allRegistrations.map((r) => r.practitionerId)),
   ];
-
   // Enriquecer con academia y RUT
   type AcademyInfo = { id: string; name: string; city: string; region: string };
   type MembershipRow = {
     practitioner_id: string;
     academies: AcademyInfo | AcademyInfo[] | null;
   };
-
   const academyByPractitioner = new Map<string, string>(); // practitionerId → academyId
   const rutById = new Map<string, string>();
-
   if (practitionerIds.length > 0) {
     const [membershipsResult, rutsResult] = await Promise.all([
       adminSupabase
@@ -122,11 +89,9 @@ export default async function AcademyRegistrationsPage({
         .select("id, rut")
         .in("id", practitionerIds),
     ]);
-
     for (const p of rutsResult.data ?? []) {
       rutById.set(p.id, p.rut);
     }
-
     for (const m of (membershipsResult.data ?? []) as MembershipRow[]) {
       if (academyByPractitioner.has(m.practitioner_id)) continue;
       const raw = m.academies;
@@ -134,14 +99,12 @@ export default async function AcademyRegistrationsPage({
       if (acad) academyByPractitioner.set(m.practitioner_id, acad.id);
     }
   }
-
   // Filtrar inscripciones por academia
   const filteredRegistrations = allRegistrations.filter((reg) => {
     const regAcademyId = academyByPractitioner.get(reg.practitionerId) ?? null;
     if (isSinAcademia) return regAcademyId === null;
     return regAcademyId === academyId;
   });
-
   const rows: RegistrationRow[] = filteredRegistrations.map((reg) => ({
     id: reg.id,
     practitionerId: reg.practitionerId,
@@ -156,12 +119,10 @@ export default async function AcademyRegistrationsPage({
     academyCity: academyCity,
     academyRegion: academyRegion,
   }));
-
   // Conteos
   const confirmed = rows.filter((r) => r.status === "confirmada").length;
   const pending = rows.filter((r) => r.status === "pendiente_pago").length;
   const cancelled = rows.filter((r) => r.status === "cancelada").length;
-
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -186,7 +147,6 @@ export default async function AcademyRegistrationsPage({
           </svg>
           {event.name} · Inscripciones
         </Link>
-
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-neutral-50">
@@ -205,7 +165,6 @@ export default async function AcademyRegistrationsPage({
               </p>
             )}
           </div>
-
           {/* Badges resumen */}
           <div className="flex items-center gap-2 flex-wrap">
             {confirmed > 0 && (
@@ -228,7 +187,6 @@ export default async function AcademyRegistrationsPage({
           </div>
         </div>
       </div>
-
       {/* Tabla de alumnos */}
       <AcademyStudentsTable rows={rows} eventId={eventId} />
     </main>

@@ -2,8 +2,10 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { adminSupabase } from "@/lib/supabase/admin";
-import { DrizzlePractitionerRepository } from "../../infrastructure/repositories/drizzlePractitionerRepository";
+import {
+  createPractitionerIdentityAdminClient,
+  createPractitionerRepo,
+} from "./_practitionerIdentityDeps";
 import {
   registerPractitioner,
   RegisterPractitionerInputSchema,
@@ -21,6 +23,7 @@ import { verifyInstructorStudentAccess } from "../../application/use-cases/verif
 import { resolveStudentAuthAccount } from "../../application/use-cases/resolveStudentAuthAccount";
 import { requireInstructorPractitioner } from "./_requireInstructorPractitioner";
 import { notifyAdminsNewStudent } from "@/modules/notifications/presentation/actions/notificationHelpers";
+import { sendStudentWelcomeEmail } from "@/lib/email";
 import type { ActionResult } from "@/lib/types";
 
 // ── Schemas ───────────────────────────────────────────────────────────────────
@@ -73,18 +76,17 @@ export async function requestCertificationAction(
   }
 
   // 3. Insert certification request
+  const supabase = createPractitionerIdentityAdminClient();
   try {
-    const { error } = await adminSupabase
-      .from("certification_requests")
-      .insert({
-        id: crypto.randomUUID(),
-        requester_id: auth.practitioner.id,
-        practitioner_id: parsed.data.practitionerId,
-        cert_type: parsed.data.certType,
-        notes: parsed.data.notes ?? null,
-        status: "pending",
-        created_at: new Date().toISOString(),
-      });
+    const { error } = await supabase.from("certification_requests").insert({
+      id: crypto.randomUUID(),
+      requester_id: auth.practitioner.id,
+      practitioner_id: parsed.data.practitionerId,
+      cert_type: parsed.data.certType,
+      notes: parsed.data.notes ?? null,
+      status: "pending",
+      created_at: new Date().toISOString(),
+    });
 
     if (error) {
       console.error("[requestCertificationAction] DB error:", error);
@@ -142,7 +144,7 @@ export async function registerStudentAction(
     ]);
 
     // 4. Register practitioner
-    const practitionerRepo = new DrizzlePractitionerRepository();
+    const practitionerRepo = createPractitionerRepo();
     const result = await registerPractitioner(
       {
         ...parsed.data,
@@ -157,13 +159,14 @@ export async function registerStudentAction(
     // 5. Students registered by instructors start as INACTIVE — they require
     //    admin membership verification before being activated.
     //    Assign academy membership in parallel.
+    const supabase = createPractitionerIdentityAdminClient();
     await Promise.all([
-      adminSupabase
+      supabase
         .from("practitioners")
         .update({ is_active: false })
         .eq("id", result.publicId),
       academyResult.academyId
-        ? adminSupabase.from("academy_memberships").insert({
+        ? supabase.from("academy_memberships").insert({
             id: crypto.randomUUID(),
             academy_id: academyResult.academyId,
             practitioner_id: result.publicId,
@@ -178,10 +181,31 @@ export async function registerStudentAction(
       revalidatePath(`/instructor/academies/${targetAcademyId}`);
     }
 
-    // 6. Notificar a los administradores del nuevo alumno pendiente
+    // 6. Enviar email de bienvenida al alumno con sus credenciales (si se creó la cuenta)
+    const tempPassword =
+      "temporaryPassword" in authAccountResult
+        ? authAccountResult.temporaryPassword
+        : undefined;
+    if (studentEmail && tempPassword) {
+      try {
+        await sendStudentWelcomeEmail(
+          studentEmail,
+          parsed.data.fullName,
+          tempPassword,
+        );
+      } catch (emailErr) {
+        // No bloquear el registro si falla el email
+        console.error(
+          "[registerStudentAction] Failed to send welcome email:",
+          emailErr,
+        );
+      }
+    }
+
+    // 7. Notificar a los administradores del nuevo alumno pendiente
     try {
       // Obtener el auth_user_id y nombre del instructor para la notificación
-      const { data: instructorData } = await adminSupabase
+      const { data: instructorData } = await supabase
         .from("practitioners")
         .select("auth_user_id, full_name")
         .eq("id", auth.practitioner.id)
@@ -261,7 +285,7 @@ export async function updateStudentProfileAction(
 
   // 4. Execute use case
   try {
-    const practitionerRepo = new DrizzlePractitionerRepository();
+    const practitionerRepo = createPractitionerRepo();
     await updateStudentProfile(parsed.data, { practitionerRepo });
 
     revalidatePath(`/instructor/students/${publicId}`);
@@ -304,8 +328,9 @@ async function resolveAcademyForInstructor(
   instructorId: string,
   targetAcademyId: string | undefined,
 ): Promise<{ academyId: string | undefined }> {
+  const supabase = createPractitionerIdentityAdminClient();
   if (targetAcademyId) {
-    const { data } = await adminSupabase
+    const { data } = await supabase
       .from("academies")
       .select("id")
       .eq("id", targetAcademyId)
@@ -316,7 +341,7 @@ async function resolveAcademyForInstructor(
     return { academyId: data?.id ?? undefined };
   }
 
-  const { data } = await adminSupabase
+  const { data } = await supabase
     .from("academies")
     .select("id")
     .contains("responsible_instructor_ids", [instructorId])

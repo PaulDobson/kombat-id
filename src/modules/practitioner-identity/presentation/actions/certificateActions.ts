@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { adminSupabase } from "@/lib/supabase/admin";
+import { createPractitionerIdentityAdminClient } from "./_practitionerIdentityDeps";
 
 type ActionResult<T = void> =
   | { success: true; data: T }
@@ -18,6 +18,7 @@ const BUCKET = "membership-certificates";
 export async function getMembershipCertificateUrlAction(
   practitionerId: string,
 ): Promise<ActionResult<{ url: string }>> {
+  const adminClient = createPractitionerIdentityAdminClient();
   const supabase = await createClient();
   const {
     data: { user },
@@ -29,12 +30,12 @@ export async function getMembershipCertificateUrlAction(
 
   // Verify the requester owns this practitioner record or is an admin
   const [{ data: practitioner }, { data: adminRow }] = await Promise.all([
-    adminSupabase
+    adminClient
       .from("practitioners")
       .select("id, auth_user_id, certificate_path")
       .eq("id", practitionerId)
       .maybeSingle(),
-    adminSupabase
+    adminClient
       .from("admin_users")
       .select("user_id")
       .eq("user_id", user.id)
@@ -56,7 +57,7 @@ export async function getMembershipCertificateUrlAction(
     };
   }
 
-  const { data: signedUrl, error } = await adminSupabase.storage
+  const { data: signedUrl, error } = await adminClient.storage
     .from(BUCKET)
     .createSignedUrl(practitioner.certificate_path as string, 300); // 5 min
 

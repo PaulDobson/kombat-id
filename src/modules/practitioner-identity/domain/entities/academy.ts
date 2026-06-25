@@ -33,6 +33,17 @@ export interface Academy {
   createdBy: string; // admin user id
   updatedAt: string;
   createdAt: string;
+  // Perfil público
+  description: string | null;
+  founderStory: string | null;
+  // Contacto
+  contactPhone: string | null;
+  contactEmail: string | null;
+  contactInstagram: string | null;
+  contactWhatsapp: string | null;
+  contactWebsite: string | null;
+  // Media
+  coverImagePath: string | null;
 }
 
 /** Req 10.4, 10.5 — Membresía de un practicante a una academia */

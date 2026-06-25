@@ -1,29 +1,26 @@
 "use server";
 
 import { requireUser } from "@/lib/supabase/server";
-import { DrizzleNotificationRepository } from "../../infrastructure/repositories/drizzleNotificationRepository";
 import { markNotificationAsRead } from "../../application/use-cases/markNotificationAsRead";
 import { markAllNotificationsAsRead } from "../../application/use-cases/markAllNotificationsAsRead";
 import { getUnreadNotificationsCount } from "../../application/use-cases/getUnreadNotificationsCount";
 import { getNotificationsByUser } from "../../application/use-cases/getNotificationsByUser";
-import { revalidatePath } from "next/cache";
 import type { NotificationWithStatus } from "../../domain/entities/notification";
 import type { NotificationCategory } from "../../domain/enums/notificationCategory";
+import { createNotificationModuleDeps } from "./_notificationDeps";
 
 /**
  * Server Action: Marca una notificación como leída
  */
 export async function markAsReadAction(notificationId: string): Promise<void> {
   const user = await requireUser();
-  const notificationRepo = new DrizzleNotificationRepository();
+  const { notificationRepo } = createNotificationModuleDeps();
 
   try {
     await markNotificationAsRead(
       { notificationId, userId: user.id },
       { notificationRepo },
     );
-
-    revalidatePath("/dashboard");
   } catch (error) {
     console.error("[markAsReadAction] Error:", error);
     throw new Error("No se pudo marcar la notificación como leída");
@@ -35,12 +32,10 @@ export async function markAsReadAction(notificationId: string): Promise<void> {
  */
 export async function markAllAsReadAction(): Promise<void> {
   const user = await requireUser();
-  const notificationRepo = new DrizzleNotificationRepository();
+  const { notificationRepo } = createNotificationModuleDeps();
 
   try {
     await markAllNotificationsAsRead({ userId: user.id }, { notificationRepo });
-
-    revalidatePath("/dashboard");
   } catch (error) {
     console.error("[markAllAsReadAction] Error:", error);
     throw new Error("No se pudieron marcar las notificaciones como leídas");
@@ -52,7 +47,7 @@ export async function markAllAsReadAction(): Promise<void> {
  */
 export async function getUnreadCountAction(): Promise<number> {
   const user = await requireUser();
-  const notificationRepo = new DrizzleNotificationRepository();
+  const { notificationRepo } = createNotificationModuleDeps();
 
   try {
     return await getUnreadNotificationsCount(
@@ -75,7 +70,7 @@ export async function getUserNotificationsAction(params?: {
   offset?: number;
 }): Promise<NotificationWithStatus[]> {
   const user = await requireUser();
-  const notificationRepo = new DrizzleNotificationRepository();
+  const { notificationRepo } = createNotificationModuleDeps();
 
   try {
     return await getNotificationsByUser(

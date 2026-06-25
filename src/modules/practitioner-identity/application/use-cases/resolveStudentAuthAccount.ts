@@ -1,30 +1,40 @@
 import { adminSupabase } from "@/lib/supabase/admin";
-import { requireEnv } from "@/lib/config";
 
 export interface ResolveStudentAuthAccountResult {
   authUserId: string | undefined;
+  temporaryPassword?: string;
 }
 
 /**
- * Resolves or creates a Supabase Auth account for a student email.
+ * Genera una contraseña temporal legible, sin caracteres ambiguos (0/O, 1/l).
+ */
+function generateTemporaryPassword(): string {
+  const chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+  const array = new Uint8Array(12);
+  crypto.getRandomValues(array);
+  return Array.from(array)
+    .map((b) => chars[b % chars.length])
+    .join("");
+}
+
+/**
+ * Resuelve o crea una cuenta Supabase Auth para el email de un alumno.
  *
- * - If an account already exists for the email, returns its ID.
- * - If no account exists, sends a Supabase invitation email and returns the
- *   new user's ID.
- * - If the invite fails, returns undefined (non-fatal: the practitioner profile
- *   is still created and auto-linking happens when the student activates their
- *   account via email).
+ * - Si ya existe una cuenta para el email, retorna su ID (sin temporaryPassword).
+ * - Si no existe, crea la cuenta con contraseña temporal y retorna el ID + la contraseña.
+ *   El caller es responsable de enviar el email de bienvenida con las credenciales.
+ * - Si la creación falla, retorna undefined (no-fatal: el perfil del practicante
+ *   igual se crea y el alumno puede vincular su cuenta manualmente después).
  *
- * Uses the Supabase Admin REST API directly to look up a user by email in O(1),
- * since @supabase/supabase-js v2 does not expose a getUserByEmail method on the
- * admin client.
+ * Usa la Admin REST API de Supabase para buscar al usuario por email en O(1),
+ * ya que @supabase/supabase-js v2 no expone getUserByEmail en el cliente admin.
  */
 export async function resolveStudentAuthAccount(
   email: string,
 ): Promise<ResolveStudentAuthAccountResult> {
   // Look up the user by email via the Admin REST API (O(1) — no full user list download)
-  const supabaseUrl = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
-  const serviceRoleKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
   const response = await fetch(
     `${supabaseUrl}/auth/v1/admin/users?filter=${encodeURIComponent(email)}`,
@@ -48,55 +58,34 @@ export async function resolveStudentAuthAccount(
     }
   }
 
-  // No account yet — invite via Supabase.
-  // This creates the user as pending confirmation and triggers
-  // Supabase's native invitation email with an activation link.
-  // The user sets their own password when they click the link.
-  //
-  // inviteUserByEmail does NOT support PKCE — Supabase uses the implicit flow
-  // and redirects to the Site URL with tokens in the URL hash fragment
-  // (#access_token=...&type=invite). Hash fragments are never sent to the
-  // server, so we point to /auth/confirm — a client-side page that reads
-  // the hash and calls setSession() to establish the session.
-  //
-  // IMPORTANT: NEXT_PUBLIC_SITE_URL must match your current environment in
-  // .env.local (e.g. http://localhost:3000 for dev).
-  // The redirectTo URL must be registered in Supabase Dashboard →
-  // Authentication → URL Configuration → Redirect URLs.
-  const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    process.env.SITE_URL ??
-    "https://kombat-id.vercel.app";
+  // No account yet — crear cuenta con contraseña temporal y enviar email personalizado.
+  // Se usa createUser en lugar de inviteUserByEmail para evitar el email nativo de
+  // Supabase que incluye un enlace con caducidad de 24 horas.
+  // El alumno recibe sus credenciales directamente y accede con usuario + contraseña.
+  const temporaryPassword = generateTemporaryPassword();
 
-  const callbackUrl = `${siteUrl}/auth/confirm`;
-
-  console.log(
-    "[resolveStudentAuthAccount] inviting with redirectTo:",
-    callbackUrl,
-  );
-
-  const { data: inviteData, error: inviteError } =
-    await adminSupabase.auth.admin.inviteUserByEmail(email, {
-      redirectTo: callbackUrl,
-      data: {
+  const { data: createdUser, error: createError } =
+    await adminSupabase.auth.admin.createUser({
+      email,
+      password: temporaryPassword,
+      email_confirm: true, // No requiere confirmación de email — el instructor ya validó el correo
+      user_metadata: {
         role: "alumno",
         must_change_password: true,
       },
+      app_metadata: {
+        role: "alumno",
+      },
     });
 
-  if (inviteError || !inviteData?.user) {
+  if (createError || !createdUser?.user) {
     console.error(
-      "[resolveStudentAuthAccount] Failed to invite auth user:",
-      inviteError?.message,
+      "[resolveStudentAuthAccount] Failed to create auth user:",
+      createError?.message,
     );
     // Non-fatal: practitioner profile is still created
     return { authUserId: undefined };
   }
 
-  // Ensure app_metadata role is set (inviteUserByEmail puts data in user_metadata)
-  await adminSupabase.auth.admin.updateUserById(inviteData.user.id, {
-    app_metadata: { role: "alumno" },
-  });
-
-  return { authUserId: inviteData.user.id };
+  return { authUserId: createdUser.user.id, temporaryPassword };
 }

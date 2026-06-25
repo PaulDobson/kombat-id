@@ -1,16 +1,14 @@
-import { createClient } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { EventForm } from "../../EventForm";
+import { requireAdmin } from "@/lib/auth-guards";
 import type {
   EventType,
   EventAttachment,
   Database,
 } from "@/types/database.types";
-
 type MartialEventRow = Database["public"]["Tables"]["martial_events"]["Row"];
-
 interface MartialEventWithAttachments {
   id: string;
   name: string;
@@ -26,46 +24,24 @@ interface MartialEventWithAttachments {
   created_by: string;
   created_at: string;
 }
-
-async function requireAdminUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!data) redirect("/");
-  return user;
-}
-
 export default async function EditEventPage({
   params,
 }: {
   params: Promise<{ eventId: string }>;
 }) {
-  await requireAdminUser();
+  await requireAdmin();
   const { eventId } = await params;
-
   const { data } = (await adminSupabase
     .from("martial_events")
     .select("*")
     .eq("id", eventId)
     .maybeSingle()) as { data: MartialEventRow | null };
-
   if (!data) notFound();
-
   const event: MartialEventWithAttachments = {
     ...data,
     event_type: data.event_type as EventType,
     attachments: (data.attachments || []) as unknown as EventAttachment[],
   };
-
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-6">
@@ -80,7 +56,6 @@ export default async function EditEventPage({
         </h1>
         <p className="text-sm text-neutral-400 mt-0.5">{event.name}</p>
       </div>
-
       <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">
         <EventForm event={event} />
       </div>

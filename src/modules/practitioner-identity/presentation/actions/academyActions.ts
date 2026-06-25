@@ -1,13 +1,13 @@
 "use server";
-
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
-import { adminSupabase } from "@/lib/supabase/admin";
+import { isAdmin, requireAdmin } from "./_requireAdmin";
 import type { Academy } from "../../domain/entities/academy";
-import { DrizzleAcademyRepository } from "../../infrastructure/repositories/drizzleAcademyRepository";
-import { DrizzleAcademyMembershipRepository } from "../../infrastructure/repositories/drizzleAcademyMembershipRepository";
-import { DrizzlePractitionerRepository } from "../../infrastructure/repositories/drizzlePractitionerRepository";
+import {
+  createAcademyMembershipRepo,
+  createAcademyRepo,
+  createPractitionerRepo,
+} from "./_practitionerIdentityDeps";
 import {
   createAcademy,
   CreateAcademyInputSchema,
@@ -35,37 +35,9 @@ import {
   UnauthorizedError,
 } from "../../domain/errors";
 import type { AcademySearchQuery } from "../../domain/interfaces/academyRepository";
-
 type ActionResult<T = void> =
   | { success: true; data: T }
   | { success: false; error: string; code: string };
-
-async function requireAdmin(): Promise<{ userId: string } | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!data) return null;
-  return { userId: user.id };
-}
-
-async function isAdmin(userId: string): Promise<boolean> {
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", userId)
-    .maybeSingle();
-  return data !== null;
-}
-
 export async function createAcademyAction(
   rawInput: unknown,
 ): Promise<ActionResult<{ academyId: string }>> {
@@ -73,7 +45,6 @@ export async function createAcademyAction(
   if (!admin) {
     return { success: false, error: "No autorizado", code: "UNAUTHORIZED" };
   }
-
   const parsed = CreateAcademyInputSchema.safeParse({
     ...(rawInput as object),
     adminId: admin.userId,
@@ -85,10 +56,9 @@ export async function createAcademyAction(
       code: "VALIDATION_ERROR",
     };
   }
-
   try {
-    const academyRepo = new DrizzleAcademyRepository();
-    const practitionerRepo = new DrizzlePractitionerRepository();
+    const academyRepo = createAcademyRepo();
+    const practitionerRepo = createPractitionerRepo();
     const result = await createAcademy(parsed.data, {
       academyRepo,
       practitionerRepo,
@@ -115,7 +85,6 @@ export async function createAcademyAction(
     };
   }
 }
-
 export async function deactivateAcademyAction(
   rawInput: unknown,
 ): Promise<ActionResult> {
@@ -123,7 +92,6 @@ export async function deactivateAcademyAction(
   if (!admin) {
     return { success: false, error: "No autorizado", code: "UNAUTHORIZED" };
   }
-
   const parsed = DeactivateAcademyInputSchema.safeParse({
     ...(rawInput as object),
     adminId: admin.userId,
@@ -135,9 +103,8 @@ export async function deactivateAcademyAction(
       code: "VALIDATION_ERROR",
     };
   }
-
   try {
-    const academyRepo = new DrizzleAcademyRepository();
+    const academyRepo = createAcademyRepo();
     await deactivateAcademy(parsed.data, { academyRepo, isAdmin });
     revalidatePath("/admin/academies");
     revalidatePath("/academies");
@@ -168,7 +135,6 @@ export async function deactivateAcademyAction(
     };
   }
 }
-
 export async function assignPractitionerToAcademyAction(
   rawInput: unknown,
 ): Promise<ActionResult<{ membershipId: string }>> {
@@ -176,7 +142,6 @@ export async function assignPractitionerToAcademyAction(
   if (!admin) {
     return { success: false, error: "No autorizado", code: "UNAUTHORIZED" };
   }
-
   const parsed = AssignPractitionerToAcademyInputSchema.safeParse({
     ...(rawInput as object),
     adminId: admin.userId,
@@ -188,11 +153,10 @@ export async function assignPractitionerToAcademyAction(
       code: "VALIDATION_ERROR",
     };
   }
-
   try {
-    const academyRepo = new DrizzleAcademyRepository();
-    const membershipRepo = new DrizzleAcademyMembershipRepository();
-    const practitionerRepo = new DrizzlePractitionerRepository();
+    const academyRepo = createAcademyRepo();
+    const membershipRepo = createAcademyMembershipRepo();
+    const practitionerRepo = createPractitionerRepo();
     const result = await assignPractitionerToAcademy(parsed.data, {
       academyRepo,
       membershipRepo,
@@ -241,7 +205,6 @@ export async function assignPractitionerToAcademyAction(
     };
   }
 }
-
 export async function removePractitionerFromAcademyAction(
   rawInput: unknown,
 ): Promise<ActionResult> {
@@ -249,7 +212,6 @@ export async function removePractitionerFromAcademyAction(
   if (!admin) {
     return { success: false, error: "No autorizado", code: "UNAUTHORIZED" };
   }
-
   const parsed = RemovePractitionerFromAcademyInputSchema.safeParse({
     ...(rawInput as object),
     adminId: admin.userId,
@@ -261,9 +223,8 @@ export async function removePractitionerFromAcademyAction(
       code: "VALIDATION_ERROR",
     };
   }
-
   try {
-    const membershipRepo = new DrizzleAcademyMembershipRepository();
+    const membershipRepo = createAcademyMembershipRepo();
     await removePractitionerFromAcademy(parsed.data, {
       membershipRepo,
       isAdmin,
@@ -292,7 +253,6 @@ export async function removePractitionerFromAcademyAction(
     };
   }
 }
-
 export async function addInstructorToAcademyAction(
   rawInput: unknown,
 ): Promise<ActionResult> {
@@ -300,7 +260,6 @@ export async function addInstructorToAcademyAction(
   if (!admin) {
     return { success: false, error: "No autorizado", code: "UNAUTHORIZED" };
   }
-
   const parsed = z
     .object({ academyId: z.string().uuid(), instructorId: z.string().uuid() })
     .safeParse(rawInput);
@@ -311,18 +270,14 @@ export async function addInstructorToAcademyAction(
       code: "VALIDATION_ERROR",
     };
   }
-
   const { academyId, instructorId } = parsed.data;
-
   try {
-    const academyRepo = new DrizzleAcademyRepository();
-    const practitionerRepo = new DrizzlePractitionerRepository();
-
+    const academyRepo = createAcademyRepo();
+    const practitionerRepo = createPractitionerRepo();
     const [academy, instructor] = await Promise.all([
       academyRepo.findById(academyId),
       practitionerRepo.findById(instructorId),
     ]);
-
     if (!academy) {
       return {
         success: false,
@@ -353,7 +308,6 @@ export async function addInstructorToAcademyAction(
         code: "ALREADY_ASSIGNED",
       };
     }
-
     const updated: Academy = {
       ...academy,
       responsibleInstructorIds: [
@@ -374,7 +328,6 @@ export async function addInstructorToAcademyAction(
     };
   }
 }
-
 export async function removeInstructorFromAcademyAction(
   rawInput: unknown,
 ): Promise<ActionResult> {
@@ -382,7 +335,6 @@ export async function removeInstructorFromAcademyAction(
   if (!admin) {
     return { success: false, error: "No autorizado", code: "UNAUTHORIZED" };
   }
-
   const parsed = z
     .object({ academyId: z.string().uuid(), instructorId: z.string().uuid() })
     .safeParse(rawInput);
@@ -393,13 +345,10 @@ export async function removeInstructorFromAcademyAction(
       code: "VALIDATION_ERROR",
     };
   }
-
   const { academyId, instructorId } = parsed.data;
-
   try {
-    const academyRepo = new DrizzleAcademyRepository();
+    const academyRepo = createAcademyRepo();
     const academy = await academyRepo.findById(academyId);
-
     if (!academy) {
       return {
         success: false,
@@ -407,7 +356,6 @@ export async function removeInstructorFromAcademyAction(
         code: "NOT_FOUND",
       };
     }
-
     const updated: Academy = {
       ...academy,
       responsibleInstructorIds: academy.responsibleInstructorIds.filter(
@@ -427,7 +375,6 @@ export async function removeInstructorFromAcademyAction(
     };
   }
 }
-
 export async function searchAcademiesAction(
   rawInput: unknown,
 ): Promise<ActionResult<Academy[]>> {
@@ -435,11 +382,9 @@ export async function searchAcademiesAction(
   if (!admin) {
     return { success: false, error: "No autorizado", code: "UNAUTHORIZED" };
   }
-
   const query = rawInput as AcademySearchQuery;
-
   try {
-    const academyRepo = new DrizzleAcademyRepository();
+    const academyRepo = createAcademyRepo();
     const academies = await academyRepo.search(query ?? {});
     return { success: true, data: academies };
   } catch (err) {

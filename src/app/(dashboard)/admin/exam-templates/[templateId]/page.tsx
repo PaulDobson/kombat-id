@@ -1,33 +1,14 @@
-import { createClient } from "@/lib/supabase/server";
-import { adminSupabase } from "@/lib/supabase/admin";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import Link from "next/link";
+import { requireAdmin } from "@/lib/auth-guards";
 import { DrizzleExamTemplateRepository } from "@/modules/grade-exam/infrastructure/repositories/drizzleExamTemplateRepository";
 import { DeactivateTemplateButton } from "./DeactivateTemplateButton";
-
 // ---------------------------------------------------------------------------
 // Auth guard
 // ---------------------------------------------------------------------------
-
-async function requireAdminUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!data) redirect("/dashboard");
-  return user;
-}
-
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
 const GRADE_LABELS: Record<string, string> = {
   white: "Blanco",
   yellow: "Amarillo",
@@ -36,29 +17,24 @@ const GRADE_LABELS: Record<string, string> = {
   red: "Rojo",
   black: "Negro",
 };
-
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
-
 export default async function ExamTemplateDetailPage({
   params,
 }: {
   params: Promise<{ templateId: string }>;
 }) {
-  await requireAdminUser();
+  await requireAdmin();
   const { templateId } = await params;
-
   const repo = new DrizzleExamTemplateRepository();
   const template = await repo.findById(templateId);
   if (!template) notFound();
-
   const createdAt = new Date(template.createdAt).toLocaleDateString("es-CL", {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
-
   return (
     <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Back link */}
@@ -86,7 +62,6 @@ export default async function ExamTemplateDetailPage({
           )}
         </div>
       </div>
-
       {/* Actions */}
       <div className="flex items-center gap-3">
         <Link
@@ -96,7 +71,6 @@ export default async function ExamTemplateDetailPage({
           Editar
         </Link>
       </div>
-
       {/* Template details */}
       <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">
         <h2 className="text-sm font-semibold text-neutral-50 mb-4">
@@ -157,7 +131,6 @@ export default async function ExamTemplateDetailPage({
           </div>
         </dl>
       </div>
-
       {/* Items table */}
       <div className="bg-neutral-900 border border-neutral-700 rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-neutral-700 flex items-center justify-between">
@@ -168,7 +141,6 @@ export default async function ExamTemplateDetailPage({
             {template.items.length} ítem{template.items.length !== 1 ? "s" : ""}
           </span>
         </div>
-
         {template.items.length === 0 ? (
           <div className="text-center py-10">
             <p className="text-neutral-500 text-sm">
@@ -221,7 +193,6 @@ export default async function ExamTemplateDetailPage({
           </div>
         )}
       </div>
-
       {/* Danger zone */}
       {template.isActive && (
         <div className="bg-neutral-900 border border-rose-500/20 rounded-xl p-6 space-y-3">

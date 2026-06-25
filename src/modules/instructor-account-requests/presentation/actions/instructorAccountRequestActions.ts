@@ -2,17 +2,12 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
 import { adminSupabase } from "@/lib/supabase/admin";
-import { SupabaseInstructorAccountRequestRepository } from "../../infrastructure/repositories/supabaseInstructorAccountRequestRepository";
 import {
   SubmitInstructorAccountRequestInput,
   submitInstructorAccountRequest,
 } from "../../application/use-cases/submitInstructorAccountRequest";
-import {
-  approveInstructorAccountRequest,
-  type InstructorAuthService,
-} from "../../application/use-cases/approveInstructorAccountRequest";
+import { approveInstructorAccountRequest } from "../../application/use-cases/approveInstructorAccountRequest";
 import { rejectInstructorAccountRequest } from "../../application/use-cases/rejectInstructorAccountRequest";
 import {
   ObserveInstructorAccountRequestInput,
@@ -32,6 +27,12 @@ import {
   sendInstructorApprovalEmail,
   sendInstructorRejectionEmail,
 } from "@/lib/email";
+import { notifyAdminsInstructorRequestPending } from "@/modules/notifications/presentation/actions/notificationHelpers";
+import {
+  createInstructorAccountRequestRepo,
+  createInstructorAuthService,
+} from "./_instructorAccountRequestDeps";
+import { requireAdmin } from "./_requireAdmin";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -46,91 +47,6 @@ type ActionResult<T = void> =
 // ---------------------------------------------------------------------------
 
 const ADMIN_PATH = "/admin/instructor-requests";
-
-// ---------------------------------------------------------------------------
-// Auth helper — verifies session and admin role
-// Validates: Requirements 10.1, 10.2, 10.3
-// ---------------------------------------------------------------------------
-
-async function requireAdmin(): Promise<{ userId: string } | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return null;
-
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!data) return null;
-  return { userId: user.id };
-}
-
-// ---------------------------------------------------------------------------
-// InstructorAuthService implementation (composition root)
-// Creates a Supabase Auth user with role 'instructor' in app_metadata.
-// Validates: Requirements 4.6, 10.4
-// ---------------------------------------------------------------------------
-
-const instructorAuthService: InstructorAuthService = {
-  async inviteInstructorUser(
-    email: string,
-  ): Promise<{ authUserId: string; temporaryPassword: string }> {
-    // Generate a secure temporary password: 16 chars, mix of letters/digits/symbols
-    const chars =
-      "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%";
-    const temporaryPassword = Array.from(
-      { length: 16 },
-      () => chars[Math.floor(Math.random() * chars.length)],
-    ).join("");
-
-    // Check if a Supabase Auth user already exists for this email.
-    // listUsers doesn't support filtering by email directly, so we use
-    // getUserByEmail via the admin API (available in supabase-js v2).
-    const { data: existingData } = await adminSupabase.auth.admin.listUsers({
-      perPage: 1000,
-    });
-
-    const existingUser = existingData?.users?.find(
-      (u) => u.email?.toLowerCase() === email.toLowerCase(),
-    );
-
-    if (existingUser) {
-      // User already exists — update their password and ensure instructor role
-      const { error: updateError } =
-        await adminSupabase.auth.admin.updateUserById(existingUser.id, {
-          password: temporaryPassword,
-          app_metadata: { role: "instructor" },
-          user_metadata: { must_change_password: true },
-        });
-      if (updateError) {
-        throw new Error(
-          updateError.message ?? "Unknown error updating auth user",
-        );
-      }
-      return { authUserId: existingUser.id, temporaryPassword };
-    }
-
-    // User does not exist — create them
-    const { data, error } = await adminSupabase.auth.admin.createUser({
-      email,
-      password: temporaryPassword,
-      email_confirm: true,
-      app_metadata: { role: "instructor" },
-      user_metadata: { must_change_password: true },
-    });
-
-    if (error || !data?.user) {
-      throw new Error(error?.message ?? "Unknown error creating auth user");
-    }
-
-    return { authUserId: data.user.id, temporaryPassword };
-  },
-};
 
 // ---------------------------------------------------------------------------
 // Public action — no authentication required
@@ -156,8 +72,23 @@ export async function submitInstructorAccountRequestAction(
   }
 
   try {
-    const repo = new SupabaseInstructorAccountRequestRepository();
+    const repo = createInstructorAccountRequestRepo();
     const result = await submitInstructorAccountRequest(parsed.data, { repo });
+
+    // Fire-and-forget: notify admins of the new pending request.
+    // Notification failure must never block the registration response.
+    notifyAdminsInstructorRequestPending({
+      requestId: result.id,
+      fullName: parsed.data.fullName,
+      email: parsed.data.email,
+      academyName: parsed.data.academyName,
+    }).catch((err) =>
+      console.error(
+        "[submitInstructorAccountRequestAction] Notification error:",
+        err,
+      ),
+    );
+
     return { success: true, data: result };
   } catch (err) {
     if (err instanceof DuplicateInstructorEmailError) {
@@ -208,10 +139,11 @@ export async function approveInstructorAccountRequestAction(
   }
 
   try {
-    const repo = new SupabaseInstructorAccountRequestRepository();
+    const repo = createInstructorAccountRequestRepo();
+    const authService = createInstructorAuthService();
     const { temporaryPassword } = await approveInstructorAccountRequest(
       { requestId: parsed.data.requestId, adminId: admin.userId },
-      { repo, authService: instructorAuthService },
+      { repo, authService },
     );
 
     // After Auth user is created, provision a practitioners record so the
@@ -328,7 +260,7 @@ export async function rejectInstructorAccountRequestAction(
   }
 
   try {
-    const repo = new SupabaseInstructorAccountRequestRepository();
+    const repo = createInstructorAccountRequestRepo();
     const requestForEmail = await repo.findById(parsed.data.requestId);
     await rejectInstructorAccountRequest(
       { requestId: parsed.data.requestId, adminId: admin.userId },
@@ -401,7 +333,7 @@ export async function observeInstructorAccountRequestAction(
   }
 
   try {
-    const repo = new SupabaseInstructorAccountRequestRepository();
+    const repo = createInstructorAccountRequestRepo();
     await observeInstructorAccountRequest(
       {
         requestId: parsed.data.requestId,
@@ -471,7 +403,7 @@ export async function listInstructorAccountRequestsAction(
   }
 
   try {
-    const repo = new SupabaseInstructorAccountRequestRepository();
+    const repo = createInstructorAccountRequestRepo();
     const filter: InstructorAccountRequestFilter = {
       ...(parsed.data.status !== undefined && {
         status: parsed.data.status as InstructorAccountRequestStatus,

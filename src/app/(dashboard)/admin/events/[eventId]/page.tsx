@@ -1,77 +1,49 @@
-import { createClient } from "@/lib/supabase/server";
-import { adminSupabase } from "@/lib/supabase/admin";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { EventType, Database } from "@/types/database.types";
+import { adminSupabase } from "@/lib/supabase/admin";
 import { DeleteEventButton } from "../DeleteEventButton";
-
 type MartialEvent = Database["public"]["Tables"]["martial_events"]["Row"];
-
-async function requireAdminUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data } = await adminSupabase
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!data) redirect("/");
-  return user;
-}
-
 const EVENT_TYPE_LABELS: Record<EventType, string> = {
   competition: "Competencia",
   seminar: "Seminario",
   exam: "Examen",
 };
-
 const EVENT_TYPE_STYLES: Record<EventType, string> = {
   competition: "bg-primary-900/50 text-primary-400 border border-primary-800",
   seminar: "bg-warning-500/10 text-warning-400 border border-warning-500/30",
   exam: "bg-success-900/50 text-success-400 border border-success-800",
 };
-
 import {
   formatDateWithWeekday as formatDate,
   formatDateLong,
 } from "@/lib/format-date";
 import { formatRegistrationFee } from "@/modules/event-registration/domain/entities/eventRegistration";
 import { DrizzleEventRegistrationRepository } from "@/modules/event-registration/infrastructure/repositories/drizzleEventRegistrationRepository";
-
+import { requireAdmin } from "@/lib/auth-guards";
 export default async function EventDetailPage({
   params,
 }: {
   params: Promise<{ eventId: string }>;
 }) {
-  await requireAdminUser();
+  await requireAdmin();
   const { eventId } = await params;
-
   const { data: event } = (await adminSupabase
     .from("martial_events")
     .select("*")
     .eq("id", eventId)
     .maybeSingle()) as { data: MartialEvent | null };
-
   if (!event) notFound();
-
   // Count participants registered for this event
   const { count: participantCount } = await adminSupabase
     .from("martial_history")
     .select("id", { count: "exact", head: true })
     .eq("event_id", eventId);
-
   // Count confirmed registrations for capacity indicator
   const registrationRepo = new DrizzleEventRegistrationRepository();
   const confirmedCount = await registrationRepo.countConfirmedByEvent(eventId);
-
   const today = new Date().toISOString().slice(0, 10);
   const isPast = event.event_date < today;
-
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Breadcrumb */}
@@ -102,7 +74,6 @@ export default async function EventDetailPage({
           )}
         </div>
       </div>
-
       {/* Details card */}
       <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">
         <h2 className="text-sm font-semibold text-neutral-50 mb-4">
@@ -171,7 +142,6 @@ export default async function EventDetailPage({
           </div>
         )}
       </div>
-
       {/* Actions */}
       <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">
         <h2 className="text-sm font-semibold text-neutral-50 mb-4">Acciones</h2>

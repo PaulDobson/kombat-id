@@ -3,12 +3,14 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { adminSupabase } from "@/lib/supabase/admin";
 import type { Academy, ChileanRegion } from "../../domain/entities/academy";
-import { DrizzleAcademyRepository } from "../../infrastructure/repositories/drizzleAcademyRepository";
-import { DrizzlePractitionerRepository } from "../../infrastructure/repositories/drizzlePractitionerRepository";
 import { isInstructorRole } from "@/lib/roles";
 import type { ActionResult } from "@/lib/types";
+import {
+  createAcademyRepo,
+  createPractitionerIdentityAdminClient,
+  createPractitionerRepo,
+} from "./_practitionerIdentityDeps";
 
 // ---------------------------------------------------------------------------
 // Auth helper — verifies session and instructor role
@@ -22,7 +24,8 @@ async function requireInstructor() {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data: practitioner } = await adminSupabase
+  const adminClient = createPractitionerIdentityAdminClient();
+  const { data: practitioner } = await adminClient
     .from("practitioners")
     .select("*")
     .eq("auth_user_id", user.id)
@@ -94,8 +97,8 @@ export async function createInstructorAcademyAction(
   }
 
   try {
-    const academyRepo = new DrizzleAcademyRepository();
-    const practitionerRepo = new DrizzlePractitionerRepository();
+    const academyRepo = createAcademyRepo();
+    const practitionerRepo = createPractitionerRepo();
 
     // Verify the practitioner record exists and has instructor role
     const practitioner = await practitionerRepo.findById(
@@ -125,6 +128,14 @@ export async function createInstructorAcademyAction(
       createdBy: instructor.userId,
       updatedAt: now,
       createdAt: now,
+      description: null,
+      founderStory: null,
+      contactPhone: null,
+      contactEmail: null,
+      contactInstagram: null,
+      contactWhatsapp: null,
+      contactWebsite: null,
+      coverImagePath: null,
     };
 
     await academyRepo.save(academy);
@@ -148,7 +159,7 @@ async function requireInstructorForAcademy(academyId: string) {
   const instructor = await requireInstructor();
   if (!instructor) return null;
 
-  const academyRepo = new DrizzleAcademyRepository();
+  const academyRepo = createAcademyRepo();
   const academy = await academyRepo.findById(academyId);
   if (!academy) return null;
   if (!academy.responsibleInstructorIds.includes(instructor.practitionerId))
@@ -184,7 +195,8 @@ export async function instructorAssignPractitionerAction(
   }
 
   try {
-    const { data: existing } = await adminSupabase
+    const supabase = createPractitionerIdentityAdminClient();
+    const { data: existing } = await supabase
       .from("academy_memberships")
       .select("id")
       .eq("practitioner_id", parsed.data.practitionerId)
@@ -198,7 +210,7 @@ export async function instructorAssignPractitionerAction(
       };
     }
 
-    await adminSupabase.from("academy_memberships").insert({
+    await supabase.from("academy_memberships").insert({
       id: crypto.randomUUID(),
       academy_id: parsed.data.academyId,
       practitioner_id: parsed.data.practitionerId,
@@ -247,7 +259,8 @@ export async function instructorRemovePractitionerAction(
   }
 
   try {
-    await adminSupabase
+    const supabase = createPractitionerIdentityAdminClient();
+    await supabase
       .from("academy_memberships")
       .delete()
       .eq("academy_id", parsed.data.academyId)
@@ -296,7 +309,7 @@ export async function instructorDeletePractitionerAction(
   }
 
   try {
-    const practitionerRepo = new DrizzlePractitionerRepository();
+    const practitionerRepo = createPractitionerRepo();
     const practitioner = await practitionerRepo.findById(parsed.data.publicId);
 
     if (!practitioner) {
@@ -316,8 +329,10 @@ export async function instructorDeletePractitionerAction(
       };
     }
 
+    const supabase = createPractitionerIdentityAdminClient();
+
     // VALIDACIÓN ADICIONAL: Verificar que el alumno pertenece a una academia del instructor
-    const { data: activeMembership } = await adminSupabase
+    const { data: activeMembership } = await supabase
       .from("academy_memberships")
       .select("academy_id, academies!inner(responsible_instructor_ids)")
       .eq("practitioner_id", parsed.data.publicId)
@@ -360,7 +375,7 @@ export async function instructorDeletePractitionerAction(
     // Paso 1: Llamar a la función SQL que desactiva todos los registros en public
     // (practitioners, academy_memberships, certifications, discipline_grades).
     // La función retorna el auth_user_id para que lo eliminemos aquí via Admin API.
-    const { data: result, error: functionError } = await adminSupabase.rpc(
+    const { data: result, error: functionError } = await supabase.rpc(
       "delete_practitioner_by_instructor",
       {
         p_practitioner_id: practitionerId,
@@ -415,7 +430,7 @@ export async function instructorDeletePractitionerAction(
     const authUserId = typedResult.data?.auth_user_id;
     if (authUserId) {
       const { error: deleteAuthError } =
-        await adminSupabase.auth.admin.deleteUser(authUserId);
+        await supabase.auth.admin.deleteUser(authUserId);
 
       if (deleteAuthError) {
         // El registro en public ya fue desactivado correctamente.
@@ -501,7 +516,7 @@ export async function updateInstructorProfileAction(
   }
 
   try {
-    const practitionerRepo = new DrizzlePractitionerRepository();
+    const practitionerRepo = createPractitionerRepo();
     const practitioner = await practitionerRepo.findById(
       instructor.practitionerId,
     );
@@ -552,6 +567,19 @@ const UpdateInstructorAcademySchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida")
     .nullable()
     .optional(),
+  description: z.string().max(2000).trim().nullable().optional(),
+  founderStory: z.string().max(3000).trim().nullable().optional(),
+  contactPhone: z.string().max(30).trim().nullable().optional(),
+  contactEmail: z
+    .string()
+    .email("Email de contacto inválido")
+    .max(254)
+    .trim()
+    .nullable()
+    .optional(),
+  contactInstagram: z.string().max(100).trim().nullable().optional(),
+  contactWhatsapp: z.string().max(30).trim().nullable().optional(),
+  contactWebsite: z.string().max(300).trim().nullable().optional(),
 });
 
 export async function updateInstructorAcademyAction(
@@ -578,6 +606,34 @@ export async function updateInstructorAcademyAction(
       city: parsed.data.city,
       address: parsed.data.address ?? ctx.academy.address,
       foundedDate: parsed.data.foundedDate ?? ctx.academy.foundedDate,
+      description:
+        parsed.data.description !== undefined
+          ? parsed.data.description
+          : ctx.academy.description,
+      founderStory:
+        parsed.data.founderStory !== undefined
+          ? parsed.data.founderStory
+          : ctx.academy.founderStory,
+      contactPhone:
+        parsed.data.contactPhone !== undefined
+          ? parsed.data.contactPhone
+          : ctx.academy.contactPhone,
+      contactEmail:
+        parsed.data.contactEmail !== undefined
+          ? parsed.data.contactEmail
+          : ctx.academy.contactEmail,
+      contactInstagram:
+        parsed.data.contactInstagram !== undefined
+          ? parsed.data.contactInstagram
+          : ctx.academy.contactInstagram,
+      contactWhatsapp:
+        parsed.data.contactWhatsapp !== undefined
+          ? parsed.data.contactWhatsapp
+          : ctx.academy.contactWhatsapp,
+      contactWebsite:
+        parsed.data.contactWebsite !== undefined
+          ? parsed.data.contactWebsite
+          : ctx.academy.contactWebsite,
       updatedAt: new Date().toISOString(),
     };
 
@@ -619,7 +675,7 @@ export async function reactivateStudentAction(
   }
 
   try {
-    const practitionerRepo = new DrizzlePractitionerRepository();
+    const practitionerRepo = createPractitionerRepo();
     const practitioner = await practitionerRepo.findById(parsed.data.publicId);
 
     if (!practitioner) {
@@ -645,7 +701,8 @@ export async function reactivateStudentAction(
 
     if (!isDirectInstructor) {
       // Check academy membership as fallback
-      const { data: membership } = await adminSupabase
+      const supabase = createPractitionerIdentityAdminClient();
+      const { data: membership } = await supabase
         .from("academy_memberships")
         .select("academies!inner(responsible_instructor_ids)")
         .eq("practitioner_id", parsed.data.publicId)
