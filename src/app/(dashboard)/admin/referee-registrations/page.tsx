@@ -1,35 +1,27 @@
 // Server Component — no "use client"
 // Validates: Requisitos 3.1–3.5, 10.2
-
-import { redirect } from "next/navigation";
 import Link from "next/link";
-import { adminSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/auth-guards";
 import { SupabaseRefereeRegistrationRepository } from "@/modules/referee-registration/infrastructure/repositories/supabaseRefereeRegistrationRepository";
 import { listRefereeRegistrations } from "@/modules/referee-registration/application/use-cases/listRefereeRegistrations";
 import { RefereeRegistrationTable } from "@/modules/referee-registration/presentation/components/RefereeRegistrationTable";
 import type { RefereeRegistrationStatus } from "@/modules/referee-registration/domain/entities/refereeRegistration";
-
 const PAGE_SIZE = 25;
-
 const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: "", label: "Todos" },
   { value: "pending", label: "Pendientes" },
   { value: "approved", label: "Aprobados" },
   { value: "rejected", label: "Rechazados" },
 ];
-
 export default async function AdminRefereesPage({
   searchParams,
 }: {
   searchParams: Promise<{ status?: string; page?: string }>;
 }) {
   await requireAdmin();
-
   const params = await searchParams;
   const statusFilter = params.status as RefereeRegistrationStatus | undefined;
   const page = Math.max(1, parseInt(params.page ?? "1", 10));
-
   const repo = new SupabaseRefereeRegistrationRepository();
   const { items, total } = await listRefereeRegistrations(
     {
@@ -39,9 +31,7 @@ export default async function AdminRefereesPage({
     },
     { repo },
   );
-
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-
   // Serialize to plain objects for Client Components
   const rows = items.map((r) => ({
     id: r.id,
@@ -52,7 +42,6 @@ export default async function AdminRefereesPage({
     status: r.status,
     createdAt: r.createdAt,
   }));
-
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Header */}
@@ -72,7 +61,6 @@ export default async function AdminRefereesPage({
           Portal de árbitros
         </Link>
       </div>
-
       {/* Status filter */}
       <form
         method="GET"
@@ -97,14 +85,12 @@ export default async function AdminRefereesPage({
           {total} registro{total !== 1 ? "s" : ""}
         </span>
       </form>
-
       {/* Table */}
       <RefereeRegistrationTable
         registrations={rows}
         currentPage={page}
         totalPages={totalPages}
       />
-
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">

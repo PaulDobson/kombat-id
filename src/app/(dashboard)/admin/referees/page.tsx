@@ -1,23 +1,16 @@
 // Server Component — no "use client", no React hooks
 // Validates: Requisitos 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 8.1
-
-import { adminSupabase } from "@/lib/supabase/admin";
-import { redirect } from "next/navigation";
 import { SupabaseRefereeRegistrationRepository } from "@/modules/referee-registration/infrastructure/repositories/supabaseRefereeRegistrationRepository";
 import { listRefereeRegistrations } from "@/modules/referee-registration/application/use-cases/listRefereeRegistrations";
 import { toRefereeListItem } from "@/modules/referee-registration/presentation/components/refereeListItem";
 import { RefereeGrid } from "@/modules/referee-registration/presentation/components/RefereeGrid";
 import { requireAdmin } from "@/lib/auth-guards";
-
 // ---------------------------------------------------------------------------
 // Auth guard — Requisitos 1.1, 1.2, 1.3
 // ---------------------------------------------------------------------------
-
-
 // ---------------------------------------------------------------------------
 // Page — Requisito 8.1: export default async function, no "use client"
 // ---------------------------------------------------------------------------
-
 export default async function AdminRefereesPage({
   searchParams,
 }: {
@@ -25,21 +18,17 @@ export default async function AdminRefereesPage({
 }) {
   // Requisito 1.3 — requireAdminUser is the first operation
   await requireAdmin();
-
   // Requisito 2.1 — instantiate repository (composition root) and call use case
   const repo = new SupabaseRefereeRegistrationRepository();
   const { items, total } = await listRefereeRegistrations(
     { status: "approved", pageSize: 200 },
     { repo },
   );
-
   // Requisitos 2.2, 2.3 — serialize to RefereeListItem (excludes sensitive fields)
   const referees = items.map(toRefereeListItem);
-
   // Requisitos 3.3, 3.4, 3.5 — read search query param
   const sp = await searchParams;
   const searchQuery = sp.search?.trim() ?? "";
-
   return (
     <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
       {/* Header — Requisitos 3.1, 3.2 */}
@@ -57,7 +46,6 @@ export default async function AdminRefereesPage({
             {total === 1 ? "árbitro" : "árbitros"}
           </p>
         </div>
-
         {/* Search field — Requisitos 3.3, 3.4, 3.5: native GET form, no "use client" needed */}
         <form method="GET" className="w-full sm:w-72">
           <label htmlFor="search" className="sr-only">
@@ -73,7 +61,6 @@ export default async function AdminRefereesPage({
           />
         </form>
       </div>
-
       {/* Grid — Requisito 2.4: pass referees and searchQuery to RefereeGrid */}
       <RefereeGrid referees={referees} searchQuery={searchQuery} />
     </main>

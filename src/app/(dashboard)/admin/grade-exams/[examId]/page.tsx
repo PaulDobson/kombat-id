@@ -1,19 +1,15 @@
 import { adminSupabase } from "@/lib/supabase/admin";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { DrizzleGradeExamRepository } from "@/modules/grade-exam/infrastructure/repositories/drizzleGradeExamRepository";
 import { ExamAuthorizationActions } from "./ExamAuthorizationActions";
 import { requireAdmin } from "@/lib/auth-guards";
-
 // ---------------------------------------------------------------------------
 // Auth guard
 // ---------------------------------------------------------------------------
-
-
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
 const GRADE_LABELS: Record<string, string> = {
   white: "Blanco",
   yellow: "Amarillo",
@@ -22,7 +18,6 @@ const GRADE_LABELS: Record<string, string> = {
   red: "Rojo",
   black: "Negro",
 };
-
 const STATUS_LABELS: Record<string, string> = {
   draft: "Borrador",
   submitted: "Enviado",
@@ -30,7 +25,6 @@ const STATUS_LABELS: Record<string, string> = {
   approved: "Aprobado",
   rejected: "Rechazado",
 };
-
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-neutral-800 text-neutral-400 border-neutral-700",
   submitted: "bg-blue-900/40 text-blue-400 border-blue-800",
@@ -38,21 +32,17 @@ const STATUS_COLORS: Record<string, string> = {
   approved: "bg-emerald-900/40 text-emerald-400 border-emerald-800",
   rejected: "bg-rose-900/40 text-rose-400 border-rose-800",
 };
-
 const RESULT_LABELS: Record<string, string> = {
   approved: "Aprobado",
   failed: "Reprobado",
 };
-
 const RESULT_COLORS: Record<string, string> = {
   approved: "text-emerald-400",
   failed: "text-rose-400",
 };
-
 // ---------------------------------------------------------------------------
 // Helper: resolve practitioner name
 // ---------------------------------------------------------------------------
-
 async function getPractitionerName(id: string): Promise<string> {
   const { data } = await adminSupabase
     .from("practitioners")
@@ -61,11 +51,9 @@ async function getPractitionerName(id: string): Promise<string> {
     .maybeSingle();
   return data?.full_name ?? id;
 }
-
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
-
 export default async function GradeExamDetailPage({
   params,
 }: {
@@ -73,26 +61,21 @@ export default async function GradeExamDetailPage({
 }) {
   await requireAdmin();
   const { examId } = await params;
-
   const repo = new DrizzleGradeExamRepository();
   const exam = await repo.findById(examId);
   if (!exam) notFound();
-
   const [practitionerName, instructorName] = await Promise.all([
     getPractitionerName(exam.practitionerId),
     getPractitionerName(exam.instructorId),
   ]);
-
   const examDate = new Date(exam.examDate).toLocaleDateString("es-CL", {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
-
   const statusClass =
     STATUS_COLORS[exam.status] ??
     "bg-neutral-800 text-neutral-400 border-neutral-700";
-
   return (
     <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Back link */}
@@ -114,7 +97,6 @@ export default async function GradeExamDetailPage({
           </span>
         </div>
       </div>
-
       {/* General info */}
       <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">
         <h2 className="text-sm font-semibold text-neutral-50 mb-4">
@@ -181,7 +163,6 @@ export default async function GradeExamDetailPage({
           </div>
         </dl>
       </div>
-
       {/* Items table */}
       <div className="bg-neutral-900 border border-neutral-700 rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-neutral-700 flex items-center justify-between">
@@ -234,7 +215,6 @@ export default async function GradeExamDetailPage({
           </div>
         )}
       </div>
-
       {/* Instructor override */}
       {exam.instructorOverride && (
         <div className="bg-neutral-900 border border-amber-700/40 rounded-xl p-6 space-y-3">
@@ -267,7 +247,6 @@ export default async function GradeExamDetailPage({
           </dl>
         </div>
       )}
-
       {/* Authorization info */}
       {exam.status === "approved" && exam.authorizedBy && (
         <div className="bg-neutral-900 border border-emerald-700/40 rounded-xl p-6 space-y-3">
@@ -298,7 +277,6 @@ export default async function GradeExamDetailPage({
           </dl>
         </div>
       )}
-
       {/* Rejection info */}
       {exam.status === "rejected" && (
         <div className="bg-neutral-900 border border-rose-700/40 rounded-xl p-6 space-y-3">
@@ -323,7 +301,6 @@ export default async function GradeExamDetailPage({
           </dl>
         </div>
       )}
-
       {/* Authorization actions */}
       {exam.status === "pending_authorization" && (
         <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6 space-y-3">

@@ -1,11 +1,8 @@
-import { adminSupabase } from "@/lib/supabase/admin";
-import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-guards";
 import { DrizzlePractitionerRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzlePractitionerRepository";
 import { DrizzleChargeRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzleChargeRepository";
 import type { Grade } from "@/modules/practitioner-identity/domain/entities/practitioner";
 import Link from "next/link";
-
 const GRADE_LABELS: Record<Grade, string> = {
   white: "Blanco",
   yellow: "Amarillo",
@@ -14,15 +11,11 @@ const GRADE_LABELS: Record<Grade, string> = {
   red: "Rojo",
   black: "Negro",
 };
-
 export default async function AdminChargesPage() {
   await requireAdmin();
-
   const practitionerRepo = new DrizzlePractitionerRepository();
   const chargeRepo = new DrizzleChargeRepository();
-
   const practitioners = await practitionerRepo.search({});
-
   // Fetch charge counts per practitioner in parallel
   const chargeCountsRaw = await Promise.all(
     practitioners.map(async (p) => {
@@ -39,11 +32,9 @@ export default async function AdminChargesPage() {
       };
     }),
   );
-
   const chargeCountsMap = new Map(
     chargeCountsRaw.map((c) => [c.practitionerId, c]),
   );
-
   const totalPending = chargeCountsRaw.reduce(
     (sum, c) => sum + c.pendingCount,
     0,
@@ -55,7 +46,6 @@ export default async function AdminChargesPage() {
   const practitionersWithIssues = chargeCountsRaw.filter(
     (c) => c.pendingCount > 0 || c.overdueCount > 0,
   ).length;
-
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
@@ -67,7 +57,6 @@ export default async function AdminChargesPage() {
           Resumen de cobros por practicante
         </p>
       </div>
-
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-5">
@@ -91,7 +80,6 @@ export default async function AdminChargesPage() {
           </p>
         </div>
       </div>
-
       {/* Practitioners table */}
       <div className="bg-neutral-900 border border-neutral-700 rounded-xl overflow-hidden">
         {practitioners.length === 0 ? (
@@ -127,7 +115,6 @@ export default async function AdminChargesPage() {
                 const counts = chargeCountsMap.get(p.id);
                 const hasPending = (counts?.pendingCount ?? 0) > 0;
                 const hasOverdue = (counts?.overdueCount ?? 0) > 0;
-
                 return (
                   <tr
                     key={p.id}
@@ -178,7 +165,6 @@ export default async function AdminChargesPage() {
           </table>
         )}
       </div>
-
       {practitioners.length > 0 && (
         <p className="text-xs text-neutral-600 mt-3 text-right">
           {practitioners.length} practicante

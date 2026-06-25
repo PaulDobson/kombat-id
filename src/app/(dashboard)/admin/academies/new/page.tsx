@@ -1,9 +1,6 @@
-import { adminSupabase } from "@/lib/supabase/admin";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { RegisterAcademyForm } from "./RegisterAcademyForm";
 import { requireAdmin } from "@/lib/auth-guards";
-
 
 export default async function NewAcademyPage() {
   await requireAdmin();

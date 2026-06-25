@@ -1,21 +1,16 @@
 import { adminSupabase } from "@/lib/supabase/admin";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-guards";
 import { ApproveRequestButton } from "./ApproveRequestButton";
 import { RejectRequestButton } from "./RejectRequestButton";
 import { ObserveRequestButton } from "./ObserveRequestButton";
-
 // ---------------------------------------------------------------------------
 // Auth guard
 // ---------------------------------------------------------------------------
-
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
 const PAGE_SIZE = 25;
-
 const CERT_TYPE_LABELS: Record<string, string> = {
   technical_grade: "Grado técnico",
   instructor: "Instructor",
@@ -23,11 +18,9 @@ const CERT_TYPE_LABELS: Record<string, string> = {
   coach: "Entrenador",
   event_participation: "Participación en evento",
 };
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
 function buildUrl(
   base: Record<string, string | undefined>,
   overrides: Record<string, string | undefined>,
@@ -40,13 +33,10 @@ function buildUrl(
   const qs = params.toString();
   return `/admin/certification-requests${qs ? `?${qs}` : ""}`;
 }
-
 import { formatDateShort as formatDate } from "@/lib/format-date";
-
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
-
 export default async function CertificationRequestsPage({
   searchParams,
 }: {
@@ -54,10 +44,8 @@ export default async function CertificationRequestsPage({
 }) {
   await requireAdmin();
   const sp = await searchParams;
-
   const page = Math.max(1, parseInt(sp.page ?? "1", 10));
   const offset = (page - 1) * PAGE_SIZE;
-
   // Fetch pending requests with pagination
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: requestRows, count } = await (adminSupabase as any)
@@ -66,7 +54,6 @@ export default async function CertificationRequestsPage({
     .eq("status", "pending")
     .order("created_at", { ascending: false })
     .range(offset, offset + PAGE_SIZE - 1);
-
   const requests = (requestRows ?? []) as Array<{
     id: string;
     requester_id: string;
@@ -76,10 +63,8 @@ export default async function CertificationRequestsPage({
     status: string;
     created_at: string;
   }>;
-
   const totalCount = count ?? 0;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
-
   // Enrich with practitioner names (scoped to current page)
   const practitionerIds = [
     ...new Set([
@@ -87,7 +72,6 @@ export default async function CertificationRequestsPage({
       ...requests.map((r) => r.practitioner_id),
     ]),
   ];
-
   const { data: practitionerRows } =
     practitionerIds.length > 0
       ? await adminSupabase
@@ -95,7 +79,6 @@ export default async function CertificationRequestsPage({
           .select("id, full_name, rut")
           .in("id", practitionerIds)
       : { data: [] };
-
   const practitionerById = new Map<string, { fullName: string; rut: string }>();
   for (const p of practitionerRows ?? []) {
     practitionerById.set(p.id as string, {
@@ -103,7 +86,6 @@ export default async function CertificationRequestsPage({
       rut: p.rut as string,
     });
   }
-
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-5">
       {/* Header */}
@@ -115,7 +97,6 @@ export default async function CertificationRequestsPage({
           {totalCount.toLocaleString("es-CL")} solicitudes pendientes
         </p>
       </div>
-
       {/* Table */}
       <div className="bg-neutral-900 border border-neutral-700 rounded-xl overflow-hidden">
         {requests.length === 0 ? (
@@ -212,7 +193,6 @@ export default async function CertificationRequestsPage({
           </div>
         )}
       </div>
-
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">

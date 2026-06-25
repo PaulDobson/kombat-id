@@ -1,12 +1,9 @@
 import { adminSupabase } from "@/lib/supabase/admin";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-guards";
 import { RegisterForm } from "./RegisterForm";
-
 export default async function NewPractitionerPage() {
   await requireAdmin();
-
   // Fetch instructors and masters for the dropdown
   const { data: instructors } = await adminSupabase
     .from("practitioners")
@@ -14,13 +11,11 @@ export default async function NewPractitionerPage() {
     .in("role", ["instructor", "profesor", "maestro"])
     .eq("is_active", true)
     .order("full_name", { ascending: true });
-
   const instructorOptions = (instructors ?? []).map((p) => ({
     id: p.id as string,
     fullName: p.full_name as string,
     role: p.role as string,
   }));
-
   return (
     <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-6">
@@ -37,7 +32,6 @@ export default async function NewPractitionerPage() {
           Completa los datos para crear un nuevo perfil de identidad.
         </p>
       </div>
-
       <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">
         <RegisterForm instructors={instructorOptions} />
       </div>

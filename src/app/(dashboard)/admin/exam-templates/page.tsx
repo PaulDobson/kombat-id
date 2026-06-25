@@ -1,17 +1,12 @@
-import { adminSupabase } from "@/lib/supabase/admin";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-guards";
 import { DrizzleExamTemplateRepository } from "@/modules/grade-exam/infrastructure/repositories/drizzleExamTemplateRepository";
-
 // ---------------------------------------------------------------------------
 // Auth guard
 // ---------------------------------------------------------------------------
-
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
 const GRADE_LABELS: Record<string, string> = {
   white: "Blanco",
   yellow: "Amarillo",
@@ -20,17 +15,13 @@ const GRADE_LABELS: Record<string, string> = {
   red: "Rojo",
   black: "Negro",
 };
-
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
-
 export default async function AdminExamTemplatesPage() {
   await requireAdmin();
-
   const repo = new DrizzleExamTemplateRepository();
   const templates = await repo.findAll();
-
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-5">
       {/* Header */}
@@ -51,7 +42,6 @@ export default async function AdminExamTemplatesPage() {
           + Nueva pauta
         </Link>
       </div>
-
       {/* Table */}
       <div className="bg-neutral-900 border border-neutral-700 rounded-xl overflow-hidden">
         {templates.length === 0 ? (

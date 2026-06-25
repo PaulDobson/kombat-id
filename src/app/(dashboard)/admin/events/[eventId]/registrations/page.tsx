@@ -1,5 +1,4 @@
-import { adminSupabase } from "@/lib/supabase/admin";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-guards";
 import { DrizzleEventRegistrationRepository } from "@/modules/event-registration/infrastructure/repositories/drizzleEventRegistrationRepository";
@@ -8,11 +7,9 @@ import { RegistrationsList } from "./RegistrationsList";
 import { RegistrationsStats } from "./RegistrationsStats";
 import type { RegistrationRow } from "./RegistrationsGrouped";
 import type { Database } from "@/types/database.types";
-
+import { adminSupabase } from "@/lib/supabase/admin";
 type MartialEvent = Database["public"]["Tables"]["martial_events"]["Row"];
-
 type ViewMode = "agrupado" | "lista";
-
 export default async function EventRegistrationsPage({
   params,
   searchParams,
@@ -24,18 +21,14 @@ export default async function EventRegistrationsPage({
   const { eventId } = await params;
   const sp = await searchParams;
   const view: ViewMode = sp.vista === "lista" ? "lista" : "agrupado";
-
   const { data: event } = (await adminSupabase
     .from("martial_events")
     .select("*")
     .eq("id", eventId)
     .maybeSingle()) as { data: MartialEvent | null };
-
   if (!event) notFound();
-
   const repo = new DrizzleEventRegistrationRepository();
   const registrations = await repo.findByEvent(eventId);
-
   // Derivar conteos desde los datos ya cargados (elimina 2 consultas extra a BD)
   const statusCounts = { pendiente_pago: 0, confirmada: 0, cancelada: 0 };
   let confirmedCount = 0;
@@ -46,25 +39,21 @@ export default async function EventRegistrationsPage({
       confirmedCount++;
     } else if (r.status === "cancelada") statusCounts.cancelada++;
   }
-
   const maxParticipants = event.max_participants;
   const totalRegistrations =
     statusCounts.pendiente_pago +
     statusCounts.confirmada +
     statusCounts.cancelada;
-
   // ── Enrich registrations with academy data ──────────────────────────────
   // Get academy memberships for all practitioners in this event
   const practitionerIds = [
     ...new Set(registrations.map((r) => r.practitionerId)),
   ];
-
   const academyByPractitioner = new Map<
     string,
     { id: string; name: string; city: string; region: string }
   >();
   const rutById = new Map<string, string>();
-
   if (practitionerIds.length > 0) {
     // Obtener academia (join embebido) y RUT en paralelo — 2 consultas en vez de 3
     type AcademyInfo = {
@@ -77,7 +66,6 @@ export default async function EventRegistrationsPage({
       practitioner_id: string;
       academies: AcademyInfo | AcademyInfo[] | null;
     };
-
     const [membershipsResult, rutsResult] = await Promise.all([
       adminSupabase
         .from("academy_memberships")
@@ -88,11 +76,9 @@ export default async function EventRegistrationsPage({
         .select("id, rut")
         .in("id", practitionerIds),
     ]);
-
     for (const p of rutsResult.data ?? []) {
       rutById.set(p.id, p.rut);
     }
-
     for (const m of (membershipsResult.data ?? []) as MembershipWithAcademy[]) {
       if (academyByPractitioner.has(m.practitioner_id)) continue;
       // Supabase puede devolver la relación embebida como objeto o array
@@ -101,7 +87,6 @@ export default async function EventRegistrationsPage({
       if (academy) academyByPractitioner.set(m.practitioner_id, academy);
     }
   }
-
   const enrichedRegistrations: RegistrationRow[] = registrations.map((reg) => {
     const academy = academyByPractitioner.get(reg.practitionerId) ?? null;
     return {
@@ -119,7 +104,6 @@ export default async function EventRegistrationsPage({
       academyRegion: academy?.region ?? null,
     };
   });
-
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Header */}
@@ -150,7 +134,6 @@ export default async function EventRegistrationsPage({
           Gestión de inscripciones
         </p>
       </div>
-
       {/* Stats */}
       <RegistrationsStats
         statusCounts={statusCounts}
@@ -158,7 +141,6 @@ export default async function EventRegistrationsPage({
         maxParticipants={maxParticipants}
         confirmedCount={confirmedCount}
       />
-
       {/* View toggle */}
       <div className="flex items-center gap-1 bg-neutral-900 border border-neutral-700/60 rounded-xl p-1 self-start">
         <Link
@@ -208,7 +190,6 @@ export default async function EventRegistrationsPage({
           Lista completa
         </Link>
       </div>
-
       {/* Content */}
       {view === "agrupado" ? (
         <RegistrationsGrouped

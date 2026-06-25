@@ -1,5 +1,5 @@
+import { notFound } from "next/navigation";
 import { adminSupabase } from "@/lib/supabase/admin";
-import { redirect, notFound } from "next/navigation";
 import { DrizzleAcademyRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzleAcademyRepository";
 import type { ChileanRegion } from "@/modules/practitioner-identity/domain/entities/academy";
 import type { Grade } from "@/modules/practitioner-identity/domain/entities/practitioner";
@@ -25,7 +25,6 @@ import { requireAdmin } from "@/lib/auth-guards";
 // ---------------------------------------------------------------------------
 // Auth guard
 // ---------------------------------------------------------------------------
-
 
 // ---------------------------------------------------------------------------
 // Constants

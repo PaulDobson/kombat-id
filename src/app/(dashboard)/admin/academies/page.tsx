@@ -1,5 +1,4 @@
 import { adminSupabase } from "@/lib/supabase/admin";
-import { redirect } from "next/navigation";
 import type { ChileanRegion } from "@/modules/practitioner-identity/domain/entities/academy";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-guards";
@@ -7,7 +6,6 @@ import { requireAdmin } from "@/lib/auth-guards";
 // ---------------------------------------------------------------------------
 // Auth guard
 // ---------------------------------------------------------------------------
-
 
 // ---------------------------------------------------------------------------
 // Constants

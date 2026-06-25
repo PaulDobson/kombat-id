@@ -1,13 +1,9 @@
 import { adminSupabase } from "@/lib/supabase/admin";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Grade } from "@/modules/practitioner-identity/domain/entities/practitioner";
 import { ActivateButton } from "../[publicId]/ActivateButton";
 import { requireAdmin } from "@/lib/auth-guards";
-
-
 const PAGE_SIZE = 10;
-
 const GRADE_LABELS: Record<Grade, string> = {
   white: "Blanco",
   yellow: "Amarillo",
@@ -16,7 +12,6 @@ const GRADE_LABELS: Record<Grade, string> = {
   red: "Rojo",
   black: "Negro",
 };
-
 const GRADE_STYLES: Record<Grade, string> = {
   white: "bg-neutral-700 text-neutral-200 border border-neutral-600",
   yellow: "bg-yellow-900/50 text-yellow-400 border border-yellow-800",
@@ -25,7 +20,6 @@ const GRADE_STYLES: Record<Grade, string> = {
   red: "bg-red-900/50 text-red-400 border border-red-800",
   black: "bg-neutral-800 text-neutral-100 border border-neutral-600",
 };
-
 function buildUrl(overrides: Record<string, string | undefined>): string {
   const params = new URLSearchParams();
   for (const [k, v] of Object.entries(overrides)) {
@@ -34,20 +28,17 @@ function buildUrl(overrides: Record<string, string | undefined>): string {
   const qs = params.toString();
   return `/admin/practitioners/pending-activation${qs ? `?${qs}` : ""}`;
 }
-
 export default async function PendingActivationPage({
   searchParams,
 }: {
   searchParams: Promise<{ name?: string; rut?: string; page?: string }>;
 }) {
   await requireAdmin();
-
   const sp = await searchParams;
   const name = sp.name?.trim() ?? "";
   const rut = sp.rut?.trim() ?? "";
   const page = Math.max(1, parseInt(sp.page ?? "1", 10));
   const offset = (page - 1) * PAGE_SIZE;
-
   // Build query with filters and pagination
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let query: any = adminSupabase
@@ -59,17 +50,13 @@ export default async function PendingActivationPage({
     .eq("is_active", false)
     .not("instructor_id", "is", null)
     .order("created_at", { ascending: false });
-
   if (name) query = query.ilike("full_name", `%${name}%`);
   if (rut) query = query.ilike("rut", `%${rut}%`);
-
   query = query.range(offset, offset + PAGE_SIZE - 1);
-
   const { data: rows, count } = await query;
   const practitioners = rows ?? [];
   const totalCount = count ?? 0;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
-
   // Enrich with instructor names and academy names
   const instructorIds = [
     ...new Set(
@@ -79,7 +66,6 @@ export default async function PendingActivationPage({
     ),
   ];
   const practitionerIds = practitioners.map((p: { id: string }) => p.id);
-
   const [{ data: instructorRows }, { data: memberships }] = await Promise.all([
     instructorIds.length > 0
       ? adminSupabase
@@ -95,7 +81,6 @@ export default async function PendingActivationPage({
           .in("practitioner_id", practitionerIds)
       : Promise.resolve({ data: [] }),
   ]);
-
   const instructorNameById = new Map<string, string>();
   for (const i of instructorRows ?? []) {
     instructorNameById.set(i.id as string, i.full_name as string);
@@ -105,10 +90,8 @@ export default async function PendingActivationPage({
     const aName = (m.academies as { name: string } | null)?.name;
     if (aName) academyByPractitioner.set(m.practitioner_id as string, aName);
   }
-
   const hasFilters = !!(name || rut);
   const baseParams = { name: name || undefined, rut: rut || undefined };
-
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Header */}
@@ -132,7 +115,6 @@ export default async function PendingActivationPage({
           {totalCount} pendiente{totalCount !== 1 ? "s" : ""}
         </span>
       </div>
-
       {/* Info banner */}
       <div className="flex items-start gap-3 bg-amber-900/20 border border-amber-700/30 rounded-xl px-4 py-3">
         <span className="text-amber-400 shrink-0" aria-hidden="true">
@@ -144,7 +126,6 @@ export default async function PendingActivationPage({
           y su código QR de identificación quedará habilitado.
         </p>
       </div>
-
       {/* Search filters */}
       <form
         method="GET"
@@ -189,7 +170,6 @@ export default async function PendingActivationPage({
           )}
         </div>
       </form>
-
       {/* Table */}
       <div className="bg-neutral-900 border border-neutral-700 rounded-xl overflow-hidden">
         {practitioners.length === 0 ? (
@@ -303,7 +283,6 @@ export default async function PendingActivationPage({
           </div>
         )}
       </div>
-
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">

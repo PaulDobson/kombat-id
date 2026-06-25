@@ -1,5 +1,4 @@
 import { adminSupabase } from "@/lib/supabase/admin";
-import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-guards";
 import { DrizzleAcademyRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzleAcademyRepository";
 import {
@@ -16,20 +15,16 @@ import {
 } from "@/lib/presentation-constants";
 import type { ChileanRegion } from "@/modules/practitioner-identity/domain/entities/academy";
 import type { Grade } from "@/modules/practitioner-identity/domain/entities/practitioner";
-
 import { formatDateShort as formatDate } from "@/lib/format-date";
-
 function daysUntil(iso: string): number {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const target = new Date(iso + "T00:00:00");
   return Math.round((target.getTime() - today.getTime()) / 86_400_000);
 }
-
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
-
 export default async function AdminDashboardPage({
   searchParams,
 }: {
@@ -38,15 +33,11 @@ export default async function AdminDashboardPage({
   // requireAdmin() usa React.cache() — si DashboardNav ya llamó requireUser() +
   // getIsAdmin() en este mismo request, no se disparan queries adicionales.
   await requireAdmin();
-
   const sp = searchParams ? await searchParams : {};
   const regionFilter = sp.region ?? "";
-
   const academyRepo = new DrizzleAcademyRepository();
-
   // Grados definidos explícitamente para generación de consultas paralelas
   const GRADES = ["white", "yellow", "green", "blue", "red", "black"] as const;
-
   // Todas las queries en paralelo — DB hace el conteo, no Node.js
   const [
     { data: allAcademiesData },
@@ -102,33 +93,27 @@ export default async function AdminDashboardPage({
       ),
     ),
   ]);
-
   // Filtro de región en memoria — el dataset de academias es pequeño (< 100)
   const allAcademies = allAcademiesData ?? [];
   const academies = regionFilter
     ? allAcademies.filter((a) => a.region === regionFilter)
     : allAcademies;
-
   const totalPractitioners = totalCount ?? 0;
   const activePractitioners = activeCount ?? 0;
-
   // Distribución por grado — construida desde conteos DB, sin scan de filas
   const gradeData = GRADES.map((grade, i) => ({
     grade,
     label: GRADE_LABELS[grade as Grade] ?? grade,
     count: gradeCountResults[i]?.count ?? 0,
   })).filter((d) => d.count > 0);
-
   // Conteo de practicantes por academia — batch query única
   const academyIds = academies.map((a) => a.id);
   const practitionerCountMap =
     await academyRepo.countActivePractitionersBatch(academyIds);
-
   const academyCounts = academies.map((a) => ({
     ...a,
     practitionerCount: practitionerCountMap.get(a.id) ?? 0,
   }));
-
   // Build attention items — only include non-zero counts
   const attentionItems: Array<{ label: string; href: string; count: number }> =
     [];
@@ -160,7 +145,6 @@ export default async function AdminDashboardPage({
       count: pendingInstructorRequests ?? 0,
     });
   }
-
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Header */}
@@ -172,7 +156,6 @@ export default async function AdminDashboardPage({
           Resumen general de la organización
         </p>
       </div>
-
       {/* Attention banner — only shown when there are pending actions */}
       {attentionItems.length > 0 && (
         <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl px-5 py-4">
@@ -231,7 +214,6 @@ export default async function AdminDashboardPage({
           </div>
         </div>
       )}
-
       {/* KPI cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <KpiCard
@@ -256,7 +238,6 @@ export default async function AdminDashboardPage({
           color="text-blue-400"
         />
       </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Grade distribution chart */}
         <section className="bg-neutral-900 border border-neutral-700 rounded-xl p-5 space-y-4">
@@ -271,7 +252,6 @@ export default async function AdminDashboardPage({
             <GradeChart data={gradeData} />
           )}
         </section>
-
         {/* Upcoming events */}
         <section className="bg-neutral-900 border border-neutral-700 rounded-xl p-5 space-y-4">
           <div className="flex items-center justify-between">
@@ -285,7 +265,6 @@ export default async function AdminDashboardPage({
               Gestionar →
             </Link>
           </div>
-
           {upcomingEvents.length === 0 ? (
             <p className="text-neutral-500 text-sm text-center py-8">
               No hay eventos próximos.
@@ -325,7 +304,6 @@ export default async function AdminDashboardPage({
           )}
         </section>
       </div>
-
       {/* Academies */}
       <section className="bg-neutral-900 border border-neutral-700 rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-neutral-700 flex flex-wrap items-center justify-between gap-3">
@@ -375,7 +353,6 @@ export default async function AdminDashboardPage({
             </Link>
           </div>
         </div>
-
         {academyCounts.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-neutral-500 text-sm">
@@ -434,11 +411,9 @@ export default async function AdminDashboardPage({
     </main>
   );
 }
-
 // ---------------------------------------------------------------------------
 // KPI Card
 // ---------------------------------------------------------------------------
-
 function KpiCard({
   label,
   value,

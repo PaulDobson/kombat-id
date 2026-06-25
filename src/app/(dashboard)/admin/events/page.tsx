@@ -1,23 +1,18 @@
 import { adminSupabase } from "@/lib/supabase/admin";
-import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-guards";
 import Link from "next/link";
 import type { EventType } from "@/types/database.types";
-
 const EVENT_TYPE_LABELS: Record<EventType, string> = {
   competition: "Competencia",
   seminar: "Seminario",
   exam: "Examen",
 };
-
 const EVENT_TYPE_STYLES: Record<EventType, string> = {
   competition: "bg-primary-900/50 text-primary-400 border border-primary-800",
   seminar: "bg-warning-500/10 text-warning-400 border border-warning-500/30",
   exam: "bg-success-900/50 text-success-400 border border-success-800",
 };
-
 import { formatDateShort as formatDate } from "@/lib/format-date";
-
 export default async function AdminEventsPage({
   searchParams,
 }: {
@@ -25,26 +20,21 @@ export default async function AdminEventsPage({
 }) {
   await requireAdmin();
   const params = await searchParams;
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let query: any = adminSupabase
     .from("martial_events")
     .select("*")
     .order("event_date", { ascending: false });
-
   if (params.type && ["competition", "seminar", "exam"].includes(params.type)) {
     query = query.eq("event_type", params.type);
   }
   if (params.q) {
     query = query.ilike("name", `%${params.q}%`);
   }
-
   const { data: events, error } = await query;
   if (error) console.error("[AdminEventsPage]", error);
-
   const eventList = events ?? [];
   const today = new Date().toISOString().slice(0, 10);
-
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
@@ -64,7 +54,6 @@ export default async function AdminEventsPage({
           + Nuevo evento
         </Link>
       </div>
-
       {/* Filters */}
       <form
         method="GET"
@@ -101,7 +90,6 @@ export default async function AdminEventsPage({
           </Link>
         )}
       </form>
-
       {/* Table */}
       <div className="bg-neutral-900 border border-neutral-700 rounded-xl overflow-hidden">
         {eventList.length === 0 ? (
@@ -198,7 +186,6 @@ export default async function AdminEventsPage({
           </table>
         )}
       </div>
-
       {eventList.length > 0 && (
         <p className="text-xs text-neutral-600 mt-3 text-right">
           {eventList.length} evento{eventList.length !== 1 ? "s" : ""}

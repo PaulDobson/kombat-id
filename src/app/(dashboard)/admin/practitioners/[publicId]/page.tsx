@@ -1,5 +1,4 @@
-import { adminSupabase } from "@/lib/supabase/admin";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import { DrizzlePractitionerRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzlePractitionerRepository";
 import { DrizzleCertificationRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzleCertificationRepository";
 import { DrizzleMartialHistoryRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzleMartialHistoryRepository";
@@ -10,11 +9,10 @@ import { DeletePractitionerButton } from "./DeletePractitionerButton";
 import { RegenerateCertificateButton } from "./RegenerateCertificateButton";
 import { requireAdmin } from "@/lib/auth-guards";
 import { ROLE_LABELS } from "@/lib/roles";
-
+import { adminSupabase } from "@/lib/supabase/admin";
 // ---------------------------------------------------------------------------
 // Labels
 // ---------------------------------------------------------------------------
-
 const GRADE_LABELS: Record<string, string> = {
   white: "Blanco",
   yellow: "Amarillo",
@@ -23,7 +21,6 @@ const GRADE_LABELS: Record<string, string> = {
   red: "Rojo",
   black: "Negro",
 };
-
 const GRADE_STYLES: Record<string, string> = {
   white: "bg-neutral-700 text-neutral-200 border border-neutral-600",
   yellow: "bg-yellow-900/50 text-yellow-400 border border-yellow-800",
@@ -32,7 +29,6 @@ const GRADE_STYLES: Record<string, string> = {
   red: "bg-red-900/50 text-red-400 border border-red-800",
   black: "bg-neutral-800 text-neutral-100 border border-neutral-600",
 };
-
 const BELT_COLORS: Record<string, string> = {
   white: "bg-neutral-100",
   yellow: "bg-yellow-400",
@@ -41,13 +37,11 @@ const BELT_COLORS: Record<string, string> = {
   red: "bg-red-500",
   black: "bg-neutral-900 border border-neutral-600",
 };
-
 const GENDER_LABELS: Record<string, string> = {
   male: "Masculino",
   female: "Femenino",
   other: "Otro",
 };
-
 const CERT_TYPE_LABELS: Record<string, string> = {
   technical_grade: "Grado técnico",
   instructor: "Instructor",
@@ -55,25 +49,21 @@ const CERT_TYPE_LABELS: Record<string, string> = {
   coach: "Entrenador",
   event_participation: "Participación en evento",
 };
-
 const EVENT_TYPE_LABELS: Record<string, string> = {
   competition: "Competencia",
   seminar: "Seminario",
   exam: "Examen",
 };
-
 const EVENT_TYPE_STYLES: Record<string, string> = {
   competition: "bg-primary-900/50 text-primary-400 border border-primary-800",
   seminar: "bg-amber-500/10 text-amber-400 border border-amber-500/30",
   exam: "bg-emerald-900/50 text-emerald-400 border border-emerald-800",
 };
-
 import { formatDateLong } from "@/lib/format-date";
 function formatDate(iso: string | null) {
   if (!iso) return "—";
   return formatDateLong(iso.slice(0, 10));
 }
-
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
@@ -86,11 +76,9 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
     </div>
   );
 }
-
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
-
 export default async function AdminPractitionerDetailPage({
   params,
 }: {
@@ -98,19 +86,15 @@ export default async function AdminPractitionerDetailPage({
 }) {
   const user = await requireAdmin();
   const { publicId } = await params;
-
   const practitionerRepo = new DrizzlePractitionerRepository();
   const certRepo = new DrizzleCertificationRepository();
   const historyRepo = new DrizzleMartialHistoryRepository();
-
   const [practitioner, certifications, historyEntries] = await Promise.all([
     practitionerRepo.findById(publicId),
     certRepo.findByPractitioner(publicId),
     historyRepo.findByPractitionerId(publicId),
   ]);
-
   if (!practitioner) notFound();
-
   // Fetch academy membership and instructor name
   const [{ data: membership }, instructorData] = await Promise.all([
     adminSupabase
@@ -122,12 +106,10 @@ export default async function AdminPractitionerDetailPage({
       ? practitionerRepo.findById(practitioner.instructorId)
       : Promise.resolve(null),
   ]);
-
   const academy = membership?.academies as { id: string; name: string } | null;
   const gradeLabel = `${GRADE_LABELS[practitioner.grade] ?? practitioner.grade}${practitioner.dan ? ` ${practitioner.dan}° Dan` : ""}`;
   const activeCerts = certifications.filter((c) => !c.isRevoked);
   const recentHistory = historyEntries.slice(0, 5);
-
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Breadcrumb */}
@@ -137,7 +119,6 @@ export default async function AdminPractitionerDetailPage({
       >
         ← Volver al listado
       </Link>
-
       {/* Hero card */}
       <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">
         <div className="flex flex-col sm:flex-row items-start gap-5">
@@ -151,7 +132,6 @@ export default async function AdminPractitionerDetailPage({
                 : practitioner.grade.slice(0, 3).toUpperCase()}
             </span>
           </div>
-
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-1">
               <h1 className="text-2xl font-semibold tracking-tight text-neutral-50">
@@ -194,7 +174,6 @@ export default async function AdminPractitionerDetailPage({
               {instructorData && <> · Instructor: {instructorData.fullName}</>}
             </p>
           </div>
-
           {/* Admin actions */}
           <div className="flex flex-wrap gap-2 shrink-0">
             <Link
@@ -228,7 +207,6 @@ export default async function AdminPractitionerDetailPage({
           </div>
         </div>
       </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left column: personal data + address */}
         <div className="lg:col-span-2 space-y-6">
@@ -266,7 +244,6 @@ export default async function AdminPractitionerDetailPage({
               )}
             </dl>
           </div>
-
           {/* Address */}
           {(practitioner.addressStreet ||
             practitioner.addressCity ||
@@ -288,7 +265,6 @@ export default async function AdminPractitionerDetailPage({
               </dl>
             </div>
           )}
-
           {/* Deactivation info */}
           {!practitioner.isActive && practitioner.deactivatedAt && (
             <div className="bg-rose-500/5 border border-rose-500/20 rounded-xl p-6">
@@ -304,7 +280,6 @@ export default async function AdminPractitionerDetailPage({
               </dl>
             </div>
           )}
-
           {/* Martial history */}
           <div className="bg-neutral-900 border border-neutral-700 rounded-xl overflow-hidden">
             <div className="px-5 py-4 border-b border-neutral-700 flex items-center justify-between">
@@ -373,7 +348,6 @@ export default async function AdminPractitionerDetailPage({
             )}
           </div>
         </div>
-
         {/* Right column: stats + certifications */}
         <div className="space-y-6">
           {/* Stats */}
@@ -395,7 +369,6 @@ export default async function AdminPractitionerDetailPage({
               </p>
             </div>
           </div>
-
           {/* Certifications */}
           <div className="bg-neutral-900 border border-neutral-700 rounded-xl overflow-hidden">
             <div className="px-5 py-4 border-b border-neutral-700 flex items-center justify-between">
@@ -441,7 +414,6 @@ export default async function AdminPractitionerDetailPage({
               </ul>
             )}
           </div>
-
           {/* Quick links */}
           <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-5 space-y-2">
             <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">

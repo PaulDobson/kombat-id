@@ -1,18 +1,13 @@
 import { adminSupabase } from "@/lib/supabase/admin";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { DrizzleGradeExamRepository } from "@/modules/grade-exam/infrastructure/repositories/drizzleGradeExamRepository";
 import { requireAdmin } from "@/lib/auth-guards";
-
 // ---------------------------------------------------------------------------
 // Auth guard
 // ---------------------------------------------------------------------------
-
-
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
 const GRADE_LABELS: Record<string, string> = {
   white: "Blanco",
   yellow: "Amarillo",
@@ -21,44 +16,35 @@ const GRADE_LABELS: Record<string, string> = {
   red: "Rojo",
   black: "Negro",
 };
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
 async function fetchPractitionerNames(
   ids: string[],
 ): Promise<Map<string, string>> {
   if (ids.length === 0) return new Map();
-
   const { data } = await adminSupabase
     .from("practitioners")
     .select("id, full_name")
     .in("id", ids);
-
   const map = new Map<string, string>();
   for (const row of data ?? []) {
     map.set(row.id, row.full_name ?? row.id);
   }
   return map;
 }
-
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
-
 export default async function AdminGradeExamsPage() {
   await requireAdmin();
-
   const repo = new DrizzleGradeExamRepository();
   const exams = await repo.findPendingAuthorization();
-
   // Batch-load practitioner names for both alumno and instructor columns
   const allIds = [
     ...new Set(exams.flatMap((e) => [e.practitionerId, e.instructorId])),
   ];
   const nameMap = await fetchPractitionerNames(allIds);
-
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-5">
       {/* Header */}
@@ -71,7 +57,6 @@ export default async function AdminGradeExamsPage() {
           {exams.length !== 1 ? "s" : ""}
         </p>
       </div>
-
       {/* Table */}
       <div className="bg-neutral-900 border border-neutral-700 rounded-xl overflow-hidden">
         {exams.length === 0 ? (

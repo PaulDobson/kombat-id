@@ -1,5 +1,4 @@
-import { adminSupabase } from "@/lib/supabase/admin";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import { DrizzlePractitionerRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzlePractitionerRepository";
 import { DrizzleChargeRepository } from "@/modules/practitioner-identity/infrastructure/repositories/drizzleChargeRepository";
 import { getPractitionerEconomicSummary } from "@/modules/practitioner-identity/application/use-cases/getPractitionerEconomicSummary";
@@ -8,36 +7,29 @@ import type {
   ChargeType,
 } from "@/modules/practitioner-identity/domain/entities/charge";
 import Link from "next/link";
-
-
 const CHARGE_TYPE_LABELS: Record<ChargeType, string> = {
   examen_grado: "Examen de grado",
   membresia_anual: "Membresía anual",
   licencia_competencia: "Licencia de competencia",
 };
-
 const STATUS_STYLES: Record<ChargeStatus, string> = {
   pendiente: "bg-amber-900/50 text-amber-400 border border-amber-800",
   pagado: "bg-emerald-900/50 text-emerald-400 border border-emerald-800",
   vencido: "bg-rose-900/50 text-rose-400 border border-rose-800",
   exento: "bg-neutral-800 text-neutral-400 border border-neutral-700",
 };
-
 const STATUS_LABELS: Record<ChargeStatus, string> = {
   pendiente: "Pendiente",
   pagado: "Pagado",
   vencido: "Vencido",
   exento: "Exento",
 };
-
 import { formatDateNumeric } from "@/lib/format-date";
 import { requireAdmin } from "@/lib/auth-guards";
-
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "—";
   return formatDateNumeric(dateStr);
 }
-
 function formatAmount(amount: number, currency: string): string {
   return new Intl.NumberFormat("es-CL", {
     style: "currency",
@@ -45,27 +37,21 @@ function formatAmount(amount: number, currency: string): string {
     maximumFractionDigits: 0,
   }).format(amount);
 }
-
 export default async function PractitionerChargesPage({
   params,
 }: {
   params: Promise<{ practitionerId: string }>;
 }) {
   await requireAdmin();
-
   const { practitionerId } = await params;
-
   const practitionerRepo = new DrizzlePractitionerRepository();
   const chargeRepo = new DrizzleChargeRepository();
-
   const practitioner = await practitionerRepo.findById(practitionerId);
   if (!practitioner) notFound();
-
   const summary = await getPractitionerEconomicSummary(
     { practitionerId: practitioner.id },
     { chargeRepo },
   );
-
   return (
     <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Back link */}
@@ -75,7 +61,6 @@ export default async function PractitionerChargesPage({
       >
         ← Volver al resumen económico
       </Link>
-
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
@@ -92,7 +77,6 @@ export default async function PractitionerChargesPage({
           </span>
         )}
       </div>
-
       {/* Status summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-4">
@@ -128,7 +112,6 @@ export default async function PractitionerChargesPage({
           </p>
         </div>
       </div>
-
       {/* Charges list */}
       <div className="bg-neutral-900 border border-neutral-700 rounded-xl overflow-hidden">
         <div className="px-4 py-3 border-b border-neutral-700">
@@ -136,7 +119,6 @@ export default async function PractitionerChargesPage({
             Cobros ({summary.charges.length})
           </h2>
         </div>
-
         {summary.charges.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-neutral-500 text-sm">
@@ -206,7 +188,6 @@ export default async function PractitionerChargesPage({
           </table>
         )}
       </div>
-
       {summary.charges.some((c) => c.exemptionReason) && (
         <div className="mt-4 space-y-2">
           <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
