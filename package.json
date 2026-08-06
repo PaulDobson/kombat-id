@@ -8,13 +8,6 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "seed": "tsx scripts/seed.ts",
-    "seed:users": "tsx scripts/create-auth-users.ts",
-    "seed:practitioners": "tsx scripts/seed-practitioners.ts",
-    "assign:academies": "tsx scripts/assign-practitioners-to-academies.ts",
-    "seed:masters": "tsx scripts/seed-masters.ts",
-    "setup:storage": "tsx scripts/setup-event-storage.ts",
-    "setup:certificates-storage": "tsx scripts/setup-membership-certificates-storage.ts",
     "types:generate": "pnpm supabase gen types typescript --project-id nopqnoefsoljvafhhcmk > src/types/database.types.ts"
   },
   "dependencies": {
