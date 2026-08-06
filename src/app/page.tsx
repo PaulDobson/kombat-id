@@ -1367,7 +1367,7 @@ export default async function LandingPage({
         />
         {/* Pulsing glow ring */}
         <div
-          className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-primary-600/8 rounded-full blur-3xl pointer-events-none animate-glow-pulse"
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-75 bg-primary-600/8 rounded-full blur-3xl pointer-events-none animate-glow-pulse"
           aria-hidden="true"
         />
         <div
