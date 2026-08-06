@@ -41,13 +41,32 @@ export async function DashboardNav() {
     ["instructor", "profesor", "maestro"].includes(practitionerRow.role ?? "");
 
   // For instructors: fetch their academies to build the nav dropdown
-  let instructorAcademyItems: { href: string; label: string }[] = [];
+  let instructorAcademyItems: {
+    href: string;
+    label: string;
+    subItems: { href: string; label: string }[];
+  }[] = [];
+  let instructorAcademyMobileItems: { href: string; label: string }[] = [];
   if (isInstructor && practitionerRow) {
     const academyRows = await getInstructorAcademyItems(practitionerRow.id);
     instructorAcademyItems = academyRows.map((a) => ({
       href: `/instructor/academies/${a.id}`,
       label: a.name,
+      subItems: [
+        {
+          href: `/instructor/academies/${a.id}?section=register`,
+          label: "Registrar Alumnos",
+        },
+      ],
     }));
+    // Mobile: flat list with both links per academy
+    instructorAcademyMobileItems = academyRows.flatMap((a) => [
+      { href: `/instructor/academies/${a.id}`, label: a.name },
+      {
+        href: `/instructor/academies/${a.id}?section=register`,
+        label: `↳ Registrar Alumnos — ${a.name}`,
+      },
+    ]);
   }
 
   const initials = practitionerRow
@@ -122,7 +141,7 @@ export async function DashboardNav() {
           {
             title: "Academia",
             items: [
-              ...instructorAcademyItems,
+              ...instructorAcademyMobileItems,
               {
                 href: "/instructor/academies/new",
                 label: "+ Crear academia",

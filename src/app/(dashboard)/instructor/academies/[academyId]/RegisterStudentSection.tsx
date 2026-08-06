@@ -1,10 +1,32 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { RegisterStudentForm } from "../../RegisterStudentForm";
 
 export function RegisterStudentSection({ academyId }: { academyId: string }) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
+
+  // Abre el modal cuando la URL contiene ?section=register
+  useEffect(() => {
+    if (searchParams.get("section") === "register") {
+      setOpen(true);
+    }
+  }, [searchParams]);
+
+  // Al cerrar el modal, limpia el query param para no reabrirlo en futuros renders
+  function handleClose() {
+    setOpen(false);
+    if (searchParams.get("section") === "register") {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("section");
+      const newUrl = params.size > 0 ? `${pathname}?${params}` : pathname;
+      router.replace(newUrl, { scroll: false });
+    }
+  }
 
   // Bloquear scroll del body cuando el modal está abierto
   useEffect(() => {
@@ -46,7 +68,7 @@ export function RegisterStudentSection({ academyId }: { academyId: string }) {
         <div
           className="fixed inset-0 z-50 flex items-start justify-center p-4 sm:p-6 overflow-y-auto"
           onClick={(e) => {
-            if (e.target === e.currentTarget) setOpen(false);
+            if (e.target === e.currentTarget) handleClose();
           }}
         >
           {/* Overlay */}
@@ -85,7 +107,7 @@ export function RegisterStudentSection({ academyId }: { academyId: string }) {
                 </div>
               </div>
               <button
-                onClick={() => setOpen(false)}
+                onClick={handleClose}
                 className="p-1.5 rounded-lg text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800 transition-colors"
                 aria-label="Cerrar"
               >
@@ -109,7 +131,7 @@ export function RegisterStudentSection({ academyId }: { academyId: string }) {
             <div className="px-6 py-6">
               <RegisterStudentForm
                 academyId={academyId}
-                onSuccess={() => setOpen(false)}
+                onSuccess={handleClose}
               />
             </div>
           </div>
