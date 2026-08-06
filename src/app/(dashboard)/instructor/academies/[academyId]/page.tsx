@@ -93,7 +93,7 @@ export default async function InstructorAcademyDetailPage({
   searchParams,
 }: {
   params: Promise<{ academyId: string }>;
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; section?: string }>;
 }) {
   const user = await requireUser();
   const { academyId } = await params;

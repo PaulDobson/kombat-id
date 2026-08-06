@@ -4,6 +4,7 @@ import { StudentSection } from "./_sections/StudentSection";
 import { DashboardTabs } from "./_sections/DashboardTabs";
 import { ActivityWidgets } from "./_sections/ActivityWidgets";
 import { DrizzleGradeExamRepository } from "@/modules/grade-exam/infrastructure/repositories/drizzleGradeExamRepository";
+import { OnboardingGate } from "@/modules/instructor-onboarding/presentation/components/OnboardingGate";
 import {
   Building2,
   Users,
@@ -203,6 +204,8 @@ export default async function InstructorPage({
           Gestiona tus academias y alumnos
         </p>
       </div>
+
+      <OnboardingGate practitionerId={session.practitionerId} />
 
       {/* ── BANNER: Atención requerida ───────────────────────────── */}
       {attentionItems.length > 0 && (
