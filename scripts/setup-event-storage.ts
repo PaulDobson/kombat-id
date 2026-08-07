@@ -52,10 +52,12 @@ async function main() {
     );
   } else {
     // ── 2. Create the bucket ────────────────────────────────────────────────
+    // public: true para que las portadas de eventos sean accesibles vía URL pública
+    // Los documentos privados pueden usar signed URLs según sea necesario
     const { error: createError } = await supabase.storage.createBucket(
       BUCKET_NAME,
       {
-        public: false,
+        public: true,
         allowedMimeTypes: [
           "image/jpeg",
           "image/png",
@@ -74,7 +76,7 @@ async function main() {
     }
 
     console.log(`✅  Bucket "${BUCKET_NAME}" created successfully.`);
-    console.log("    - public: false");
+    console.log("    - public: true (cover images are publicly accessible)");
     console.log("    - allowedMimeTypes: jpeg, png, webp, pdf, doc, docx");
     console.log("    - fileSizeLimit: 10 MB");
   }

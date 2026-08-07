@@ -2,7 +2,8 @@
  * Storage helpers for event files (cover images and attachments).
  *
  * Uses the browser Supabase client so uploads happen client-side from forms.
- * The bucket `event-files` is private — signed URLs are used for reads.
+ * The bucket `event-files` is public — cover images are accessed via public URLs.
+ * For private attachments, use createSignedUrl.
  */
 
 import { createClient } from "@/lib/supabase/client";
