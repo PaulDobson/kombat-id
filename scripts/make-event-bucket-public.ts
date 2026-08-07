@@ -69,10 +69,11 @@ async function makeEventBucketPublic() {
       .not("cover_image_path", "is", null)
       .limit(1);
 
-    if (events && events.length > 0 && events[0].cover_image_path) {
+    const firstEvent = events?.[0];
+    if (firstEvent?.cover_image_path) {
       const { data: urlData } = supabase.storage
         .from("event-files")
-        .getPublicUrl(events[0].cover_image_path);
+        .getPublicUrl(firstEvent.cover_image_path);
 
       console.log(`\n🧪 Probando URL: ${urlData.publicUrl}`);
 

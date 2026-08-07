@@ -40,7 +40,7 @@ async function testImageUrls() {
 
     const { data } = supabase.storage
       .from("event-files")
-      .getPublicUrl(event.cover_image_path);
+      .getPublicUrl(event.cover_image_path!);
 
     console.log(`URL generada: ${data.publicUrl}`);
 

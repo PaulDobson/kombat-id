@@ -62,7 +62,7 @@ async function checkEventImages() {
       // Generar URL pública para verificar
       const { data } = supabase.storage
         .from("event-files")
-        .getPublicUrl(event.cover_image_path);
+        .getPublicUrl(event.cover_image_path!);
 
       console.log(`  URL: ${data.publicUrl}\n`);
     });
