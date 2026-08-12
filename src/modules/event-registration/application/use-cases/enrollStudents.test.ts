@@ -54,6 +54,22 @@ class InMemoryEventRegistrationRepository implements IEventRegistrationRepositor
     return null;
   }
 
+  async findActiveByPractitionerAndEvent(
+    practitionerId: string,
+    eventId: string,
+  ): Promise<EventRegistration | null> {
+    for (const reg of this.registrations.values()) {
+      if (
+        reg.practitionerId === practitionerId &&
+        reg.eventId === eventId &&
+        reg.status !== "cancelada"
+      ) {
+        return reg;
+      }
+    }
+    return null;
+  }
+
   async countConfirmedByEvent(eventId: string): Promise<number> {
     let count = 0;
     for (const reg of this.registrations.values()) {

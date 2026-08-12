@@ -455,6 +455,7 @@ export default async function EnrollPage({
             students={students}
             registrations={myRegistrations}
             isCompetition={isCompetition}
+            eventRegistrationFee={event.registration_fee}
           />
         )}
       </div>

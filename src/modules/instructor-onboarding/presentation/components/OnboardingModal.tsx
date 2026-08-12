@@ -65,9 +65,11 @@ export function OnboardingModal({
             <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-neutral-800">
               <div>
                 <OnboardingStepIndicator currentStep={activeStep} />
-                <p className="text-xs text-neutral-500 mt-1">
-                  {STEP_TITLES[activeStep]}
-                </p>
+                <Dialog.Title asChild>
+                  <p className="text-xs text-neutral-500 mt-1">
+                    {STEP_TITLES[activeStep]}
+                  </p>
+                </Dialog.Title>
               </div>
               <Dialog.Close asChild>
                 <button

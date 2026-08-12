@@ -43,3 +43,30 @@ export function hasCapacity(
   if (maxParticipants === null) return true;
   return confirmedCount < maxParticipants;
 }
+
+/**
+ * Determina si una inscripción puede ser eliminada según las reglas de negocio.
+ *
+ * Reglas de eliminación:
+ * - PERMITIDO: inscripciones con estado "pendiente_pago" (independiente del costo)
+ * - PERMITIDO: inscripciones confirmadas en eventos gratuitos (fee = 0 o null)
+ * - DENEGADO: inscripciones confirmadas en eventos de pago (fee > 0)
+ * - DENEGADO: inscripciones ya canceladas
+ *
+ * @param status - Estado actual de la inscripción
+ * @param eventRegistrationFee - Costo de inscripción del evento (null o 0 para eventos gratuitos)
+ * @returns true si la inscripción puede ser eliminada, false en caso contrario
+ */
+export function isDeletable(
+  status: RegistrationStatus,
+  eventRegistrationFee: number | null,
+): boolean {
+  if (status === "cancelada") return false;
+  if (status === "pendiente_pago") return true;
+  if (status === "confirmada") {
+    const isFreeEvent =
+      eventRegistrationFee === null || eventRegistrationFee === 0;
+    return isFreeEvent;
+  }
+  return false;
+}

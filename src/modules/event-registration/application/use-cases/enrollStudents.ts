@@ -33,12 +33,13 @@ export async function enrollStudents(
   const skipped: Array<{ id: string; name: string }> = [];
 
   for (const practitioner of input.practitioners) {
-    const existing = await repository.findByPractitionerAndEvent(
+    // Only check for active registrations - cancelled registrations should not block re-enrollment
+    const existingActive = await repository.findActiveByPractitionerAndEvent(
       practitioner.id,
       input.eventId,
     );
 
-    if (existing) {
+    if (existingActive) {
       skipped.push({ id: practitioner.id, name: practitioner.name });
       continue;
     }

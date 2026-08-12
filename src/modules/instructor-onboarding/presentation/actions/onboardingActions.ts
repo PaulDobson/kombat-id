@@ -61,6 +61,7 @@ const AcademyPublicProfileSchema = z.object({
 });
 
 const RegisterStudentSchema = z.object({
+  rut: z.string().min(1, "RUT requerido").max(20),
   fullName: z.string().min(1).max(120),
   email: z.string().email(),
   birthDate: z
@@ -69,7 +70,6 @@ const RegisterStudentSchema = z.object({
     .refine((d) => new Date(d) < new Date(), {
       message: "La fecha debe ser pasada",
     }),
-  belt: z.enum(["white", "yellow", "green", "blue", "red", "black"]).optional(),
   academyId: z.string().uuid(),
 });
 
@@ -322,13 +322,13 @@ export async function registerStudentAction(
         id: practitionerId,
         full_name: parsed.data.fullName,
         birth_date: parsed.data.birthDate,
-        grade: parsed.data.belt ?? "white",
+        grade: "white",
         role: "alumno",
         is_active: false,
         auth_user_id: authUserId,
         contact_email: parsed.data.email,
         instructor_id: auth.practitioner.id,
-        rut: `ONBOARDING-${practitionerId}`,
+        rut: parsed.data.rut,
         gender: "other",
         start_date: now.slice(0, 10),
         qr_token: crypto.randomUUID(),
