@@ -9,6 +9,7 @@ import { registerStudentAction } from "../../actions/onboardingActions";
 import type { SessionStudent } from "../types";
 
 const RegisterStudentSchema = z.object({
+  rut: z.string().min(1, "RUT requerido").max(20, "Máximo 20 caracteres"),
   fullName: z
     .string()
     .min(1, "Nombre requerido")
@@ -20,19 +21,9 @@ const RegisterStudentSchema = z.object({
     .refine((d) => new Date(d) < new Date(), {
       message: "La fecha debe ser pasada",
     }),
-  belt: z.enum(["white", "yellow", "green", "blue", "red", "black"]).optional(),
 });
 
 type RegisterStudentFormData = z.infer<typeof RegisterStudentSchema>;
-
-const BELT_OPTIONS = [
-  { value: "white", label: "Blanco" },
-  { value: "yellow", label: "Amarillo" },
-  { value: "green", label: "Verde" },
-  { value: "blue", label: "Azul" },
-  { value: "red", label: "Rojo" },
-  { value: "black", label: "Negro" },
-] as const;
 
 interface RegisterStudentsStepProps {
   academyId: string;
@@ -118,6 +109,20 @@ export function RegisterStudentsStep({
 
         <div>
           <label className="block text-sm font-medium text-neutral-300 mb-1">
+            RUT <span className="text-red-400">*</span>
+          </label>
+          <input
+            {...register("rut")}
+            className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-2.5 text-sm text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            placeholder="12345678-9"
+          />
+          {errors.rut && (
+            <p className="text-xs text-red-400 mt-1">{errors.rut.message}</p>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-neutral-300 mb-1">
             Nombre completo <span className="text-red-400">*</span>
           </label>
           <input
@@ -161,24 +166,6 @@ export function RegisterStudentsStep({
               {errors.birthDate.message}
             </p>
           )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-neutral-300 mb-1">
-            Cinturón{" "}
-            <span className="text-neutral-500 text-xs">(opcional)</span>
-          </label>
-          <select
-            {...register("belt")}
-            className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-2.5 text-sm text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="">Sin especificar</option>
-            {BELT_OPTIONS.map((b) => (
-              <option key={b.value} value={b.value}>
-                {b.label}
-              </option>
-            ))}
-          </select>
         </div>
 
         {actionError && (

@@ -141,6 +141,35 @@ export class DrizzleEventRegistrationRepository implements IEventRegistrationRep
     return this.fromRow(data as EventRegistrationRow);
   }
 
+  /**
+   * Finds an active (non-cancelled) registration for a practitioner in a specific event.
+   * Only returns registrations where status is not "cancelada".
+   *
+   * @param practitionerId - The ID of the practitioner
+   * @param eventId - The ID of the event
+   * @returns The active registration if found, or null if no registration exists or if the existing registration is cancelled
+   */
+  async findActiveByPractitionerAndEvent(
+    practitionerId: string,
+    eventId: string,
+  ): Promise<EventRegistration | null> {
+    const { data, error } = await adminSupabase
+      .from("event_registrations" as never)
+      .select("*")
+      .eq("practitioner_id", practitionerId)
+      .eq("event_id", eventId)
+      .neq("status", "cancelada")
+      .maybeSingle();
+
+    if (error)
+      throw new DomainError(
+        `Failed to find active registration by practitioner and event: ${error.message}`,
+      );
+    if (!data) return null;
+
+    return this.fromRow(data as EventRegistrationRow);
+  }
+
   /** Counts registrations with status = 'confirmada' for the given event. */
   async countConfirmedByEvent(eventId: string): Promise<number> {
     const { count, error } = await adminSupabase

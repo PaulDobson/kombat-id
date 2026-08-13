@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { EnrollForm } from "./EnrollForm";
+import { DeleteRegistrationButton } from "@/modules/event-registration/presentation/components/DeleteRegistrationButton";
+import { isDeletable } from "@/modules/event-registration/domain/entities/eventRegistration";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -27,6 +29,7 @@ interface Props {
   students: Student[];
   registrations: Registration[];
   isCompetition: boolean;
+  eventRegistrationFee: number | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -84,10 +87,14 @@ function RegisteredTab({
   registrations,
   students,
   isCompetition,
+  eventId,
+  eventRegistrationFee,
 }: {
   registrations: Registration[];
   students: Student[];
   isCompetition: boolean;
+  eventId: string;
+  eventRegistrationFee: number | null;
 }) {
   const studentMap = new Map(students.map((s) => [s.id, s]));
 
@@ -234,11 +241,15 @@ function RegisteredTab({
                 <th className="text-left px-4 py-4 text-xs font-semibold text-neutral-400 uppercase tracking-wider hidden md:table-cell">
                   Inscrito el
                 </th>
+                <th className="text-right px-4 py-4 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+                  Acciones
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-800">
               {registrations.map((reg) => {
                 const student = studentMap.get(reg.practitionerId);
+                const canDelete = isDeletable(reg.status, eventRegistrationFee);
                 return (
                   <tr
                     key={reg.id}
@@ -312,6 +323,15 @@ function RegisteredTab({
                     <td className="px-4 py-4 text-neutral-400 text-xs tabular-nums hidden md:table-cell">
                       {formatDate(reg.registeredAt)}
                     </td>
+                    <td className="px-4 py-4 text-right">
+                      {canDelete && (
+                        <DeleteRegistrationButton
+                          registrationId={reg.id}
+                          eventId={eventId}
+                          studentName={reg.practitionerName}
+                        />
+                      )}
+                    </td>
                   </tr>
                 );
               })}
@@ -334,6 +354,7 @@ export function EnrollTabs({
   students,
   registrations,
   isCompetition,
+  eventRegistrationFee,
 }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("inscribir");
 
@@ -437,6 +458,8 @@ export function EnrollTabs({
           registrations={registrations}
           students={students}
           isCompetition={isCompetition}
+          eventId={eventId}
+          eventRegistrationFee={eventRegistrationFee}
         />
       )}
     </div>

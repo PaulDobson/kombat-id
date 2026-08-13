@@ -36,6 +36,7 @@ const EventFormSchema = z
     isFree: z.boolean(),
     registration_fee: z
       .number()
+      .int("El precio debe ser un número entero en CLP")
       .min(0, "El precio no puede ser negativo")
       .nullable()
       .optional(),
@@ -724,21 +725,29 @@ export function EventForm({ event }: Props) {
           <span className="text-neutral-500 font-normal">(opcional)</span>
         </Label.Root>
         <div className="flex items-center gap-3">
-          <input
-            id="registration_fee"
-            name="registration_fee"
-            type="number"
-            min={0}
-            step="0.01"
-            defaultValue={
-              event?.registration_fee != null
-                ? event.registration_fee
-                : undefined
-            }
-            disabled={isPending || isFree}
-            className={`flex-1 ${inputClass}`}
-            placeholder="0"
-          />
+          <div className="flex flex-1 items-center bg-neutral-800 border border-neutral-700 rounded-lg focus-within:ring-2 focus-within:ring-primary-500 transition-shadow overflow-hidden">
+            <span className="px-3 text-sm text-neutral-400 select-none border-r border-neutral-700">
+              $
+            </span>
+            <input
+              id="registration_fee"
+              name="registration_fee"
+              type="number"
+              min={0}
+              step="1"
+              defaultValue={
+                event?.registration_fee != null
+                  ? event.registration_fee
+                  : undefined
+              }
+              disabled={isPending || isFree}
+              className="flex-1 px-3 py-2 bg-transparent text-sm text-neutral-100 placeholder:text-neutral-500 focus:outline-none disabled:opacity-50"
+              placeholder="0"
+            />
+            <span className="px-3 text-xs text-neutral-500 select-none">
+              CLP
+            </span>
+          </div>
           <label className="flex items-center gap-2 text-sm text-neutral-300 cursor-pointer select-none whitespace-nowrap">
             <input
               type="checkbox"

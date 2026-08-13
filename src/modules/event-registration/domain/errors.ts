@@ -25,3 +25,11 @@ export class RegistrationNotFoundError extends Error {
     this.name = "RegistrationNotFoundError";
   }
 }
+export class CannotDeleteConfirmedPaidError extends Error {
+  constructor() {
+    super(
+      "No se puede eliminar una inscripción confirmada de un evento de pago",
+    );
+    this.name = "CannotDeleteConfirmedPaidError";
+  }
+}
