@@ -214,6 +214,7 @@ export async function instructorAssignPractitionerAction(
       id: crypto.randomUUID(),
       academy_id: parsed.data.academyId,
       practitioner_id: parsed.data.practitionerId,
+      is_active: true,
       joined_at: new Date().toISOString(),
     });
 

@@ -19,10 +19,38 @@ const initialState = {
   martialGrade: "",
 };
 
+interface RegisterStudentFormProps {
+  /**
+   * Optional academy to assign the student to.
+   * If omitted, the action will use the instructor's first active academy.
+   */
+  academyId?: string;
+
+  /**
+   * When true, hides optional fields (gender, weight, height, martial art history)
+   * and applies default values on submission.
+   * Default: false
+   */
+  simplifiedMode?: boolean;
+
+  /**
+   * Callback invoked after successful registration.
+   * Receives the publicId, fullName, email, and temporaryPassword (if created) of the registered student.
+   * Used by RegisterStudentsStep to add student to session state.
+   */
+  onSuccess?: (result: {
+    publicId: string;
+    fullName: string;
+    email: string;
+    temporaryPassword?: string;
+  }) => void;
+}
+
 export function RegisterStudentForm({
   academyId,
+  simplifiedMode = false,
   onSuccess,
-}: { academyId?: string; onSuccess?: () => void } = {}) {
+}: RegisterStudentFormProps = {}) {
   const [fields, setFields] = useState(initialState);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{
@@ -49,15 +77,12 @@ export function RegisterStudentForm({
         rut: fields.rut,
         fullName: fields.fullName,
         birthDate: fields.birthDate,
-        gender: fields.gender as "male" | "female" | "other",
-        grade: fields.grade as
-          | "white"
-          | "yellow"
-          | "green"
-          | "blue"
-          | "red"
-          | "black",
-        startDate: fields.startDate,
+        // Apply defaults when simplified mode is active
+        gender: simplifiedMode
+          ? "other"
+          : (fields.gender as "male" | "female" | "other"),
+        grade: "white", // Always white for new students
+        startDate: simplifiedMode ? today : fields.startDate,
         weightKg: fields.weightKg ? parseFloat(fields.weightKg) : undefined,
         heightCm: fields.heightCm ? parseInt(fields.heightCm, 10) : undefined,
         studentEmail: fields.studentEmail || undefined,
@@ -67,12 +92,36 @@ export function RegisterStudentForm({
       });
 
       if (res.success) {
-        setResult({
+        // Build callback data with all required fields
+        const callbackData: {
+          publicId: string;
+          fullName: string;
+          email: string;
+          temporaryPassword?: string;
+        } = {
           publicId: res.data.publicId,
-          linked: Boolean(fields.studentEmail),
-        });
+          fullName: res.data.fullName,
+          email: res.data.email,
+        };
+
+        // Only include temporaryPassword if it exists
+        if (res.data.temporaryPassword !== undefined) {
+          callbackData.temporaryPassword = res.data.temporaryPassword;
+        }
+
+        // Reset form to initial state FIRST (maintains today's date)
         setFields({ ...initialState, startDate: today });
-        onSuccess?.();
+
+        // Call onSuccess callback after form reset
+        onSuccess?.(callbackData);
+
+        // Show success UI only if no callback provided (legacy behavior for non-onboarding contexts)
+        if (!onSuccess) {
+          setResult({
+            publicId: res.data.publicId,
+            linked: Boolean(fields.studentEmail),
+          });
+        }
       } else {
         setError(res.error);
       }
@@ -209,27 +258,29 @@ export function RegisterStudentForm({
         />
       </div>
 
-      {/* Género */}
-      <div>
-        <label htmlFor="gender" className={labelClass}>
-          Género <span className="text-rose-400">*</span>
-        </label>
-        <select
-          id="gender"
-          name="gender"
-          required
-          value={fields.gender}
-          onChange={handleChange}
-          className={inputClass}
-        >
-          <option value="" disabled>
-            Seleccionar...
-          </option>
-          <option value="male">Masculino</option>
-          <option value="female">Femenino</option>
-          <option value="other">Otro</option>
-        </select>
-      </div>
+      {/* Género - hidden in simplified mode */}
+      {!simplifiedMode && (
+        <div>
+          <label htmlFor="gender" className={labelClass}>
+            Género <span className="text-rose-400">*</span>
+          </label>
+          <select
+            id="gender"
+            name="gender"
+            required={!simplifiedMode}
+            value={fields.gender}
+            onChange={handleChange}
+            className={inputClass}
+          >
+            <option value="" disabled>
+              Seleccionar...
+            </option>
+            <option value="male">Masculino</option>
+            <option value="female">Femenino</option>
+            <option value="other">Otro</option>
+          </select>
+        </div>
+      )}
 
       {/* Grado inicial — siempre Blanco */}
       <div>
@@ -263,94 +314,98 @@ export function RegisterStudentForm({
         />
       </div>
 
-      {/* Peso y Altura (opcionales) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="weightKg" className={labelClass}>
-            Peso (kg)
-          </label>
-          <input
-            id="weightKg"
-            name="weightKg"
-            type="number"
-            step="0.1"
-            min="0"
-            placeholder="65.5"
-            value={fields.weightKg}
-            onChange={handleChange}
-            className={inputClass}
-          />
+      {/* Peso y Altura (opcionales) - hidden in simplified mode */}
+      {!simplifiedMode && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="weightKg" className={labelClass}>
+              Peso (kg)
+            </label>
+            <input
+              id="weightKg"
+              name="weightKg"
+              type="number"
+              step="0.1"
+              min="0"
+              placeholder="65.5"
+              value={fields.weightKg}
+              onChange={handleChange}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label htmlFor="heightCm" className={labelClass}>
+              Altura (cm)
+            </label>
+            <input
+              id="heightCm"
+              name="heightCm"
+              type="number"
+              step="1"
+              min="50"
+              max="250"
+              placeholder="170"
+              value={fields.heightCm}
+              onChange={handleChange}
+              className={inputClass}
+            />
+          </div>
         </div>
-        <div>
-          <label htmlFor="heightCm" className={labelClass}>
-            Altura (cm)
-          </label>
-          <input
-            id="heightCm"
-            name="heightCm"
-            type="number"
-            step="1"
-            min="50"
-            max="250"
-            placeholder="170"
-            value={fields.heightCm}
-            onChange={handleChange}
-            className={inputClass}
-          />
-        </div>
-      </div>
+      )}
 
-      {/* Arte marcial previa (opcional) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="martialArt" className={labelClass}>
-            Arte marcial previa
-            <span className="text-neutral-600 font-normal ml-1">
-              (opcional)
-            </span>
-          </label>
-          <select
-            id="martialArt"
-            name="martialArt"
-            value={fields.martialArt}
-            onChange={handleChange}
-            className={inputClass}
-          >
-            <option value="">Seleccionar...</option>
-            <option value="Taekwondo WT">Tae kwon do WT</option>
-            <option value="Taekwondo ITF">Tae kwon do ITF</option>
-            <option value="BJJ">BJJ</option>
-            <option value="Karate">Karate</option>
-            <option value="Boxeo">Boxeo</option>
-            <option value="Kung Fu">Kung Fu</option>
-            <option value="Lucha">Lucha</option>
-            <option value="Otras">Otras artes marciales</option>
-          </select>
+      {/* Arte marcial previa (opcional) - hidden in simplified mode */}
+      {!simplifiedMode && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="martialArt" className={labelClass}>
+              Arte marcial previa
+              <span className="text-neutral-600 font-normal ml-1">
+                (opcional)
+              </span>
+            </label>
+            <select
+              id="martialArt"
+              name="martialArt"
+              value={fields.martialArt}
+              onChange={handleChange}
+              className={inputClass}
+            >
+              <option value="">Seleccionar...</option>
+              <option value="Taekwondo WT">Tae kwon do WT</option>
+              <option value="Taekwondo ITF">Tae kwon do ITF</option>
+              <option value="BJJ">BJJ</option>
+              <option value="Karate">Karate</option>
+              <option value="Boxeo">Boxeo</option>
+              <option value="Kung Fu">Kung Fu</option>
+              <option value="Lucha">Lucha</option>
+              <option value="Otras">Otras artes marciales</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="martialGrade" className={labelClass}>
+              Grado marcial
+              <span className="text-neutral-600 font-normal ml-1">
+                (opcional)
+              </span>
+            </label>
+            <select
+              id="martialGrade"
+              name="martialGrade"
+              value={fields.martialGrade}
+              onChange={handleChange}
+              className={inputClass}
+            >
+              <option value="">Seleccionar...</option>
+              <option value="white">Blanco</option>
+              <option value="yellow">Amarillo</option>
+              <option value="green">Verde</option>
+              <option value="blue">Azul</option>
+              <option value="red">Rojo</option>
+              <option value="black">Negro</option>
+            </select>
+          </div>
         </div>
-        <div>
-          <label htmlFor="martialGrade" className={labelClass}>
-            Grado marcial
-            <span className="text-neutral-600 font-normal ml-1">
-              (opcional)
-            </span>
-          </label>
-          <select
-            id="martialGrade"
-            name="martialGrade"
-            value={fields.martialGrade}
-            onChange={handleChange}
-            className={inputClass}
-          >
-            <option value="">Seleccionar...</option>
-            <option value="white">Blanco</option>
-            <option value="yellow">Amarillo</option>
-            <option value="green">Verde</option>
-            <option value="blue">Azul</option>
-            <option value="red">Rojo</option>
-            <option value="black">Negro</option>
-          </select>
-        </div>
-      </div>
+      )}
 
       {error && (
         <p role="alert" className="text-sm text-rose-400">
