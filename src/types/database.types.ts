@@ -792,6 +792,50 @@ export type Database = {
         };
         Relationships: [];
       };
+      instructor_onboarding_progress: {
+        Row: {
+          completed_at: string | null;
+          created_at: string;
+          id: string;
+          practitioner_id: string;
+          step_create_academy_completed: boolean;
+          step_events_info_completed: boolean;
+          step_register_students_completed: boolean;
+          step_welcome_emails_completed: boolean;
+          updated_at: string;
+        };
+        Insert: {
+          completed_at?: string | null;
+          created_at?: string;
+          id?: string;
+          practitioner_id: string;
+          step_create_academy_completed?: boolean;
+          step_events_info_completed?: boolean;
+          step_register_students_completed?: boolean;
+          step_welcome_emails_completed?: boolean;
+          updated_at?: string;
+        };
+        Update: {
+          completed_at?: string | null;
+          created_at?: string;
+          id?: string;
+          practitioner_id?: string;
+          step_create_academy_completed?: boolean;
+          step_events_info_completed?: boolean;
+          step_register_students_completed?: boolean;
+          step_welcome_emails_completed?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "instructor_onboarding_progress_practitioner_id_fkey";
+            columns: ["practitioner_id"];
+            isOneToOne: true;
+            referencedRelation: "practitioners";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       martial_events: {
         Row: {
           attachments: Json;

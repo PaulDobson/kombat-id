@@ -111,9 +111,14 @@ export async function requestCertificationAction(
 
 // ── registerStudentAction ─────────────────────────────────────────────────────
 
-export async function registerStudentAction(
-  rawInput: unknown,
-): Promise<ActionResult<{ publicId: string }>> {
+export async function registerStudentAction(rawInput: unknown): Promise<
+  ActionResult<{
+    publicId: string;
+    fullName: string;
+    email: string;
+    temporaryPassword?: string;
+  }>
+> {
   // 1. Authentication + Authorization
   const auth = await requireInstructorPractitioner();
   if (!auth.ok) {
@@ -228,7 +233,15 @@ export async function registerStudentAction(
       );
     }
 
-    return { success: true, data: { publicId: result.publicId } };
+    return {
+      success: true,
+      data: {
+        publicId: result.publicId,
+        fullName: parsed.data.fullName,
+        email: studentEmail ?? "",
+        ...(tempPassword ? { temporaryPassword: tempPassword } : {}),
+      },
+    };
   } catch (err) {
     if (err instanceof DuplicateRutError) {
       return {

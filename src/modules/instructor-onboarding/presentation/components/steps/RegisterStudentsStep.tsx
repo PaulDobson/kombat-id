@@ -1,29 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { useState } from "react";
 import { CheckCircle2, UserPlus } from "lucide-react";
-import { registerStudentAction } from "../../actions/onboardingActions";
+import { RegisterStudentForm } from "@/app/(dashboard)/instructor/RegisterStudentForm";
 import type { SessionStudent } from "../types";
-
-const RegisterStudentSchema = z.object({
-  rut: z.string().min(1, "RUT requerido").max(20, "Máximo 20 caracteres"),
-  fullName: z
-    .string()
-    .min(1, "Nombre requerido")
-    .max(120, "Máximo 120 caracteres"),
-  email: z.string().email("Email inválido"),
-  birthDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Formato inválido")
-    .refine((d) => new Date(d) < new Date(), {
-      message: "La fecha debe ser pasada",
-    }),
-});
-
-type RegisterStudentFormData = z.infer<typeof RegisterStudentSchema>;
 
 interface RegisterStudentsStepProps {
   academyId: string;
@@ -37,29 +17,22 @@ export function RegisterStudentsStep({
   const [registeredStudents, setRegisteredStudents] = useState<
     SessionStudent[]
   >([]);
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<RegisterStudentFormData>({
-    resolver: zodResolver(RegisterStudentSchema),
-  });
+  function handleFormSuccess(result: {
+    publicId: string;
+    fullName: string;
+    email: string;
+    temporaryPassword?: string;
+  }) {
+    // Map the result to SessionStudent and add to registered list
+    const newStudent: SessionStudent = {
+      practitionerId: result.publicId,
+      fullName: result.fullName,
+      email: result.email,
+      temporaryPassword: result.temporaryPassword || "",
+    };
 
-  function handleRegisterStudent(formData: RegisterStudentFormData) {
-    setActionError(null);
-    startTransition(async () => {
-      const result = await registerStudentAction({ ...formData, academyId });
-      if (result.success) {
-        setRegisteredStudents((prev) => [...prev, result.data]);
-        reset();
-      } else {
-        setActionError(result.error);
-      }
-    });
+    setRegisteredStudents((prev) => [...prev, newStudent]);
   }
 
   return (
@@ -97,91 +70,19 @@ export function RegisterStudentsStep({
         </div>
       )}
 
-      {/* Registration form */}
-      <form
-        onSubmit={handleSubmit(handleRegisterStudent)}
-        className="space-y-4 bg-neutral-800/50 border border-neutral-700 rounded-xl p-4"
-      >
+      {/* Registration form - now using RegisterStudentForm component */}
+      <div className="space-y-4 bg-neutral-800/50 border border-neutral-700 rounded-xl p-4">
         <p className="text-xs font-semibold text-neutral-400 uppercase tracking-widest flex items-center gap-2">
           <UserPlus className="w-4 h-4" />
           Nuevo alumno
         </p>
 
-        <div>
-          <label className="block text-sm font-medium text-neutral-300 mb-1">
-            RUT <span className="text-red-400">*</span>
-          </label>
-          <input
-            {...register("rut")}
-            className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-2.5 text-sm text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
-            placeholder="12345678-9"
-          />
-          {errors.rut && (
-            <p className="text-xs text-red-400 mt-1">{errors.rut.message}</p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-neutral-300 mb-1">
-            Nombre completo <span className="text-red-400">*</span>
-          </label>
-          <input
-            {...register("fullName")}
-            className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-2.5 text-sm text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
-            placeholder="Ej: Juan Pérez González"
-          />
-          {errors.fullName && (
-            <p className="text-xs text-red-400 mt-1">
-              {errors.fullName.message}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-neutral-300 mb-1">
-            Email <span className="text-red-400">*</span>
-          </label>
-          <input
-            type="email"
-            {...register("email")}
-            className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-2.5 text-sm text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
-            placeholder="alumno@ejemplo.cl"
-          />
-          {errors.email && (
-            <p className="text-xs text-red-400 mt-1">{errors.email.message}</p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-neutral-300 mb-1">
-            Fecha de nacimiento <span className="text-red-400">*</span>
-          </label>
-          <input
-            type="date"
-            {...register("birthDate")}
-            className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-2.5 text-sm text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-          {errors.birthDate && (
-            <p className="text-xs text-red-400 mt-1">
-              {errors.birthDate.message}
-            </p>
-          )}
-        </div>
-
-        {actionError && (
-          <p className="text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-xl px-4 py-2.5">
-            {actionError}
-          </p>
-        )}
-
-        <button
-          type="submit"
-          disabled={isPending}
-          className="w-full bg-neutral-700 hover:bg-neutral-600 disabled:opacity-50 text-neutral-200 font-semibold rounded-xl py-2.5 text-sm transition-colors"
-        >
-          {isPending ? "Registrando..." : "+ Agregar alumno"}
-        </button>
-      </form>
+        <RegisterStudentForm
+          academyId={academyId}
+          simplifiedMode={true}
+          onSuccess={handleFormSuccess}
+        />
+      </div>
 
       {/* Navigation */}
       <div className="flex gap-3">
@@ -194,7 +95,7 @@ export function RegisterStudentsStep({
         </button>
         <button
           type="button"
-          disabled={registeredStudents.length === 0 || isPending}
+          disabled={registeredStudents.length === 0}
           onClick={() => onComplete(registeredStudents)}
           className="flex-1 bg-primary-500 hover:bg-primary-400 disabled:bg-neutral-700 disabled:text-neutral-500 text-neutral-900 font-semibold rounded-xl py-2.5 text-sm transition-colors"
         >

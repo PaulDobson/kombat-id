@@ -7,6 +7,7 @@ import {
 } from "@/modules/event-registration/infrastructure/repositories/upcomingEventsQuery";
 import Link from "next/link";
 import { GradeChart } from "./GradeChart";
+import { RegionChart } from "./RegionChart";
 import {
   GRADE_LABELS,
   REGION_LABELS,
@@ -106,6 +107,22 @@ export default async function AdminDashboardPage({
     label: GRADE_LABELS[grade as Grade] ?? grade,
     count: gradeCountResults[i]?.count ?? 0,
   })).filter((d) => d.count > 0);
+
+  // Distribución de academias por región — calculada en memoria desde allAcademies
+  const regionCountMap = new Map<string, number>();
+  for (const academy of allAcademies) {
+    regionCountMap.set(
+      academy.region,
+      (regionCountMap.get(academy.region) ?? 0) + 1,
+    );
+  }
+  const regionData = Array.from(regionCountMap.entries()).map(
+    ([region, count]) => ({
+      region,
+      label: REGION_LABELS[region as ChileanRegion] ?? region,
+      count,
+    }),
+  );
   // Conteo de practicantes por academia — batch query única
   const academyIds = academies.map((a) => a.id);
   const practitionerCountMap =
@@ -238,6 +255,7 @@ export default async function AdminDashboardPage({
           color="text-blue-400"
         />
       </div>
+      {/* Charts row: grade distribution + academy region distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Grade distribution chart */}
         <section className="bg-neutral-900 border border-neutral-700 rounded-xl p-5 space-y-4">
@@ -252,6 +270,22 @@ export default async function AdminDashboardPage({
             <GradeChart data={gradeData} />
           )}
         </section>
+        {/* Academy region distribution chart */}
+        <section className="bg-neutral-900 border border-neutral-700 rounded-xl p-5 space-y-4">
+          <h2 className="text-sm font-semibold text-neutral-50">
+            Academias por región
+          </h2>
+          {regionData.length === 0 ? (
+            <p className="text-neutral-500 text-sm text-center py-8">
+              Sin datos de academias.
+            </p>
+          ) : (
+            <RegionChart data={regionData} />
+          )}
+        </section>
+      </div>
+      {/* Upcoming events — full width below the charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Upcoming events */}
         <section className="bg-neutral-900 border border-neutral-700 rounded-xl p-5 space-y-4">
           <div className="flex items-center justify-between">

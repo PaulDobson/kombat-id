@@ -266,10 +266,25 @@ export async function selectExistingAcademyAndCompleteStepAction(
 // ---------------------------------------------------------------------------
 // 3. registerStudentAction (onboarding version)
 // ---------------------------------------------------------------------------
+// ⚠️ DEPRECATED: registerStudentAction
+// ---------------------------------------------------------------------------
 
+/**
+ * @deprecated This action is deprecated and will be removed in a future release.
+ * Use `registerStudentAction` from `@/modules/practitioner-identity/presentation/actions/instructorActions` instead.
+ *
+ * The consolidated action provides the same functionality with additional fields in the response.
+ * Migration guide: Replace imports and use the new action which returns { publicId, fullName, email, temporaryPassword? }
+ */
 export async function registerStudentAction(
   rawInput: unknown,
 ): Promise<ActionResult<SessionStudent>> {
+  console.warn(
+    "[DEPRECATED] onboardingActions.registerStudentAction is deprecated. " +
+      "Use instructorActions.registerStudentAction instead. " +
+      "This function will be removed in the next major release.",
+  );
+
   // 1. Authentication
   const auth = await requireInstructorPractitioner();
   if (!auth.ok) {
