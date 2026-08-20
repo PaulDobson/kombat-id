@@ -71,6 +71,9 @@ export function RegionChart({ data }: { data: RegionDataPoint[] }) {
               fontSize: "12px",
               color: "#fafafa",
             }}
+            itemStyle={{
+              color: "#fafafa",
+            }}
             formatter={(value) => [
               typeof value === "number" ? value : 0,
               "Academias",

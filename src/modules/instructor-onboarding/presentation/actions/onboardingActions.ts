@@ -5,7 +5,6 @@ import { revalidatePath } from "next/cache";
 import { requireInstructorPractitioner } from "@/modules/practitioner-identity/presentation/actions/_requireInstructorPractitioner";
 import { markStepComplete } from "../../application/use-cases/markStepComplete";
 import { SupabaseOnboardingProgressRepository } from "../../infrastructure/repositories/supabaseOnboardingProgressRepository";
-import { sendStudentWelcomeEmail } from "@/lib/email";
 import { adminSupabase } from "@/lib/supabase/admin";
 import type { ActionResult } from "@/lib/types";
 import type { OnboardingProgress } from "../../domain/entities/onboardingProgress";
@@ -73,7 +72,7 @@ const RegisterStudentSchema = z.object({
   academyId: z.string().uuid(),
 });
 
-const SessionStudentSchema = z.object({
+export const SessionStudentSchema = z.object({
   practitionerId: z.string().uuid(),
   fullName: z.string(),
   email: z.string().email(),
@@ -89,7 +88,6 @@ export type SessionStudent = z.infer<typeof SessionStudentSchema>;
 export interface OnboardingProgressDTO {
   stepCreateAcademyCompleted: boolean;
   stepRegisterStudentsCompleted: boolean;
-  stepWelcomeEmailsCompleted: boolean;
   stepEventsInfoCompleted: boolean;
   completedAt: string | null;
 }
@@ -98,7 +96,6 @@ function toProgressDTO(progress: OnboardingProgress): OnboardingProgressDTO {
   return {
     stepCreateAcademyCompleted: progress.stepCreateAcademyCompleted,
     stepRegisterStudentsCompleted: progress.stepRegisterStudentsCompleted,
-    stepWelcomeEmailsCompleted: progress.stepWelcomeEmailsCompleted,
     stepEventsInfoCompleted: progress.stepEventsInfoCompleted,
     completedAt: progress.completedAt,
   };
@@ -154,7 +151,7 @@ export async function createAcademyAndCompleteStepAction(
         founded_date: combined.foundedDate ?? null,
         responsible_instructor_ids: [auth.practitioner.id],
         is_active: true,
-        created_by: auth.practitioner.id,
+        created_by: auth.practitioner.authUserId,
         description: combined.description ?? null,
         founder_story: combined.founderStory ?? null,
         contact_phone: combined.contactPhone ?? null,
@@ -409,7 +406,6 @@ const MarkStepSchema = z.object({
     ONBOARDING_STEP_KEYS as [string, ...string[]] as [
       "step_create_academy_completed",
       "step_register_students_completed",
-      "step_welcome_emails_completed",
       "step_events_info_completed",
     ],
   ),
@@ -457,76 +453,5 @@ export async function markStepCompleteAction(
 }
 
 // ---------------------------------------------------------------------------
-// 5. dispatchWelcomeEmailsAction
+// 5. dispatchWelcomeEmailsAction — REMOVED (step deprecated in migration 047)
 // ---------------------------------------------------------------------------
-
-const DispatchWelcomeEmailsSchema = z.object({
-  students: z.array(SessionStudentSchema),
-});
-
-export async function dispatchWelcomeEmailsAction(
-  rawInput: unknown,
-): Promise<ActionResult<{ failedCount: number }>> {
-  // 1. Authentication
-  const auth = await requireInstructorPractitioner();
-  if (!auth.ok) {
-    return { success: false, error: auth.error, code: auth.code };
-  }
-
-  // 2. Validation
-  const parsed = DispatchWelcomeEmailsSchema.safeParse(rawInput);
-  if (!parsed.success) {
-    return {
-      success: false,
-      error: parsed.error.message,
-      code: "VALIDATION_ERROR",
-    };
-  }
-
-  // 3. Execute — iterate students, send emails, accumulate failures
-  let failedCount = 0;
-
-  for (const student of parsed.data.students) {
-    try {
-      await sendStudentWelcomeEmail(
-        student.email,
-        student.fullName,
-        student.temporaryPassword,
-      );
-    } catch (err) {
-      console.error(
-        "[dispatchWelcomeEmailsAction] Failed for student:",
-        student.fullName,
-        err,
-      );
-      failedCount++;
-    }
-  }
-
-  // 4. Mark step complete regardless of individual email failures
-  try {
-    const repo = new SupabaseOnboardingProgressRepository();
-    await markStepComplete(
-      {
-        practitionerId: auth.practitioner.id,
-        step: "step_welcome_emails_completed",
-      },
-      { repo },
-    );
-  } catch (err) {
-    console.error(
-      "[dispatchWelcomeEmailsAction] Failed to mark step complete:",
-      err,
-    );
-    return {
-      success: false,
-      error: "Error interno del servidor",
-      code: "INTERNAL_ERROR",
-    };
-  }
-
-  // 5. Revalidate
-  revalidatePath("/instructor");
-
-  return { success: true, data: { failedCount } };
-}

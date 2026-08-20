@@ -2,7 +2,6 @@
 export interface OnboardingProgressDTO {
   stepCreateAcademyCompleted: boolean;
   stepRegisterStudentsCompleted: boolean;
-  stepWelcomeEmailsCompleted: boolean;
   stepEventsInfoCompleted: boolean;
   completedAt: string | null;
 }

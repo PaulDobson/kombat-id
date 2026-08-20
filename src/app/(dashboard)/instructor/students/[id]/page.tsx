@@ -102,11 +102,15 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
 
 export default async function InstructorStudentDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ from?: string }>;
 }) {
   const session = await requireInstructor();
   const { id } = await params;
+  const sp = await searchParams;
+  const fromAcademyId = sp.from?.trim() ?? null;
 
   const practitionerRepo = new DrizzlePractitionerRepository();
   const certRepo = new DrizzleCertificationRepository();
@@ -142,18 +146,71 @@ export default async function InstructorStudentDetailPage({
     .maybeSingle();
 
   const academy = membership?.academies as { id: string; name: string } | null;
+
+  // Resolve breadcrumb context: if ?from=academyId is provided, use that academy's
+  // name (it may differ from the membership academy if queried differently).
+  // We prefer the membership result we already have; only fetch if fromAcademyId
+  // points to a different academy.
+  let fromAcademy: { id: string; name: string } | null = null;
+  if (fromAcademyId) {
+    if (academy?.id === fromAcademyId) {
+      fromAcademy = academy;
+    } else {
+      const { data: acadRow } = await adminSupabase
+        .from("academies")
+        .select("id, name")
+        .eq("id", fromAcademyId)
+        .maybeSingle();
+      fromAcademy = acadRow as { id: string; name: string } | null;
+    }
+  }
+
   const gradeLabel = `${GRADE_LABELS[practitioner.grade] ?? practitioner.grade}${practitioner.dan ? ` ${practitioner.dan}° Dan` : ""}`;
   const activeCerts = certifications.filter((c) => !c.isRevoked);
   const recentHistory = historyEntries.slice(0, 5);
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      <Link
-        href="/instructor"
-        className="inline-flex items-center gap-1 text-sm text-neutral-400 hover:text-neutral-200 transition-colors"
+      {/* ── Breadcrumb ────────────────────────────────────────────────────── */}
+      <nav
+        className="flex items-center gap-1.5 text-sm"
+        aria-label="Breadcrumb"
       >
-        ← Volver al panel
-      </Link>
+        <Link
+          href="/instructor"
+          className="text-neutral-400 hover:text-neutral-200 transition-colors"
+        >
+          Panel
+        </Link>
+        {fromAcademy ? (
+          <>
+            <span className="text-neutral-700" aria-hidden="true">
+              /
+            </span>
+            <Link
+              href={`/instructor/academies/${fromAcademy.id}?tab=students`}
+              className="text-neutral-400 hover:text-neutral-200 transition-colors max-w-[200px] truncate"
+            >
+              {fromAcademy.name}
+            </Link>
+            <span className="text-neutral-700" aria-hidden="true">
+              /
+            </span>
+            <span className="text-neutral-200 font-medium truncate max-w-[200px]">
+              {practitioner.fullName}
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="text-neutral-700" aria-hidden="true">
+              /
+            </span>
+            <span className="text-neutral-200 font-medium truncate max-w-[200px]">
+              {practitioner.fullName}
+            </span>
+          </>
+        )}
+      </nav>
 
       {/* Hero card */}
       <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6">

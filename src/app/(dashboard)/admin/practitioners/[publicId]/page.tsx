@@ -7,6 +7,7 @@ import { DeactivateButton } from "./DeactivateButton";
 import { ActivateButton } from "./ActivateButton";
 import { DeletePractitionerButton } from "./DeletePractitionerButton";
 import { RegenerateCertificateButton } from "./RegenerateCertificateButton";
+import { CertificateDownloadButton } from "@/modules/practitioner-identity/presentation/components/CertificateDownloadButton";
 import { requireAdmin } from "@/lib/auth-guards";
 import { ROLE_LABELS } from "@/lib/roles";
 import { adminSupabase } from "@/lib/supabase/admin";
@@ -176,7 +177,7 @@ export default async function AdminPractitionerDetailPage({
           </div>
           {/* Admin actions */}
           <div className="flex flex-wrap gap-2 shrink-0">
-            <Link
+            {/*<Link
               href={`/admin/practitioners/${publicId}/grade`}
               className="bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
             >
@@ -188,12 +189,17 @@ export default async function AdminPractitionerDetailPage({
             >
               Emitir certificación
             </Link>
+*/}
             {practitioner.isActive && (
               <RegenerateCertificateButton
                 publicId={publicId}
                 practitionerName={practitioner.fullName}
               />
             )}
+            <CertificateDownloadButton
+              practitionerId={publicId}
+              hasCertificate={!!practitioner.certificatePath}
+            />
             {practitioner.isActive && (
               <DeactivateButton publicId={publicId} adminId={user.id} />
             )}
@@ -415,6 +421,7 @@ export default async function AdminPractitionerDetailPage({
             )}
           </div>
           {/* Quick links */}
+          {/* 
           <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-5 space-y-2">
             <h2 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">
               Acciones rápidas
@@ -451,6 +458,7 @@ export default async function AdminPractitionerDetailPage({
               </Link>
             )}
           </div>
+          */}
         </div>
       </div>
     </main>

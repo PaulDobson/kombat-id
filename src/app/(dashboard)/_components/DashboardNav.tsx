@@ -85,33 +85,54 @@ export async function DashboardNav() {
           items: [{ href: "/admin/dashboard", label: "Panel" }],
         },
         {
-          title: "Academia",
+          title: "Personas",
           items: [
             { href: "/admin/practitioners", label: "Practicantes" },
             {
               href: "/admin/practitioners/pending-activation",
-              label: "Activaciones",
+              label: "Activaciones pendientes",
             },
-            { href: "/admin/academies", label: "Academias" },
-            {
-              href: "/admin/certification-requests",
-              label: "Solicitudes de certificación",
-            },
+            { href: "/admin/charges", label: "Cargos / Pagos" },
+          ],
+        },
+        {
+          title: "Academias",
+          items: [
+            { href: "/admin/academies", label: "Todas las academias" },
             {
               href: "/admin/instructor-requests",
               label: "Solicitudes de instructores",
             },
           ],
         },
+        /*
+        {
+          title: "Solicitudes",
+          items: [
+            {
+              href: "/admin/certification-requests",
+              label: "Certificaciones",
+            },
+            {
+              href: "/admin/referee-registrations",
+              label: "Árbitros",
+            },
+          ],
+        },
+        */
         {
           title: "Exámenes",
           items: [
-            { href: "/admin/exam-templates", label: "Pautas" },
+            { href: "/admin/exam-templates", label: "Plantillas" },
             { href: "/admin/grade-exams", label: "Aprobaciones" },
           ],
         },
         {
-          items: [{ href: "/admin/events", label: "Eventos" }],
+          title: "Eventos",
+          items: [
+            { href: "/admin/events", label: "Ver todos" },
+            { href: "/admin/events/new", label: "Crear evento" },
+          ],
         },
         {
           title: "Árbitros",
@@ -119,11 +140,11 @@ export async function DashboardNav() {
             { href: "/admin/referees", label: "Lista de árbitros" },
             {
               href: "/admin/referee-registrations",
-              label: "Solicitudes de registro",
+              label: "Solicitud nuevo Árbitro",
             },
             {
               href: "/admin/referee-registrations/publications",
-              label: "Crear publicación",
+              label: "Publicaciones",
             },
           ],
         },
@@ -131,21 +152,36 @@ export async function DashboardNav() {
     : isInstructor
       ? [
           {
-            items: [
-              { href: "/instructor", label: "Panel Principal" },
-              { href: "/instructor/events", label: "Eventos" },
-              { href: "/instructor/grade-exams", label: "Exámenes" },
-              { href: "/certifications", label: "Certificaciones" },
-            ],
+            items: [{ href: "/instructor", label: "Panel Principal" }],
           },
           {
-            title: "Academia",
+            title: "Mi Academia",
             items: [
               ...instructorAcademyMobileItems,
               {
                 href: "/instructor/academies/new",
                 label: "+ Crear academia",
               },
+            ],
+          },
+          {
+            title: "Eventos",
+            items: [{ href: "/instructor/events", label: "Ver eventos" }],
+          },
+          {
+            title: "Exámenes",
+            items: [
+              { href: "/instructor/grade-exams", label: "Mis exámenes" },
+              {
+                href: "/instructor/grade-exams/new",
+                label: "Crear examen",
+              },
+            ],
+          },
+          {
+            items: [
+              { href: "/instructor/students", label: "Alumnos" },
+              { href: "/certifications", label: "Certificaciones" },
             ],
           },
         ]
@@ -156,6 +192,7 @@ export async function DashboardNav() {
               { href: "/martial-history", label: "Historial" },
               { href: "/ranking", label: "Ranking" },
               { href: "/certifications", label: "Certificaciones" },
+              { href: "/notifications", label: "Notificaciones" },
             ],
           },
         ];
@@ -191,7 +228,7 @@ export async function DashboardNav() {
             <>
               <NavLink href="/admin/dashboard">Panel</NavLink>
               <NavDropdown
-                label="Academia"
+                label="Personas"
                 items={[
                   {
                     href: "/admin/practitioners",
@@ -199,39 +236,63 @@ export async function DashboardNav() {
                   },
                   {
                     href: "/admin/practitioners/pending-activation",
-                    label: "Activaciones",
+                    label: "Activaciones pendientes",
                   },
-                  { href: "/admin/academies", label: "Academias" },
+                  { href: "/admin/charges", label: "Cargos / Pagos" },
+                ]}
+              />
+              <NavDropdown
+                label="Academias"
+                items={[
+                  { href: "/admin/academies", label: "Todas las academias" },
                   { separator: true },
-                  {
-                    href: "/admin/certification-requests",
-                    label: "Solicitudes de certificación",
-                  },
                   {
                     href: "/admin/instructor-requests",
                     label: "Solicitudes de instructores",
                   },
                 ]}
               />
+              {/*
+              <NavDropdown
+                label="Solicitudes"
+                items={[
+                  {
+                    href: "/admin/certification-requests",
+                    label: "Certificaciones",
+                  },
+                  {
+                    href: "/admin/referee-registrations",
+                    label: "Árbitros",
+                  },
+                ]}
+              />
+              */}
               <NavDropdown
                 label="Exámenes"
                 items={[
-                  { href: "/admin/exam-templates", label: "Pautas" },
+                  { href: "/admin/exam-templates", label: "Plantillas" },
                   { href: "/admin/grade-exams", label: "Aprobaciones" },
                 ]}
               />
-              <NavLink href="/admin/events">Eventos</NavLink>
+              <NavDropdown
+                label="Eventos"
+                items={[
+                  { href: "/admin/events", label: "Ver todos" },
+                  { href: "/admin/events/new", label: "Crear evento" },
+                ]}
+              />
               <NavDropdown
                 label="Árbitros"
                 items={[
                   { href: "/admin/referees", label: "Lista de árbitros" },
                   {
                     href: "/admin/referee-registrations",
-                    label: "Solicitudes de registro",
+                    label: "Solicitud nuevo Árbitro",
                   },
+                  { separator: true },
                   {
                     href: "/admin/referee-registrations/publications",
-                    label: "Crear publicación",
+                    label: "Publicaciones",
                   },
                 ]}
               />
@@ -239,17 +300,31 @@ export async function DashboardNav() {
           ) : isInstructor ? (
             <>
               <NavLink href="/instructor" exact>
-                Panel Principal
+                Panel
               </NavLink>
-              <NavLink href="/instructor/events">Eventos</NavLink>
-              <NavLink href="/instructor/grade-exams">Exámenes</NavLink>
               <NavDropdown
-                label="Academia"
+                label="Mi Academia"
                 items={[
                   ...instructorAcademyItems,
+                  { separator: true },
                   {
                     href: "/instructor/academies/new",
                     label: "+ Crear academia",
+                  },
+                ]}
+              />
+              {/*  <NavLink href="/instructor/students">Alumnos</NavLink>*/}
+              <NavDropdown
+                label="Eventos"
+                items={[{ href: "/instructor/events", label: "Ver eventos" }]}
+              />
+              <NavDropdown
+                label="Exámenes"
+                items={[
+                  { href: "/instructor/grade-exams", label: "Mis exámenes" },
+                  {
+                    href: "/instructor/grade-exams/new",
+                    label: "Crear examen",
                   },
                 ]}
               />
@@ -261,6 +336,7 @@ export async function DashboardNav() {
               <NavLink href="/martial-history">Historial</NavLink>
               <NavLink href="/ranking">Ranking</NavLink>
               <NavLink href="/certifications">Certificaciones</NavLink>
+              <NavLink href="/notifications">Notificaciones</NavLink>
             </>
           )}
         </nav>

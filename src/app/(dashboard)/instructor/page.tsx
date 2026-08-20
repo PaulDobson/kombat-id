@@ -1,16 +1,16 @@
 import { requireInstructor } from "@/lib/auth-guards";
 import { adminSupabase } from "@/lib/supabase/admin";
-import { StudentSection } from "./_sections/StudentSection";
-import { DashboardTabs } from "./_sections/DashboardTabs";
 import { ActivityWidgets } from "./_sections/ActivityWidgets";
+import { AcademySection } from "./_sections/AcademySection";
+import { StudentSection } from "./_sections/StudentSection";
 import { DrizzleGradeExamRepository } from "@/modules/grade-exam/infrastructure/repositories/drizzleGradeExamRepository";
 import { OnboardingGate } from "@/modules/instructor-onboarding/presentation/components/OnboardingGate";
 import {
-  Building2,
   Users,
-  UserX,
   AlertTriangle,
   ArrowRight,
+  GraduationCap,
+  UserPlus,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -18,7 +18,6 @@ export default async function InstructorPage({
   searchParams,
 }: {
   searchParams: Promise<{
-    tab?: string;
     page?: string;
     q?: string;
     inactive?: string;
@@ -30,67 +29,73 @@ export default async function InstructorPage({
   const searchQuery = sp.q?.trim() ?? "";
   const page = Math.max(1, parseInt(sp.page ?? "1", 10));
   const showInactive = sp.inactive === "1";
-  const defaultTab = sp.tab === "students" ? "students" : "academies";
 
   const today = new Date().toISOString().slice(0, 10);
-
-  // ── Fetch all data in parallel ──────────────────────────────────────────
-  const [academyResult, memberResult, upcomingEventsResult] = await Promise.all(
-    [
-      adminSupabase
-        .from("academies")
-        .select("id, name, region, city, is_active")
-        .contains("responsible_instructor_ids", [session.practitionerId]),
-      adminSupabase
-        .from("academies")
-        .select("id")
-        .contains("responsible_instructor_ids", [session.practitionerId]),
-      adminSupabase
-        .from("martial_events")
-        .select("id, name, event_type, event_date, location")
-        .gt("event_date", today)
-        .order("event_date", { ascending: true })
-        .limit(5),
-    ],
-  );
-
-  const academies = academyResult.data ?? [];
-  const academyIds = (memberResult.data ?? []).map((a: { id: string }) => a.id);
-  const activeAcademies = academies.filter((a) => a.is_active).length;
   const firstName = session.fullName.split(" ")[0] ?? session.fullName;
 
-  // ── Academy memberships ─────────────────────────────────────────────────
-  let membershipRows: Array<{ practitioner_id: string; academy_id: string }> =
-    [];
+  // ── Fetch core data in parallel ────────────────────────────────────────
+  const [academyResult, upcomingEventsResult] = await Promise.all([
+    adminSupabase
+      .from("academies")
+      .select("id, name, region, city, is_active")
+      .contains("responsible_instructor_ids", [session.practitionerId]),
+    adminSupabase
+      .from("martial_events")
+      .select("id, name, event_type, event_date, location")
+      .gt("event_date", today)
+      .order("event_date", { ascending: true })
+      .limit(5),
+  ]);
+
+  const academies = academyResult.data ?? [];
+  const academyIds = academies.map((a) => a.id);
+
+  // ── Membership data (student counts + pending per academy) ─────────────
+  let membershipRows: Array<{
+    practitioner_id: string;
+    academy_id: string;
+    practitioners: { is_active: boolean; auth_user_id: string | null } | null;
+  }> = [];
+
   if (academyIds.length > 0) {
     const { data: memberships } = await adminSupabase
       .from("academy_memberships")
-      .select("practitioner_id, academy_id")
+      .select(
+        "practitioner_id, academy_id, practitioners(is_active, auth_user_id)",
+      )
       .in("academy_id", academyIds);
-    membershipRows = (memberships ?? []) as Array<{
-      practitioner_id: string;
-      academy_id: string;
-    }>;
+    membershipRows = (memberships ?? []) as typeof membershipRows;
   }
 
-  const academyMemberIds = [
-    ...new Set(membershipRows.map((m) => m.practitioner_id)),
-  ];
-
-  // Student count per academy for the card display
+  // Build per-academy maps
   const studentCountByAcademy = new Map<string, number>();
+  const pendingCountByAcademy = new Map<string, number>();
+
   for (const row of membershipRows) {
     studentCountByAcademy.set(
       row.academy_id,
       (studentCountByAcademy.get(row.academy_id) ?? 0) + 1,
     );
+    const p = row.practitioners;
+    if (p && !p.is_active && p.auth_user_id === null) {
+      pendingCountByAcademy.set(
+        row.academy_id,
+        (pendingCountByAcademy.get(row.academy_id) ?? 0) + 1,
+      );
+    }
   }
-  const academiesWithCount = academies.map((a) => ({
+
+  const academiesWithStats = academies.map((a) => ({
     ...a,
     studentCount: studentCountByAcademy.get(a.id) ?? 0,
+    pendingCount: pendingCountByAcademy.get(a.id) ?? 0,
   }));
 
-  // ── Direct students (no academy) ────────────────────────────────────────
+  // ── All student IDs (academy members + direct students) ────────────────
+  const academyMemberIds = [
+    ...new Set(membershipRows.map((m) => m.practitioner_id)),
+  ];
+
   const { data: directStudents } = await adminSupabase
     .from("practitioners")
     .select("id")
@@ -104,24 +109,17 @@ export default async function InstructorPage({
     ...new Set([...academyMemberIds, ...directStudentIds]),
   ];
 
-  // ── KPI: pending activation ─────────────────────────────────────────────
-  let pendingActivationCount = 0;
-  if (allStudentIds.length > 0) {
-    const { count } = await adminSupabase
-      .from("practitioners")
-      .select("id", { count: "exact", head: true })
-      .in("id", allStudentIds)
-      .is("auth_user_id", null)
-      .eq("is_active", false);
-    pendingActivationCount = count ?? 0;
-  }
+  // Total pending activation count (global)
+  const totalPending = Array.from(pendingCountByAcademy.values()).reduce(
+    (sum, n) => sum + n,
+    0,
+  );
 
-  // ── Recent exams (last 5) for widget ────────────────────────────────────
+  // ── Recent exams (last 5) ──────────────────────────────────────────────
   const gradeExamRepo = new DrizzleGradeExamRepository();
   const allExams = await gradeExamRepo.findByInstructor(session.practitionerId);
   const recentExamsRaw = allExams.slice(0, 5);
 
-  // Enrich with practitioner names
   const examPractitionerIds = [
     ...new Set(recentExamsRaw.map((e) => e.practitionerId)),
   ];
@@ -146,7 +144,7 @@ export default async function InstructorPage({
     examDate: e.examDate ?? "",
   }));
 
-  // ── Upcoming events ─────────────────────────────────────────────────────
+  // ── Upcoming events ────────────────────────────────────────────────────
   const upcomingEvents = (upcomingEventsResult.data ?? []).map(
     (e: {
       id: string;
@@ -163,46 +161,56 @@ export default async function InstructorPage({
     }),
   );
 
-  // ── Attention banner items ──────────────────────────────────────────────
+  // ── Attention items ────────────────────────────────────────────────────
   const draftExamsCount = allExams.filter((e) => e.status === "draft").length;
-  const attentionItems: Array<{ label: string; href: string }> = [];
-  if (pendingActivationCount > 0) {
+  const attentionItems: Array<{
+    label: string;
+    href: string;
+    icon: React.ElementType;
+  }> = [];
+
+  if (totalPending > 0) {
     attentionItems.push({
-      label: `${pendingActivationCount} alumno${pendingActivationCount !== 1 ? "s" : ""} pendiente${pendingActivationCount !== 1 ? "s" : ""} de activación`,
-      href: "/instructor?tab=students&inactive=1",
+      label: `${totalPending} alumno${totalPending !== 1 ? "s" : ""} pendiente${totalPending !== 1 ? "s" : ""} de activación`,
+      href: "/instructor?inactive=1",
+      icon: UserPlus,
     });
   }
   if (draftExamsCount > 0) {
     attentionItems.push({
       label: `${draftExamsCount} examen${draftExamsCount !== 1 ? "es" : ""} en borrador sin enviar`,
       href: "/instructor/grade-exams",
+      icon: GraduationCap,
     });
   }
-
-  // ── Pre-render server slot ───────────────────────────────────────────────
-  const studentSection = (
-    <StudentSection
-      practitionerId={session.practitionerId}
-      searchQuery={searchQuery}
-      page={page}
-      academyMemberIds={allStudentIds}
-      showInactive={showInactive}
-    />
-  );
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* ── HEADER ──────────────────────────────────────────────── */}
-      <div>
-        <p className="text-xs font-semibold text-primary-400 uppercase tracking-widest mb-1">
-          Panel de Instructor
-        </p>
-        <h1 className="text-2xl font-bold tracking-tight text-neutral-50">
-          Bienvenido, {firstName}
-        </h1>
-        <p className="text-sm text-neutral-400 mt-1">
-          Gestiona tus academias y alumnos
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold text-primary-400 uppercase tracking-widest mb-1">
+            Panel de Instructor
+          </p>
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-50">
+            Bienvenido, {firstName}
+          </h1>
+          <p className="text-sm text-neutral-400 mt-1">
+            {academies.length} academia{academies.length !== 1 ? "s" : ""} ·{" "}
+            {allStudentIds.length} alumno{allStudentIds.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+        {/* Quick link to all students */}
+        {allStudentIds.length > 0 && (
+          <Link
+            href="#todos-los-alumnos"
+            className="inline-flex items-center gap-1.5 text-xs text-neutral-400 hover:text-neutral-200 transition-colors border border-neutral-700 hover:border-neutral-600 bg-neutral-900 px-3 py-2 rounded-lg"
+          >
+            <Users className="w-3.5 h-3.5" />
+            Ver todos los alumnos
+            <ArrowRight className="w-3 h-3" />
+          </Link>
+        )}
       </div>
 
       <OnboardingGate practitionerId={session.practitionerId} />
@@ -234,72 +242,42 @@ export default async function InstructorPage({
         </div>
       )}
 
-      {/* ── STAT CARDS ──────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        {/* KPI 1: Total academies */}
-        <div className="bg-neutral-900 border border-neutral-700 rounded-2xl p-5">
-          <div className="w-9 h-9 rounded-xl bg-blue-400/10 flex items-center justify-center mb-3">
-            <Building2 className="w-5 h-5 text-blue-400" />
-          </div>
-          <p className="text-2xl font-bold text-blue-400 tracking-tight">
-            {academies.length}
-          </p>
-          <p className="text-xs text-neutral-400 font-medium mt-0.5">
-            Academia{academies.length !== 1 ? "s" : ""}
-          </p>
-          {academies.length > 0 && (
-            <p className="text-xs text-neutral-600 mt-1">
-              {activeAcademies} activa{activeAcademies !== 1 ? "s" : ""}
-            </p>
-          )}
-        </div>
+      {/* ── MIS ACADEMIAS ───────────────────────────────────────── */}
+      <AcademySection academies={academiesWithStats} />
 
-        {/* KPI 2: Total students */}
-        <div className="bg-neutral-900 border border-neutral-700 rounded-2xl p-5">
-          <div className="w-9 h-9 rounded-xl bg-emerald-400/10 flex items-center justify-center mb-3">
-            <Users className="w-5 h-5 text-emerald-400" />
-          </div>
-          <p className="text-2xl font-bold text-emerald-400 tracking-tight">
-            {allStudentIds.length}
-          </p>
-          <p className="text-xs text-neutral-400 font-medium mt-0.5">
-            Alumno{allStudentIds.length !== 1 ? "s" : ""}
-          </p>
-        </div>
-
-        {/* KPI 3: Pending activation */}
-        <div className="col-span-2 sm:col-span-1 bg-neutral-900 border border-neutral-700 rounded-2xl p-5">
-          <div className="w-9 h-9 rounded-xl bg-amber-400/10 flex items-center justify-center mb-3">
-            <UserX className="w-5 h-5 text-amber-400" />
-          </div>
-          <p
-            className={`text-2xl font-bold tracking-tight ${
-              pendingActivationCount > 0 ? "text-amber-400" : "text-neutral-500"
-            }`}
-          >
-            {pendingActivationCount}
-          </p>
-          <p className="text-xs text-neutral-400 font-medium mt-0.5">
-            Pendiente{pendingActivationCount !== 1 ? "s" : ""} de activación
-          </p>
-          {pendingActivationCount > 0 && (
-            <p className="text-xs text-amber-600 mt-1">Sin cuenta activa</p>
-          )}
-        </div>
-      </div>
-
-      {/* ── ACTIVITY WIDGETS: Exámenes + Eventos ────────────────── */}
+      {/* ── ACTIVIDAD RECIENTE ──────────────────────────────────── */}
       <ActivityWidgets
         recentExams={recentExams}
         upcomingEvents={upcomingEvents}
       />
 
-      {/* ── TABS: Academias / Alumnos ────────────────────────────── */}
-      <DashboardTabs
-        academies={academiesWithCount}
-        studentSection={studentSection}
-        defaultTab={defaultTab}
-      />
+      {/* ── TODOS LOS ALUMNOS ───────────────────────────────────── */}
+      {allStudentIds.length > 0 && (
+        <section id="todos-los-alumnos" className="space-y-4 scroll-mt-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-emerald-400/10 flex items-center justify-center">
+                <Users className="w-4 h-4 text-emerald-400" />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold text-neutral-100">
+                  Todos los alumnos
+                </h2>
+                <p className="text-xs text-neutral-500">
+                  Vista global · todas las academias
+                </p>
+              </div>
+            </div>
+          </div>
+          <StudentSection
+            practitionerId={session.practitionerId}
+            searchQuery={searchQuery}
+            page={page}
+            academyMemberIds={allStudentIds}
+            showInactive={showInactive}
+          />
+        </section>
+      )}
     </main>
   );
 }
