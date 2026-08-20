@@ -63,7 +63,6 @@ class InMemoryOnboardingProgressRepository implements OnboardingProgressReposito
       practitionerId,
       stepCreateAcademyCompleted: false,
       stepRegisterStudentsCompleted: false,
-      stepWelcomeEmailsCompleted: false,
       stepEventsInfoCompleted: false,
       completedAt: null,
       createdAt: now,
@@ -87,7 +86,6 @@ class InMemoryOnboardingProgressRepository implements OnboardingProgressReposito
     const stepToField: Record<OnboardingStepKey, keyof OnboardingProgress> = {
       step_create_academy_completed: "stepCreateAcademyCompleted",
       step_register_students_completed: "stepRegisterStudentsCompleted",
-      step_welcome_emails_completed: "stepWelcomeEmailsCompleted",
       step_events_info_completed: "stepEventsInfoCompleted",
     };
 
@@ -215,7 +213,6 @@ describe("supabaseOnboardingProgressRepository — create and findByPractitioner
     expect(created.practitionerId).toBe(practitionerId);
     expect(created.stepCreateAcademyCompleted).toBe(false);
     expect(created.stepRegisterStudentsCompleted).toBe(false);
-    expect(created.stepWelcomeEmailsCompleted).toBe(false);
     expect(created.stepEventsInfoCompleted).toBe(false);
     expect(created.completedAt).toBeNull();
     expect(typeof created.id).toBe("string");
@@ -234,7 +231,6 @@ describe("supabaseOnboardingProgressRepository — create and findByPractitioner
     expect(found!.practitionerId).toBe(practitionerId);
     expect(found!.stepCreateAcademyCompleted).toBe(false);
     expect(found!.stepRegisterStudentsCompleted).toBe(false);
-    expect(found!.stepWelcomeEmailsCompleted).toBe(false);
     expect(found!.stepEventsInfoCompleted).toBe(false);
   });
 
@@ -365,7 +361,6 @@ describe("getOrInitOnboardingProgress — Property 1: Instructor progress record
         return (
           result.stepCreateAcademyCompleted === false &&
           result.stepRegisterStudentsCompleted === false &&
-          result.stepWelcomeEmailsCompleted === false &&
           result.stepEventsInfoCompleted === false &&
           result.completedAt === null
         );

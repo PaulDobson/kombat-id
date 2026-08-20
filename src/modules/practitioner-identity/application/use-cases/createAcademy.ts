@@ -34,7 +34,11 @@ export const CreateAcademyInputSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .optional(),
-  responsibleInstructorIds: z.array(z.string().uuid()).min(1),
+  responsibleInstructorIds: z
+    .array(z.string().uuid())
+    .min(0)
+    .optional()
+    .default([]),
 });
 
 export type CreateAcademyInput = z.infer<typeof CreateAcademyInputSchema>;
@@ -53,7 +57,7 @@ export async function createAcademy(
     throw new UnauthorizedError();
   }
 
-  // Req 10.3 — Validate each responsible instructor has the required role
+  // Req 10.3 — Validate each responsible instructor has the required role (if any provided)
   for (const instructorId of validated.responsibleInstructorIds) {
     const practitioner = await deps.practitionerRepo.findById(instructorId);
     if (

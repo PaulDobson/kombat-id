@@ -60,6 +60,9 @@ export function GradeChart({ data }: { data: GradeDataPoint[] }) {
               fontSize: "12px",
               color: "#fafafa",
             }}
+            itemStyle={{
+              color: "#fafafa",
+            }}
             formatter={(value) => [
               typeof value === "number" ? value : 0,
               "Practicantes",

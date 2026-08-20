@@ -17,7 +17,6 @@ import {
   Settings2,
 } from "lucide-react";
 import { DeactivateAcademyButton } from "./DeactivateAcademyButton";
-import { AssignPractitionerPanel } from "./AssignPractitionerPanel";
 import { RemoveMemberButton } from "./RemoveMemberButton";
 import { ManageInstructorsPanel } from "./ManageInstructorsPanel";
 import { requireAdmin } from "@/lib/auth-guards";
@@ -188,49 +187,6 @@ export default async function AcademyDetailPage({
       rut: (r as InstructorRow).rut,
       role: (r as InstructorRow).role,
     }));
-
-  const availableInstructors = (allInstructorRows ?? [])
-    .filter((r) => !currentInstructorIds.has((r as InstructorRow).id))
-    .map((r) => ({
-      id: (r as InstructorRow).id,
-      fullName: (r as InstructorRow).full_name,
-      rut: (r as InstructorRow).rut,
-      role: (r as InstructorRow).role,
-    }));
-
-  // ── Available practitioners (not yet in any membership) ───────────────────
-  const { data: allActiveMemberships } = await adminSupabase
-    .from("academy_memberships")
-    .select("practitioner_id");
-
-  const alreadyAssigned = [
-    ...new Set(
-      (allActiveMemberships ?? []).map((m) => m.practitioner_id as string),
-    ),
-  ];
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let availableQuery: any = adminSupabase
-    .from("practitioners")
-    .select("id, full_name, rut, grade")
-    .eq("is_active", true)
-    .order("full_name")
-    .limit(500);
-
-  if (alreadyAssigned.length > 0) {
-    availableQuery = availableQuery.not("id", "in", alreadyAssigned);
-  }
-
-  const { data: availableRows } = await availableQuery;
-
-  const available = (availableRows ?? []).map(
-    (p: { id: string; full_name: string; rut: string; grade: string }) => ({
-      id: p.id,
-      fullName: p.full_name,
-      rut: p.rut,
-      grade: p.grade,
-    }),
-  );
 
   // ── Pagination URL helper ─────────────────────────────────────────────────
   const pageUrl = (p: number) => `/admin/academies/${academyId}?page=${p}`;
@@ -417,7 +373,6 @@ export default async function AcademyDetailPage({
         <ManageInstructorsPanel
           academyId={academyId}
           current={currentInstructors}
-          available={academy.isActive ? availableInstructors : []}
         />
       </div>
 
@@ -580,23 +535,6 @@ export default async function AcademyDetailPage({
           </>
         )}
       </div>
-
-      {/* ── Assign panel ──────────────────────────────────────────────────── */}
-      {academy.isActive && (
-        <div className="bg-neutral-900 border border-neutral-700 rounded-2xl p-6 space-y-3">
-          <h2 className="text-sm font-semibold text-neutral-100">
-            Agregar practicante
-          </h2>
-          <p className="text-xs text-neutral-500">
-            Solo se muestran practicantes que no pertenecen a ninguna academia
-            activa.
-          </p>
-          <AssignPractitionerPanel
-            academyId={academyId}
-            available={available}
-          />
-        </div>
-      )}
 
       {/* ── Danger zone ───────────────────────────────────────────────────── */}
       {academy.isActive && (

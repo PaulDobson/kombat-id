@@ -18,7 +18,8 @@ const OnboardingProgressRowSchema = z.object({
   practitioner_id: z.string().uuid(),
   step_create_academy_completed: z.boolean(),
   step_register_students_completed: z.boolean(),
-  step_welcome_emails_completed: z.boolean(),
+  // step_welcome_emails_completed is retained in the DB but deprecated — ignored here
+  step_welcome_emails_completed: z.boolean().optional(),
   step_events_info_completed: z.boolean(),
   completed_at: z.string().nullable(),
   created_at: z.string(),
@@ -37,7 +38,6 @@ function toEntity(row: OnboardingProgressRow): OnboardingProgress {
     practitionerId: row.practitioner_id,
     stepCreateAcademyCompleted: row.step_create_academy_completed,
     stepRegisterStudentsCompleted: row.step_register_students_completed,
-    stepWelcomeEmailsCompleted: row.step_welcome_emails_completed,
     stepEventsInfoCompleted: row.step_events_info_completed,
     completedAt: row.completed_at,
     createdAt: row.created_at,
@@ -95,7 +95,7 @@ export class SupabaseOnboardingProgressRepository implements OnboardingProgressR
         practitioner_id: practitionerId,
         step_create_academy_completed: false,
         step_register_students_completed: false,
-        step_welcome_emails_completed: false,
+        step_welcome_emails_completed: true, // deprecated step — pre-set to true
         step_events_info_completed: false,
         completed_at: null,
       } as never)

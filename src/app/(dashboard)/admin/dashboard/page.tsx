@@ -7,7 +7,8 @@ import {
 } from "@/modules/event-registration/infrastructure/repositories/upcomingEventsQuery";
 import Link from "next/link";
 import { GradeChart } from "./GradeChart";
-import { RegionChart } from "./RegionChart";
+import { RegionalConcentrationChart } from "./RegionalConcentrationChart";
+import type { RegionalDataPoint } from "./RegionalConcentrationChart";
 import {
   GRADE_LABELS,
   REGION_LABELS,
@@ -116,13 +117,6 @@ export default async function AdminDashboardPage({
       (regionCountMap.get(academy.region) ?? 0) + 1,
     );
   }
-  const regionData = Array.from(regionCountMap.entries()).map(
-    ([region, count]) => ({
-      region,
-      label: REGION_LABELS[region as ChileanRegion] ?? region,
-      count,
-    }),
-  );
   // Conteo de practicantes por academia — batch query única
   const academyIds = academies.map((a) => a.id);
   const practitionerCountMap =
@@ -131,6 +125,58 @@ export default async function AdminDashboardPage({
     ...a,
     practitionerCount: practitionerCountMap.get(a.id) ?? 0,
   }));
+
+  // ── Regional concentration data (zero extra queries) ──────────────────
+  // Cross allAcademies (which has region) with practitionerCountMap.
+  // We use allAcademies (not the filtered `academies`) so the concentration
+  // chart always shows the full national picture regardless of region filter.
+  const regionAcademiesMap = new Map<string, number>();
+  const regionPractitionersMap = new Map<string, number>();
+
+  for (const academy of allAcademies) {
+    const region = academy.region;
+    regionAcademiesMap.set(region, (regionAcademiesMap.get(region) ?? 0) + 1);
+    const pCount = practitionerCountMap.get(academy.id) ?? 0;
+    regionPractitionersMap.set(
+      region,
+      (regionPractitionersMap.get(region) ?? 0) + pCount,
+    );
+  }
+
+  // Short labels for x-axis ticks (space is limited)
+  const SHORT_REGION_LABELS: Record<string, string> = {
+    arica_y_parinacota: "Arica",
+    tarapaca: "Tarap.",
+    antofagasta: "Antof.",
+    atacama: "Atac.",
+    coquimbo: "Coq.",
+    valparaiso: "Valp.",
+    metropolitana: "RM",
+    ohiggins: "O'Hig.",
+    maule: "Maule",
+    nuble: "Ñuble",
+    biobio: "BíoBío",
+    araucania: "Arauc.",
+    los_rios: "L.Ríos",
+    los_lagos: "L.Lagos",
+    aysen: "Aysén",
+    magallanes: "Magall.",
+  };
+
+  const regionalConcentrationData: RegionalDataPoint[] = Array.from(
+    regionAcademiesMap.keys(),
+  ).map((region) => {
+    const academiesN = regionAcademiesMap.get(region) ?? 0;
+    const practitionersN = regionPractitionersMap.get(region) ?? 0;
+    return {
+      region,
+      label: REGION_LABELS[region as ChileanRegion] ?? region,
+      shortLabel: SHORT_REGION_LABELS[region] ?? region,
+      academies: academiesN,
+      practitioners: practitionersN,
+      total: academiesN + practitionersN,
+    };
+  });
   // Build attention items — only include non-zero counts
   const attentionItems: Array<{ label: string; href: string; count: number }> =
     [];
@@ -255,7 +301,29 @@ export default async function AdminDashboardPage({
           color="text-blue-400"
         />
       </div>
-      {/* Charts row: grade distribution + academy region distribution */}
+      {/* ── Concentration chart: full width, hero section ────────── */}
+      <section className="bg-neutral-900 border border-neutral-700 rounded-xl p-5 space-y-2">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-semibold text-neutral-50">
+              Concentración por región
+            </h2>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              Distribución de academias y alumnos a lo largo del país · útil
+              para planificar eventos y estrategias de marketing regional
+            </p>
+          </div>
+        </div>
+        {regionalConcentrationData.length === 0 ? (
+          <p className="text-neutral-500 text-sm text-center py-12">
+            Sin datos de academias.
+          </p>
+        ) : (
+          <RegionalConcentrationChart data={regionalConcentrationData} />
+        )}
+      </section>
+
+      {/* Charts row: grade distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Grade distribution chart */}
         <section className="bg-neutral-900 border border-neutral-700 rounded-xl p-5 space-y-4">
@@ -270,23 +338,10 @@ export default async function AdminDashboardPage({
             <GradeChart data={gradeData} />
           )}
         </section>
-        {/* Academy region distribution chart */}
-        <section className="bg-neutral-900 border border-neutral-700 rounded-xl p-5 space-y-4">
-          <h2 className="text-sm font-semibold text-neutral-50">
-            Academias por región
-          </h2>
-          {regionData.length === 0 ? (
-            <p className="text-neutral-500 text-sm text-center py-8">
-              Sin datos de academias.
-            </p>
-          ) : (
-            <RegionChart data={regionData} />
-          )}
-        </section>
       </div>
-      {/* Upcoming events — full width below the charts */}
+
+      {/* Upcoming events */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Upcoming events */}
         <section className="bg-neutral-900 border border-neutral-700 rounded-xl p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-neutral-50">

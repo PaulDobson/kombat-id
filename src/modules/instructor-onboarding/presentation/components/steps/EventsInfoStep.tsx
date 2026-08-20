@@ -28,15 +28,6 @@ export function EventsInfoStep({ onComplete }: EventsInfoStepProps) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-bold text-neutral-50 mb-1">
-          Próximos eventos y competencias
-        </h3>
-        <p className="text-sm text-neutral-400">
-          Mantente al día con los eventos oficiales de Kombat Taekwondo Chile.
-        </p>
-      </div>
-
       <div className="bg-neutral-800/50 border border-neutral-700 rounded-xl p-5 space-y-4">
         <div className="flex items-start gap-3">
           <Calendar className="w-5 h-5 text-primary-400 shrink-0 mt-0.5" />

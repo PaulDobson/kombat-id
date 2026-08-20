@@ -96,17 +96,17 @@ export async function StudentSection({
 
   // Enrich current page with academy names — one query for the whole page
   const pageIds = students.map((s) => s.id);
-  const academyByStudent = new Map<string, string>();
+  const academyByStudent = new Map<string, { id: string; name: string }>();
   if (pageIds.length > 0) {
     const { data: memberships } = await adminSupabase
       .from("academy_memberships")
-      .select("practitioner_id, academies(name)")
+      .select("practitioner_id, academies(id, name)")
       .in("practitioner_id", pageIds)
       .eq("is_active", true);
 
     for (const m of memberships ?? []) {
-      const name = (m.academies as { name: string } | null)?.name;
-      if (name) academyByStudent.set(m.practitioner_id as string, name);
+      const acad = m.academies as { id: string; name: string } | null;
+      if (acad) academyByStudent.set(m.practitioner_id as string, acad);
     }
   }
 
@@ -259,7 +259,7 @@ export async function StudentSection({
                       )}
                     </td>
                     <td className="px-4 py-3 text-neutral-400 text-xs hidden md:table-cell max-w-40 truncate">
-                      {academyByStudent.get(s.id) ?? (
+                      {academyByStudent.get(s.id)?.name ?? (
                         <span className="text-neutral-600">—</span>
                       )}
                     </td>
@@ -300,7 +300,7 @@ export async function StudentSection({
                         ) : (
                           <>
                             <Link
-                              href={`/instructor/students/${s.id}`}
+                              href={`/instructor/students/${s.id}${academyByStudent.get(s.id)?.id ? `?from=${academyByStudent.get(s.id)!.id}` : ""}`}
                               title="Ver ficha"
                               className="p-1.5 rounded-lg text-primary-400 hover:text-primary-300 hover:bg-neutral-800 transition-colors"
                             >

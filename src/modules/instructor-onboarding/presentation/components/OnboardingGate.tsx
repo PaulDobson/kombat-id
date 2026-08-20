@@ -30,7 +30,6 @@ export async function OnboardingGate({ practitionerId }: OnboardingGateProps) {
   const progressDTO: OnboardingProgressDTO = {
     stepCreateAcademyCompleted: progress.stepCreateAcademyCompleted,
     stepRegisterStudentsCompleted: progress.stepRegisterStudentsCompleted,
-    stepWelcomeEmailsCompleted: progress.stepWelcomeEmailsCompleted,
     stepEventsInfoCompleted: progress.stepEventsInfoCompleted,
     completedAt: progress.completedAt,
   };
@@ -38,7 +37,6 @@ export async function OnboardingGate({ practitionerId }: OnboardingGateProps) {
   const initialOpen =
     !progress.stepCreateAcademyCompleted &&
     !progress.stepRegisterStudentsCompleted &&
-    !progress.stepWelcomeEmailsCompleted &&
     !progress.stepEventsInfoCompleted;
 
   return (

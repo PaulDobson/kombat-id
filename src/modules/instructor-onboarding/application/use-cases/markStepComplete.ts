@@ -14,7 +14,6 @@ export const MarkStepCompleteInput = z.object({
   step: z.enum([
     "step_create_academy_completed",
     "step_register_students_completed",
-    "step_welcome_emails_completed",
     "step_events_info_completed",
   ]),
 });

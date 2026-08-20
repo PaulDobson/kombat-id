@@ -5,6 +5,8 @@ import { INSTRUCTOR_ROLES, isInstructorRole } from "@/lib/roles";
 export interface InstructorPractitioner {
   id: string;
   role: (typeof INSTRUCTOR_ROLES)[number];
+  /** Supabase auth.uid() — use this for FK columns that reference auth.users */
+  authUserId: string;
 }
 
 /** Failure shape — compatible with any ActionResult<T> since success is false */
@@ -70,6 +72,7 @@ export async function requireInstructorPractitioner(): Promise<AuthAndAuthzResul
     practitioner: {
       id: practitioner.id,
       role: practitioner.role,
+      authUserId: user.id,
     },
   };
 }

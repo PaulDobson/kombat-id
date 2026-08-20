@@ -62,17 +62,6 @@ export function CreateAcademyStep({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-bold text-neutral-50 mb-1">
-          Crear tu academia
-        </h3>
-        <p className="text-sm text-neutral-400">
-          {phase === "basic"
-            ? "Ingresa los datos básicos de tu academia."
-            : "Completa el perfil público de tu academia (opcional)."}
-        </p>
-      </div>
-
       {/* Existing academies */}
       {instructorAcademies.length > 0 && (
         <div className="bg-neutral-800/50 border border-neutral-700 rounded-xl p-4">
