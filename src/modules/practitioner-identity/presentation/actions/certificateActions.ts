@@ -7,8 +7,6 @@ type ActionResult<T = void> =
   | { success: true; data: T }
   | { success: false; error: string; code: string };
 
-const BUCKET = "membership-certificates";
-
 // ---------------------------------------------------------------------------
 // Get a short-lived signed URL for the practitioner's membership certificate.
 // The caller must be the owner of the certificate (matched by auth_user_id)
@@ -57,21 +55,12 @@ export async function getMembershipCertificateUrlAction(
     };
   }
 
-  const { data: signedUrl, error } = await adminClient.storage
-    .from(BUCKET)
-    .createSignedUrl(practitioner.certificate_path as string, 300); // 5 min
-
-  if (error || !signedUrl?.signedUrl) {
-    console.error(
-      "[getMembershipCertificateUrlAction] Storage error:",
-      error?.message,
-    );
-    return {
-      success: false,
-      error: "No se pudo generar el enlace de descarga",
-      code: "INTERNAL_ERROR",
-    };
-  }
-
-  return { success: true, data: { url: signedUrl.signedUrl } };
+  // Evitamos devolver una URL firmada de Supabase Storage porque con Next.js
+  // y URLs de objetos privados se pueden disparar errores de cache key en el
+  // optimizador de imágenes. La descarga se hace a través de la ruta interna
+  // que genera/renderiza el PDF directamente sin pasar por un asset externo.
+  return {
+    success: true,
+    data: { url: `/api/membership-certificate/${practitionerId}` },
+  };
 }

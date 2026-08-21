@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { unstable_cache } from "next/cache";
 import { Flag, School } from "lucide-react";
@@ -156,10 +157,11 @@ export default async function LandingPage({
                 }}
                 aria-hidden="true"
               />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src="/images/KombatLogoSquare.webp"
                 alt="Kombat Taekwondo"
+                width={128}
+                height={128}
                 className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-2xl shadow-2xl shadow-primary-900/60 ring-1 ring-primary-700/30"
               />
             </div>
@@ -1444,10 +1446,11 @@ export default async function LandingPage({
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-neutral-600">
           <div className="flex items-center gap-2.5">
             <div className="w-6 h-6 rounded-md overflow-hidden shrink-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src="/images/KombatLogoSquare.webp"
                 alt="Kombat Taekwondo"
+                width={24}
+                height={24}
                 className="w-full h-full object-cover"
               />
             </div>
