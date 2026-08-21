@@ -7,8 +7,6 @@ type ActionResult<T = void> =
   | { success: true; data: T }
   | { success: false; error: string; code: string };
 
-const BUCKET = "membership-certificates";
-
 // ---------------------------------------------------------------------------
 // Get a short-lived signed URL for the practitioner's membership certificate.
 // The caller must be the owner of the certificate (matched by auth_user_id)
