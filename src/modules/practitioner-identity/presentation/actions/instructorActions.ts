@@ -11,6 +11,7 @@ import {
   RegisterPractitionerInputSchema,
 } from "../../application/use-cases/registerPractitioner";
 import {
+  DuplicateAuthUserError,
   DuplicateRutError,
   PractitionerNotFoundError,
   PractitionerInactiveError,
@@ -248,6 +249,14 @@ export async function registerStudentAction(rawInput: unknown): Promise<
         success: false,
         error: "Ya existe un practicante con ese RUT",
         code: "DUPLICATE_RUT",
+      };
+    }
+    if (err instanceof DuplicateAuthUserError) {
+      return {
+        success: false,
+        error:
+          "Este alumno ya tiene una cuenta autenticada asociada a otro perfil",
+        code: "DUPLICATE_AUTH_USER",
       };
     }
     console.error("[registerStudentAction] Unexpected error:", err);

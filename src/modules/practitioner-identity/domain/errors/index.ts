@@ -12,6 +12,12 @@ export class DuplicateRutError extends DomainError {
   }
 }
 
+export class DuplicateAuthUserError extends DomainError {
+  constructor(authUserId: string) {
+    super(`A practitioner with auth user id ${authUserId} already exists`);
+  }
+}
+
 export class PractitionerInactiveError extends DomainError {
   constructor(id: string) {
     super(`Practitioner ${id} is inactive`);

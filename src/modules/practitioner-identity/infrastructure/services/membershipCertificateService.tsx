@@ -5,6 +5,32 @@ import QRCode from "qrcode";
 import path from "path";
 import fs from "fs";
 
+function resolvePublicAssetPath(fileName: string): string {
+  const candidates = [
+    path.join(process.cwd(), "public", "images", fileName),
+    path.join(process.cwd(), "public", fileName),
+    path.resolve(process.cwd(), "..", "public", "images", fileName),
+    path.resolve(process.cwd(), "..", "public", fileName),
+    path.resolve(__dirname, "../../../../public", "images", fileName),
+    path.resolve(__dirname, "../../../../public", fileName),
+  ];
+
+  const resolved = candidates.find((candidate) => fs.existsSync(candidate));
+  if (!resolved) {
+    throw new Error(
+      `No se encontró el asset "${fileName}" en ninguna ruta esperada: ${candidates.join(", ")}`,
+    );
+  }
+
+  return resolved;
+}
+
+function readAssetAsDataUrl(fileName: string, mimeType: string): string {
+  const filePath = resolvePublicAssetPath(fileName);
+  const buffer = fs.readFileSync(filePath);
+  return `data:${mimeType};base64,${buffer.toString("base64")}`;
+}
+
 import { adminSupabase } from "@/lib/supabase/admin";
 import { MembershipCertificate } from "../../presentation/components/MembershipCertificate";
 
@@ -90,35 +116,14 @@ export async function generateAndStoreMembershipCertificate(
     year: "numeric",
   });
 
-  // Logo — read from filesystem to avoid HTTP round-trip in server context
-  const logoPath = path.join(
-    process.cwd(),
-    "public",
-    "images",
-    "KombatLogo_H.png",
-  );
-  const logoBase64 = fs.readFileSync(logoPath).toString("base64");
-  const logoDataUrl = `data:image/png;base64,${logoBase64}`;
+  // Resolve public assets from a few valid serverless deployment paths.
+  const logoDataUrl = readAssetAsDataUrl("KombatLogo_H.png", "image/png");
 
   // Signature image — Juan Marcelo Gallardo (Presidente)
-  const signaturePath = path.join(
-    process.cwd(),
-    "public",
-    "images",
-    "firma_1.jpeg",
-  );
-  const signatureBase64 = fs.readFileSync(signaturePath).toString("base64");
-  const signatureDataUrl = `data:image/jpeg;base64,${signatureBase64}`;
+  const signatureDataUrl = readAssetAsDataUrl("firma_1.jpeg", "image/jpeg");
 
   // Signature image 2 — Juan Riquelme Pavez (Director Educacional)
-  const signaturePath2 = path.join(
-    process.cwd(),
-    "public",
-    "images",
-    "firma_juan.jpeg",
-  );
-  const signatureBase642 = fs.readFileSync(signaturePath2).toString("base64");
-  const signatureDataUrl2 = `data:image/jpeg;base64,${signatureBase642}`;
+  const signatureDataUrl2 = readAssetAsDataUrl("firma_juan.jpeg", "image/jpeg");
 
   // Generate PDF buffer
   const pdfBuffer = await renderToBuffer(

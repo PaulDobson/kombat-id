@@ -18,6 +18,7 @@ import {
   type StoragePort,
 } from "../../application/use-cases/updateProfilePhoto";
 import {
+  DuplicateAuthUserError,
   DuplicateRutError,
   PractitionerNotFoundError,
   PractitionerInactiveError,
@@ -65,6 +66,14 @@ export async function registerPractitionerAction(
         success: false,
         error: "Ya existe un practicante con ese RUT",
         code: "DUPLICATE_RUT",
+      };
+    }
+    if (err instanceof DuplicateAuthUserError) {
+      return {
+        success: false,
+        error:
+          "Este perfil ya está asociado a una cuenta de autenticación existente",
+        code: "DUPLICATE_AUTH_USER",
       };
     }
     console.error("[registerPractitionerAction] Unexpected error:", err);

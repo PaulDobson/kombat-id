@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { Practitioner } from "../../domain/entities/practitioner";
 import type { PractitionerRepository } from "../../domain/interfaces/practitionerRepository";
-import { DuplicateRutError } from "../../domain/errors";
+import { DuplicateAuthUserError, DuplicateRutError } from "../../domain/errors";
 
 export const RegisterPractitionerInputSchema = z.object({
   rut: z.string().min(1),
@@ -35,9 +35,18 @@ export async function registerPractitioner(
 ): Promise<{ publicId: string }> {
   const validated = RegisterPractitionerInputSchema.parse(input);
 
-  const existing = await deps.practitionerRepo.findByRut(validated.rut);
-  if (existing) {
+  const existingByRut = await deps.practitionerRepo.findByRut(validated.rut);
+  if (existingByRut) {
     throw new DuplicateRutError(validated.rut);
+  }
+
+  if (validated.authUserId) {
+    const existingByAuthUser = await deps.practitionerRepo.findByAuthUserId(
+      validated.authUserId,
+    );
+    if (existingByAuthUser) {
+      throw new DuplicateAuthUserError(validated.authUserId);
+    }
   }
 
   const now = new Date().toISOString();
